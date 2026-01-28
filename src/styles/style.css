@@ -1,0 +1,51 @@
+@config "../../tailwind.config.js";
+@import "tailwindcss";
+
+@layer base {
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  /* 标签字体样式 */
+  .label-text {
+    @apply shrink-0 whitespace-nowrap text-base font-semibold text-gray-700 dark:text-gray-200;
+  }
+
+  .input-style {
+    @apply h-12 rounded-full border border-gray-300 bg-white px-4
+    text-gray-900 transition-colors duration-200 ease-in-out
+    hover:border-primary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20
+    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:border-primary-400
+    placeholder-gray-400;
+  }
+  .select-style {
+    @apply h-12 w-full appearance-none rounded-full border border-gray-300 bg-white px-4 pr-8
+    text-gray-900 transition-colors duration-200 ease-in-out
+    hover:border-primary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20
+    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:border-primary-400
+    cursor-pointer;
+  }
+
+  .field-row {
+    @apply grid grid-cols-1 gap-y-2 md:grid-cols-[80px,1fr] md:items-center md:gap-x-4;
+  }
+
+  .ui-btn-primary {
+    @apply px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full
+    font-medium transition-colors cursor-pointer shadow-sm hover:shadow-md;
+  }
+}
+
+@theme {
+  /* ... */
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+html.dark {
+  color-scheme: dark;
+}

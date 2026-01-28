@@ -1,0 +1,39 @@
+<script setup>
+defineProps({
+    amount: { type: Number, required: true },
+    change: { type: Number, default: 0 }
+})
+
+const formatCurrency = (val) => {
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(val);
+};
+</script>
+
+<template>
+    <div
+        class="bg-linear-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col justify-between h-full">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-20 -mt-20"></div>
+
+        <div class="relative z-10">
+            <p class="text-gray-400 text-xl mb-1">总资产</p>
+            <h2 class="text-5xl font-bold mb-4 tracking-tight">{{ formatCurrency(amount) }}</h2>
+            <div class="flex items-center gap-2">
+                <span
+                    class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                    ▲
+                    {{ change }}%
+                </span>
+                <span class="text-gray-400 text-sm">较上月增长</span>
+            </div>
+        </div>
+
+        <div class="mt-8 h-12 flex items-end gap-2 opacity-50">
+            <div class="w-12 bg-white h-1/2 rounded-t"></div>
+            <div class="w-12 bg-white h-2/3 rounded-t"></div>
+            <div class="w-12 bg-white h-1/3 rounded-t"></div>
+            <div class="w-12 bg-white h-3/4 rounded-t"></div>
+            <div class="w-12 bg-white h-full rounded-t"></div>
+            <div class="w-12 bg-primary-400 h-2/3 rounded-t"></div>
+        </div>
+    </div>
+</template>
