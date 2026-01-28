@@ -4,7 +4,7 @@ import WorthCard from '@/components/cards/dashboardCards/WorthCard.vue'
 import BudgetCard from '@/components/cards/dashboardCards/BudgetCard.vue'
 import TrendCard from '@/components/cards/dashboardCards/TrendCard.vue'
 import AccountListCard from '@/components/cards/dashboardCards/AccountListCard.vue'
-import TransactionsCard from '@/components/cards/dashboardCards/TransactionsCard.vue'
+import ActivityCard from '@/components/cards/dashboardCards/ActivityCard.vue'
 import FundProportionCard from '@/components/cards/dashboardCards/FundProportionCard.vue'
 import { getAccounts } from "@/utils/accounts.js"
 
@@ -69,7 +69,7 @@ onMounted(() => {
 
 
         <div class="md:col-span-4">
-            <TransactionsCard :transactions="recentTransactions" />
+            <ActivityCard :transactions="recentTransactions" />
         </div>
     </div>
 </template>
