@@ -34,7 +34,7 @@ const icon = computed(() => {
             <!-- 顶部栏 -->
             <TopBar :title="currentTitle" :icon="icon"></TopBar>
             <!-- 路由视图 -->
-            <div class="flex-1 overflow-y-auto p-6 scroll-smooth">
+            <div class="flex-1 overflow-y-auto p-4 scroll-smooth">
                 <RouterView />
             </div>
         </main>

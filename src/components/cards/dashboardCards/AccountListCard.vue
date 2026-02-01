@@ -14,13 +14,17 @@ const emit = defineEmits(['refresh'])
 const showAddAccount = ref(false)
 const showChangeAccount = ref(false)
 const selectedAccount = ref()
-//刷新列表
-const handleRefresh = () => {
 
-    showAddAccount.value = false
-    showChangeAccount.value = false
-
-    emit('refresh')
+const currencySymbol = (currency) => {
+    const map = {
+        CNY: '¥',
+        USD: '$',
+        EUR: '€',
+        JPY: '¥',
+        GBP: '£',
+        HKD: 'HK$',
+    }
+    return map[(currency || '').toUpperCase()] || (currency ? `${currency} ` : '')
 }
 
 const openEditModal = (account) => {
@@ -39,7 +43,7 @@ const openEditModal = (account) => {
         </h3>
 
         <div class="flex-1 space-y-5 overflow-y-auto pr-1 custom-scrollbar">
-            <div v-for="acc in accounts" :key="acc.name" class="flex justify-between items-center">
+            <div v-for="acc in accounts" :key="acc.id" class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 flex items-center justify-center font-bold text-sm shadow-sm">
@@ -57,7 +61,7 @@ const openEditModal = (account) => {
                 </div>
 
                 <span class="text-sm font-bold text-gray-700 dark:text-gray-200">
-                    ¥{{ (Number(acc.balance) / 1000).toFixed(1) }}k
+                    {{ currencySymbol(acc.currency) }}{{ (Number(acc.balance) / 1000).toFixed(1) }}k
                 </span>
             </div>
 
@@ -72,9 +76,8 @@ const openEditModal = (account) => {
             </button>
         </div>
     </div>
-    <AddAccount :isOpen="showAddAccount" @close="showAddAccount = false" @refresh="handleRefresh" />
-    <ChangeAccount :isOpen="showChangeAccount" :data="selectedAccount" @close="showChangeAccount = false"
-        @refresh="handleRefresh" />
+    <AddAccount :isOpen="showAddAccount" @close="showAddAccount = false" />
+    <ChangeAccount :isOpen="showChangeAccount" :data="selectedAccount" @close="showChangeAccount = false" />
 
 
 </template>

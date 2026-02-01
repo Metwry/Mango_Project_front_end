@@ -1,31 +1,34 @@
 <script setup>
 import { ref } from 'vue'
+import TransactionsHistoryCard from '@/components/cards/bookkeepingCards/TransactionsHistoryCard.vue';
+import AddTransactionCard from '@/components/cards/bookkeepingCards/AddTransactionCard.vue';
 
-const amount = ref('')
-const note = ref('')
+
+defineProps({
+
+    Accounts: { type: Array, default: () => [] },
+    Transactions: { type: Array, default: () => [] }
+
+})
+
 </script>
 
 <template>
-    <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">记一笔</h2>
+    <!-- 占满视口：高全屏 + 宽全屏 -->
+    <div class="h-full w-full bg-gary-50 dark:bg-gray-900 ">
+        <!-- 内容区：宽度占满，仅保留内边距 -->
+        <div class="h-full w-full ">
+            <div class="flex h-full w-hull flex-col gap-4">
+                <!-- 上：新增交易（固定高度） -->
+                <section class="h-[450px] w-full overflow-hidden">
+                    <AddTransactionCard />
+                </section>
 
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">金额</label>
-                <input v-model="amount" type="number" placeholder="0.00"
-                    class="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <!-- 下：交易历史（固定高度 + 内部滚动） -->
+                <section class="h-[750px] w-full overflow-hidden">
+                    <TransactionsHistoryCard />
+                </section>
             </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
-                <textarea v-model="note" placeholder="买什么了？"
-                    class="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 h-24"></textarea>
-            </div>
-
-            <button
-                class="w-full bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 transition-colors">
-                保存记录
-            </button>
         </div>
     </div>
 </template>

@@ -6,10 +6,13 @@ import TrendCard from '@/components/cards/dashboardCards/TrendCard.vue'
 import AccountListCard from '@/components/cards/dashboardCards/AccountListCard.vue'
 import ActivityCard from '@/components/cards/dashboardCards/ActivityCard.vue'
 import FundProportionCard from '@/components/cards/dashboardCards/FundProportionCard.vue'
-import { getAccounts } from "@/utils/accounts.js"
+import { useAccountsStore } from '@/stores/accounts'
+import { storeToRefs } from "pinia";
+
 
 //资金账户列表
-const accounts = ref([])
+const accountsStore = useAccountsStore();
+const { accounts, loading, error } = storeToRefs(accountsStore);
 
 const netWorth = ref(190000.0)
 const monthlyChange = ref(3.2)
@@ -25,50 +28,37 @@ const recentTransactions = ref([
 ])
 
 
-//拿数据库数据
-const fetchData = async () => {
-    try {
-        const { data } = await getAccounts() // 
-        accounts.value = data
-
-    } catch (err) {
-        console.error('刷新失败', err)
-    }
-}
 //页面加载
 onMounted(() => {
-    fetchData()
-})
+    accountsStore.fetchAccounts();
+});
+
 </script>
 
 <template>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="md:col-span-2 h-90">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+
+        <div class="col-span-1 md:col-span-2 xl:col-span-2 h-auto min-h-[20rem]">
             <WorthCard :amount="netWorth" :change="monthlyChange" />
         </div>
 
-        <div class="md:col-span-1 h-90">
+        <div class="col-span-1 md:col-span-1 xl:col-span-1 h-auto min-h-[20rem]">
             <BudgetCard :progress="budgetProgress" :remaining="budgetRemaining" />
         </div>
 
-        <!-- todo->美化 -->
-        <div class="md:col-span-1 h-90">
+        <div class="col-span-1 md:col-span-1 xl:col-span-1 h-auto min-h-[20rem]">
             <FundProportionCard :accounts="accounts" />
         </div>
 
-
-
-        <div class="md:col-span-3">
+        <div class="col-span-1 md:col-span-2 xl:col-span-3 min-h-[24rem]">
             <TrendCard />
         </div>
 
-        <div class="md:col-span-1">
-            <AccountListCard :accounts="accounts" @refresh="fetchData" />
+        <div class="col-span-1 md:col-span-2 xl:col-span-1 h-auto min-h-[24rem]">
+            <AccountListCard :accounts="accounts" />
         </div>
 
-
-
-        <div class="md:col-span-4">
+        <div class="col-span-1 md:col-span-2 xl:col-span-4">
             <ActivityCard :transactions="recentTransactions" />
         </div>
     </div>
