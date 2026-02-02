@@ -9,8 +9,7 @@ import SettingsModal from '@/components/windows/SettingsModal.vue'
 const showSettings = ref(false)
 const route = useRoute()
 
-// --- 逻辑：动态计算标题 ---
-// 这会自动监听路由变化。如果路由配置了 meta.title 就用配置的，否则默认显示 '我的资产'
+
 const currentTitle = computed(() => {
     return route.meta.title || '我的资产'
 })

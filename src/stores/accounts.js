@@ -18,35 +18,21 @@ export const useAccountsStore = defineStore("accounts", () => {
   const fetched = ref(false);
   const lastFetchedAt = ref(null);
 
-  // 用于并发去重/保证强制刷新
   const fetchPromise = ref(null);
-
-  // 可选：详情缓存
-  const detailMap = reactive({}); // { [id]: accountDetail }
+  const detailMap = reactive({});
 
   // ===== getters =====
   const byId = computed(() => (id) => accounts.value.find((a) => a.id === id));
 
   // ===== actions =====
-  /**
-   * 拉取账户列表
-   * - 非 force：若已有请求在跑，则复用；若已 fetched 则不重复拉
-   * - force：保证一定会再发一次请求（即使当前有请求在跑）
-   */
   async function fetchAccounts({ force = false } = {}) {
-    // 非 force：如果已经拉过并且不强制刷新，直接返回
     if (fetched.value && !force) return accounts.value;
-
-    // 非 force：如果已有请求在跑，复用这个请求
     if (fetchPromise.value && !force) return fetchPromise.value;
 
-    // force：如果已有请求在跑，先等它结束，然后再发一次新的
     if (fetchPromise.value && force) {
       try {
         await fetchPromise.value;
-      } catch {
-        // 前一个请求失败也无所谓，继续强制再拉一次
-      }
+      } catch {}
     }
 
     loading.value = true;
@@ -55,8 +41,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     const p = (async () => {
       try {
         const res = await getAccounts();
-        const payload = res?.data;
-
+        const payload = res?.data ?? res;
         const list = Array.isArray(payload)
           ? payload
           : (payload?.results ?? []);
@@ -86,12 +71,10 @@ export const useAccountsStore = defineStore("accounts", () => {
   async function createAccount(payload) {
     saving.value = true;
     error.value = null;
-
     try {
       const res = await apiCreateAccount(payload);
-      // 以数据库为准：强制刷新列表
-      await fetchAccounts({ force: true });
-      return res?.data;
+      await refreshAccounts();
+      return res?.data ?? res;
     } catch (e) {
       error.value = e;
       throw e;
@@ -103,14 +86,13 @@ export const useAccountsStore = defineStore("accounts", () => {
   async function updateAccount(id, payload) {
     saving.value = true;
     error.value = null;
-
     try {
       const res = await apiUpdateAccount(id, payload);
-      // 更新详情缓存（可选）
-      if (res?.data) detailMap[id] = res.data;
+      const data = res?.data ?? res;
+      if (data) detailMap[id] = data;
 
-      await fetchAccounts({ force: true });
-      return res?.data;
+      await refreshAccounts();
+      return data;
     } catch (e) {
       error.value = e;
       throw e;
@@ -122,12 +104,10 @@ export const useAccountsStore = defineStore("accounts", () => {
   async function deleteAccount(id) {
     saving.value = true;
     error.value = null;
-
     try {
       await apiDeleteAccount(id);
       delete detailMap[id];
-
-      await fetchAccounts({ force: true });
+      await refreshAccounts();
     } catch (e) {
       error.value = e;
       throw e;
@@ -142,7 +122,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     error.value = null;
     try {
       const res = await getAccountDetail(id);
-      const detail = res?.data;
+      const detail = res?.data ?? res;
       if (detail) detailMap[id] = detail;
       return detail;
     } catch (e) {
@@ -151,8 +131,21 @@ export const useAccountsStore = defineStore("accounts", () => {
     }
   }
 
+  function reset() {
+    accounts.value = [];
+    loading.value = false;
+    saving.value = false;
+    error.value = null;
+
+    fetched.value = false;
+    lastFetchedAt.value = null;
+
+    fetchPromise.value = null;
+
+    Object.keys(detailMap).forEach((k) => delete detailMap[k]);
+  }
+
   return {
-    // state
     accounts,
     loading,
     saving,
@@ -161,15 +154,15 @@ export const useAccountsStore = defineStore("accounts", () => {
     lastFetchedAt,
     detailMap,
 
-    // getters
     byId,
 
-    // actions
     fetchAccounts,
     refreshAccounts,
     createAccount,
     updateAccount,
     deleteAccount,
     fetchAccountDetail,
+
+    reset,
   };
 });

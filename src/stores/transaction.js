@@ -10,30 +10,25 @@ import {
 } from "@/utils/transaction.js";
 
 export const useTransactionsStore = defineStore("transactions", () => {
-  // ===== state =====
   const items = ref([]);
   const total = ref(0);
   const loading = ref(false);
   const error = ref(null);
 
-  // filters：跨组件共享的筛选/分页状态
   const defaultFilters = () => ({
     account_id: null,
     category: null,
-    start: null, // YYYY-MM-DD
-    end: null, // YYYY-MM-DD
+    start: null,
+    end: null,
     search: "",
-    ordering: "-date",
+    ordering: "-created_at", // ✅ 原来 -date，后端没有这个字段就会无效
     page: 1,
     page_size: 20,
   });
 
   const filters = reactive(defaultFilters());
+  const detailMap = reactive({});
 
-  // 详情缓存
-  const detailMap = reactive({}); // { [id]: transaction }
-
-  // ===== getters (computed) =====
   const hasFilters = computed(() => {
     return !!(
       filters.account_id ||
@@ -44,7 +39,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
     );
   });
 
-  // ===== actions =====
   function setFilters(patch) {
     Object.assign(filters, patch);
   }
@@ -53,32 +47,34 @@ export const useTransactionsStore = defineStore("transactions", () => {
     Object.assign(filters, defaultFilters());
   }
 
+  function normalizeListPayload(payload) {
+    if (payload && Array.isArray(payload.results)) {
+      return {
+        list: payload.results,
+        total: payload.count ?? payload.results.length,
+      };
+    }
+    if (Array.isArray(payload)) return { list: payload, total: payload.length };
+    return { list: [], total: 0 };
+  }
+
   async function fetchList(extraParams = {}) {
     loading.value = true;
     error.value = null;
 
     try {
-      // 合并 filters + extraParams（extraParams 优先）
       const params = { ...filters, ...extraParams };
-
-      // 清理空值，避免传 null/空字符串
       Object.keys(params).forEach((k) => {
         const v = params[k];
         if (v === null || v === undefined || v === "") delete params[k];
       });
 
       const res = await getTransactions(params);
+      const payload = res?.data ?? res; // ✅ 兼容 utils 返回 data/response
 
-      // 兼容 DRF 常见分页格式：{ count, results }
-      if (res?.results) {
-        items.value = res.results;
-        total.value = res.count ?? res.results.length;
-      } else {
-        // 非分页：直接数组
-        const list = Array.isArray(res) ? res : (res?.data ?? []);
-        items.value = list;
-        total.value = list.length;
-      }
+      const normalized = normalizeListPayload(payload);
+      items.value = normalized.list;
+      total.value = normalized.total;
 
       return items.value;
     } catch (e) {
@@ -99,8 +95,9 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await getTransactionDetail(id);
-      detailMap[id] = res;
-      return res;
+      const payload = res?.data ?? res;
+      if (payload) detailMap[id] = payload;
+      return payload;
     } catch (e) {
       error.value = e;
       throw e;
@@ -111,8 +108,8 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await createTransaction(payload);
-      // await refresh();
-      return res;
+      // 这里你现在不 refresh，是合理的（列表接口不稳时避免中断）
+      return res?.data ?? res;
     } catch (e) {
       error.value = e;
       throw e;
@@ -123,9 +120,10 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await updateTransaction(id, payload);
-      detailMap[id] = res;
+      const data = res?.data ?? res;
+      if (data) detailMap[id] = data;
       await refresh();
-      return res;
+      return data;
     } catch (e) {
       error.value = e;
       throw e;
@@ -136,9 +134,10 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await patchTransaction(id, patch);
-      detailMap[id] = res;
+      const data = res?.data ?? res;
+      if (data) detailMap[id] = data;
       await refresh();
-      return res;
+      return data;
     } catch (e) {
       error.value = e;
       throw e;
@@ -157,9 +156,18 @@ export const useTransactionsStore = defineStore("transactions", () => {
     }
   }
 
-  // expose
+  // ✅ logout/切用户时用：清空交易相关状态
+  function reset() {
+    items.value = [];
+    total.value = 0;
+    loading.value = false;
+    error.value = null;
+
+    Object.assign(filters, defaultFilters());
+    Object.keys(detailMap).forEach((k) => delete detailMap[k]);
+  }
+
   return {
-    // state
     items,
     total,
     loading,
@@ -167,10 +175,8 @@ export const useTransactionsStore = defineStore("transactions", () => {
     filters,
     detailMap,
 
-    // getters
     hasFilters,
 
-    // actions
     setFilters,
     resetFilters,
     fetchList,
@@ -180,5 +186,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     updateOne,
     patchOne,
     removeOne,
+
+    reset, // ✅
   };
 });

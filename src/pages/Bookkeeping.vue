@@ -1,34 +1,66 @@
 <script setup>
-import { ref } from 'vue'
-import TransactionsHistoryCard from '@/components/cards/bookkeepingCards/TransactionsHistoryCard.vue';
-import AddTransactionCard from '@/components/cards/bookkeepingCards/AddTransactionCard.vue';
+import { onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
+import TransactionsHistoryCard from "@/components/cards/bookkeepingCards/TransactionsHistoryCard.vue";
+import AddTransactionCard from "@/components/cards/bookkeepingCards/AddTransactionCard.vue";
+import { useAccountsStore } from "@/stores/accounts";
+import { useTransactionsStore } from "@/stores/transaction";
 
+const accountsStore = useAccountsStore();
+const transactionsStore = useTransactionsStore();
 
-defineProps({
+const { accounts, loading: accountsLoading, error: accountsError } = storeToRefs(accountsStore);
+const { items: transactions, loading: transactionsLoading, error: transactionsError } =
+  storeToRefs(transactionsStore);
 
-    Accounts: { type: Array, default: () => [] },
-    Transactions: { type: Array, default: () => [] }
+const submitting = ref(false);
+const resetKey = ref(0);
 
-})
+onMounted(async () => {
+  await Promise.all([accountsStore.fetchAccounts(), transactionsStore.fetchList()]);
+});
 
+async function onSubmitTransaction(payload) {
+  submitting.value = true;
+  try {
+    await transactionsStore.createOne(payload);
+    resetKey.value += 1;
+
+    await Promise.all([
+      accountsStore.fetchAccounts({ force: true }),
+      transactionsStore.fetchList({ page: 1 }),
+    ]);
+  } finally {
+    submitting.value = false;
+  }
+}
 </script>
 
 <template>
-    <!-- 占满视口：高全屏 + 宽全屏 -->
-    <div class="h-full w-full bg-gary-50 dark:bg-gray-900 ">
-        <!-- 内容区：宽度占满，仅保留内边距 -->
-        <div class="h-full w-full ">
-            <div class="flex h-full w-hull flex-col gap-4">
-                <!-- 上：新增交易（固定高度） -->
-                <section class="h-[450px] w-full overflow-hidden">
-                    <AddTransactionCard />
-                </section>
+  <div class="h-full w-full bg-gray-50 dark:bg-gray-900">
+    <div class="h-full w-full">
+      <div class="flex h-full w-full flex-col gap-4">
+        <section class="h-[450px] w-full overflow-hidden">
+          <AddTransactionCard
+            :accounts="accounts"
+            :accounts-loading="accountsLoading"
+            :accounts-error="accountsError"
+            :submitting="submitting"
+            :reset-key="resetKey"
+            @submit="onSubmitTransaction"
+          />
+        </section>
 
-                <!-- 下：交易历史（固定高度 + 内部滚动） -->
-                <section class="h-[750px] w-full overflow-hidden">
-                    <TransactionsHistoryCard />
-                </section>
-            </div>
-        </div>
+        <section class="h-[750px] w-full overflow-hidden">
+          <TransactionsHistoryCard
+            :transactions="transactions"
+            :accounts="accounts"
+            :loading="transactionsLoading"
+            :error="transactionsError"
+          />
+        </section>
+      </div>
     </div>
+  </div>
 </template>
+

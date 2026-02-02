@@ -16,7 +16,6 @@ export const useAuthStore = defineStore("auth", () => {
 
   // ===== actions =====
   async function login(username, password) {
-    // 登录用普通 axios，避免带旧 token（你原逻辑）
     const res = await axios.post("/api/login/", { username, password });
 
     const { access, refresh, user: u } = res.data;
@@ -32,18 +31,18 @@ export const useAuthStore = defineStore("auth", () => {
 
   function logout() {
     const accountsStore = useAccountsStore();
+    const transactionsStore = useAccountsStore();
 
     accessToken.value = "";
     refreshToken.value = "";
     user.value = null;
 
-    // 建议：同时清掉本地缓存，避免刷新又“复活”
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
 
-    // 你原逻辑：退出时清账户 store
-    accountsStore.$reset();
+    accountsStore.reset();
+    transactionsStore.reset();
   }
 
   function setAccessToken(token) {
