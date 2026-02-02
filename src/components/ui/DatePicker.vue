@@ -2,8 +2,10 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 
 const props = defineProps({
-    modelValue: { type: String, default: "" }, // YYYY-MM-DD
+    // 接收格式示例: "2026-02-02 14:40:42.622 +08:00"
+    modelValue: { type: String, default: "" },
 });
+
 const emit = defineEmits(["update:modelValue"]);
 
 const open = ref(false);
@@ -14,17 +16,49 @@ const YEAR_MIN = 1900;
 const YEAR_MAX = 2100;
 const clampYear = (y) => Math.min(YEAR_MAX, Math.max(YEAR_MIN, Math.trunc(Number(y) || YEAR_MIN)));
 
-const pad2 = (n) => String(n).padStart(2, "0");
-const ymd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+// --- 1. 新增：格式化函数 (生成目标长字符串) ---
+const formatFullTime = (date) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const pad3 = (n) => String(n).padStart(3, '0');
+
+    const y = date.getFullYear();
+    const m = pad(date.getMonth() + 1);
+    const d = pad(date.getDate());
+    const h = pad(date.getHours());
+    const min = pad(date.getMinutes());
+    const s = pad(date.getSeconds());
+    const ms = pad3(date.getMilliseconds());
+
+    // 计算时区 (例如北京时间 -480 分钟 -> +08:00)
+    const timezoneOffset = -date.getTimezoneOffset();
+    const sign = timezoneOffset >= 0 ? '+' : '-';
+    const offsetH = pad(Math.floor(Math.abs(timezoneOffset) / 60));
+    const offsetM = pad(Math.abs(timezoneOffset) % 60);
+
+    // 返回格式: YYYY-MM-DD HH:mm:ss.SSS +ZZ:zz
+    return `${y}-${m}-${d} ${h}:${min}:${s}.${ms} ${sign}${offsetH}:${offsetM}`;
+};
+
+// --- 2. 新增：辅助函数 (仅提取 YYYY-MM-DD 用于 UI 显示和比对) ---
+const toYMD = (date) => {
+    if (!date) return "";
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+};
+
+// --- 3. 修改：解析函数 ---
+// 兼容处理：有些浏览器 new Date() 不支持中间带空格，替换为 T 变成标准 ISO
 const parse = (s) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-    if (!m) return null;
-    const d = new Date(+m[1], +m[2] - 1, +m[3]);
-    return ymd(d) === s ? d : null;
+    if (!s) return null;
+    let d = new Date(s);
+    if (isNaN(d.getTime())) {
+        // 尝试修复格式 (例如将 "2026-02-02 14:..." 变成 "2026-02-02T14:...")
+        d = new Date(s.replace(' ', 'T'));
+    }
+    return isNaN(d.getTime()) ? null : d;
 };
 
 const today = new Date();
-const todayStr = ymd(today);
+const todayStr = toYMD(today);
 
 const init = parse(props.modelValue) || today;
 const viewYear = ref(init.getFullYear());
@@ -60,7 +94,13 @@ const cells = computed(() => {
     });
 });
 
-const selectedStr = computed(() => (parse(props.modelValue) ? props.modelValue : ""));
+// --- 4. 修改：显示的文字 ---
+// 按钮上只显示 "2026-02-02"，虽然实际值是长字符串，防止按钮太长
+const selectedStr = computed(() => {
+    const d = parse(props.modelValue);
+    return d ? toYMD(d) : "";
+});
+
 const panelPos = ref({ top: 0, left: 0, width: 0 });
 
 const panelStyle = computed(() => ({
@@ -77,7 +117,7 @@ const computePanelPosition = () => {
 
     const rect = el.getBoundingClientRect();
     const gap = 8;
-    const guessH = 320; // 比你之前 340 再小一点
+    const guessH = 320;
 
     let top = rect.bottom + gap;
     if (window.innerHeight - rect.bottom < guessH && rect.top > guessH) {
@@ -100,9 +140,26 @@ const toggleOpen = async () => {
 };
 const close = () => (open.value = false);
 
-const selectDay = (d) => {
-    if (!d) return;
-    emit("update:modelValue", ymd(d));
+// --- 5. 核心修改：点击日期时的逻辑 ---
+const selectDay = (cellDate) => {
+    if (!cellDate) return;
+
+    // 获取当前时刻 (时分秒毫秒)
+    const now = new Date();
+
+    // 创建新日期：使用选中的【年/月/日】 + 当前的【时/分/秒】
+    const finalDate = new Date(
+        cellDate.getFullYear(),
+        cellDate.getMonth(),
+        cellDate.getDate(),
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        now.getMilliseconds()
+    );
+
+    // 格式化为完整字符串并发送
+    emit("update:modelValue", formatFullTime(finalDate));
     close();
 };
 
@@ -129,6 +186,8 @@ const onDocClick = (e) => {
     if (panelRef.value?.contains(t)) return;
     close();
 };
+
+const ymd = toYMD;
 
 onMounted(() => {
     window.addEventListener("resize", onWindowChange);

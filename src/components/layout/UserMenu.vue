@@ -1,41 +1,45 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import BaseIcon from '../BaseIcon.vue'
+import { ref, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import BaseIcon from "../BaseIcon.vue";
 
-// 定义 emits，用于通知父组件打开设置弹窗
-const emit = defineEmits(['open-settings'])
+const emit = defineEmits(["open-settings"]);
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const showUserMenu = ref(false)
-const userMenuRef = ref(null)
+const showUserMenu = ref(false);
+const userMenuRef = ref(null);
 
-// 逻辑：点击外部关闭
-const handleClickOutside = (event) => {
-    if (userMenuRef.value && !userMenuRef.value.contains(event.target)) {
-        showUserMenu.value = false
+const handlePointerDownOutside = (event) => {
+    const el = userMenuRef.value;
+    if (!el) return;
+
+    if (!el.contains(event.target)) {
+        showUserMenu.value = false;
     }
-}
+};
 
-// 逻辑：退出登录
 const handleLogout = () => {
-    authStore.logout()
-    router.replace('/login')
-}
+    authStore.logout();
+    router.replace("/login");
+};
 
-// 逻辑：触发父组件的设置弹窗
 const triggerSettings = () => {
-    emit('open-settings')
-    showUserMenu.value = false
-}
+    emit("open-settings");
+    showUserMenu.value = false;
+};
 
-// 生命周期
-onMounted(() => document.addEventListener('click', handleClickOutside))
-onUnmounted(() => document.removeEventListener('click', handleClickOutside))
+onMounted(() => {
+    document.addEventListener("pointerdown", handlePointerDownOutside, true);
+});
+
+onUnmounted(() => {
+    document.removeEventListener("pointerdown", handlePointerDownOutside, true);
+});
 </script>
+
 
 <template>
     <div class="p-4 border-t border-gray-100 dark:border-gray-700 relative" ref="userMenuRef">
@@ -62,7 +66,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
             </button>
         </div>
 
-        <div @click.stop="showUserMenu = !showUserMenu"
+        <div @pointerdown.stop="showUserMenu = !showUserMenu"
             class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-xl transition-colors select-none">
             <div
                 class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800">

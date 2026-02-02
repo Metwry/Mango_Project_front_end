@@ -5,9 +5,11 @@ import DatePicker from "@/components/ui/DatePicker.vue";
 import AccountPicker from "@/components/ui/AccountPicker.vue";
 import { useAccountsStore } from "@/stores/accounts";
 import { useTransactionsStore } from "@/stores/transaction";
+import dayjs from 'dayjs'
+
 
 const accountsStore = useAccountsStore();
-const { accounts, loading, error } = storeToRefs(accountsStore);
+const { accounts } = storeToRefs(accountsStore);
 const transactionsStore = useTransactionsStore();
 
 onMounted(() => {
@@ -19,7 +21,7 @@ const form = reactive({
     counterparty: "",
     category_name: "",
     amount: null,
-    add_date: new Date().toISOString()
+    add_date: dayjs().format('YYYY-MM-DD HH:mm:ss.SSS Z')
 });
 
 
@@ -29,18 +31,24 @@ function clear() {
     form.counterparty = '';
     form.category_name = '';
     form.amount = null;
-    form.add_date = new Date().toISOString();
+    form.add_date = dayjs().format('YYYY-MM-DD HH:mm:ss.SSS Z')
 };
 
-function addTransaction() {
-    return transactionsStore.createOne({
+async function addTransaction() {
+    const res = await transactionsStore.createOne({
         account: form.account_id,
         counterparty: form.counterparty,
         category_name: form.category_name,
         amount: form.amount,
         add_date: form.add_date,
-        type: form.type,
     });
+
+    await accountsStore.fetchAccounts({ force: true });
+    console.log(accounts.value);
+
+    clear();
+
+    return res;
 }
 </script>
 
@@ -99,16 +107,23 @@ function addTransaction() {
         </div>
 
         <!-- 底部：固定操作区 -->
-        <div class="px-6 py-6  flex items-center justify-end gap-3">
-            <button type="button" class=" cursor-pointer px-4 py-2 rounded-lg text-sm ring-1 ring-gray-200 dark:ring-gray-600
-               hover:bg-gray-50 dark:hover:bg-gray-700" @click="clear">
-                清空
+        <div class="px-6 py-6 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
+
+            <button type="button" class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors
+             text-gray-500 hover:text-red-600 hover:bg-red-50 cursor-pointer
+             dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20" @click="clear">
+                重置
             </button>
 
-            <button type="button" class=" cursor-pointer px-4 py-2 rounded-lg text-sm bg-gray-900 text-white hover:bg-gray-800
-               disabled:opacity-60" :disabled="!form.account_id || !form.amount" @click="addTransaction">
-                保存
+            <button type="button"
+                class="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white rounded-lg transition-all shadow-md shadow-green-500/30
+             bg-gradient-to-r from-green-500 to-green-600 cursor-pointer
+             hover:from-green-600 hover:to-green-700 hover:shadow-lg hover:shadow-green-500/40
+             disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:from-gray-400 disabled:to-gray-500"
+                :disabled="!form.account_id || !form.amount" @click="addTransaction">
+                确认保存
             </button>
+
         </div>
     </div>
 </template>

@@ -192,7 +192,7 @@ onUnmounted(() => {
                             <div class="min-w-0">
                                 <div class="truncate text-gray-800 dark:text-gray-100">{{ a.name }}</div>
                                 <div class="truncate text-xs text-gray-500 dark:text-gray-400">
-                                    {{ a.currency }} · {{ a.type }}
+                                    {{ a.cuarrency }} · {{ a.type }}
                                 </div>
                             </div>
 

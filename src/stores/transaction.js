@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { ref, reactive, computed } from "vue";
 import {
   getTransactions,
   createTransaction,
@@ -8,157 +9,176 @@ import {
   deleteTransaction,
 } from "@/utils/transaction.js";
 
-export const useTransactionsStore = defineStore("transactions", {
-  state: () => ({
-    items: [],
-    total: 0, // 如果后端返回 count/total，可用
-    loading: false,
-    error: null,
+export const useTransactionsStore = defineStore("transactions", () => {
+  // ===== state =====
+  const items = ref([]);
+  const total = ref(0);
+  const loading = ref(false);
+  const error = ref(null);
 
-    // 只放“跨组件共享”的筛选/分页状态；表单数据别放这里
-    filters: {
-      account_id: null,
-      category: null,
-      start: null, // YYYY-MM-DD
-      end: null, // YYYY-MM-DD
-      search: "", // 可选
-      ordering: "-date", // 可选：如 "-date" / "date"
-      page: 1,
-      page_size: 20,
-    },
+  // filters：跨组件共享的筛选/分页状态
+  const defaultFilters = () => ({
+    account_id: null,
+    category: null,
+    start: null, // YYYY-MM-DD
+    end: null, // YYYY-MM-DD
+    search: "",
+    ordering: "-date",
+    page: 1,
+    page_size: 20,
+  });
 
-    // 详情缓存（可选）
-    detailMap: {}, // { [id]: transaction }
-  }),
+  const filters = reactive(defaultFilters());
 
-  getters: {
-    hasFilters(state) {
-      const f = state.filters;
-      return !!(f.account_id || f.category || f.start || f.end || f.search);
-    },
-  },
+  // 详情缓存
+  const detailMap = reactive({}); // { [id]: transaction }
 
-  actions: {
-    setFilters(patch) {
-      this.filters = { ...this.filters, ...patch };
-    },
+  // ===== getters (computed) =====
+  const hasFilters = computed(() => {
+    return !!(
+      filters.account_id ||
+      filters.category ||
+      filters.start ||
+      filters.end ||
+      filters.search
+    );
+  });
 
-    resetFilters() {
-      this.filters = {
-        account_id: null,
-        category: null,
-        start: null,
-        end: null,
-        search: "",
-        ordering: "-date",
-        page: 1,
-        page_size: 20,
-      };
-    },
+  // ===== actions =====
+  function setFilters(patch) {
+    Object.assign(filters, patch);
+  }
 
-    async fetchList(extraParams = {}) {
-      this.loading = true;
-      this.error = null;
+  function resetFilters() {
+    Object.assign(filters, defaultFilters());
+  }
 
-      try {
-        // 合并 filters + extraParams（extraParams 优先）
-        const params = { ...this.filters, ...extraParams };
+  async function fetchList(extraParams = {}) {
+    loading.value = true;
+    error.value = null;
 
-        // 清理空值，避免传 null/空字符串
-        Object.keys(params).forEach((k) => {
-          const v = params[k];
-          if (v === null || v === undefined || v === "") delete params[k];
-        });
+    try {
+      // 合并 filters + extraParams（extraParams 优先）
+      const params = { ...filters, ...extraParams };
 
-        const res = await getTransactions(params);
+      // 清理空值，避免传 null/空字符串
+      Object.keys(params).forEach((k) => {
+        const v = params[k];
+        if (v === null || v === undefined || v === "") delete params[k];
+      });
 
-        // 兼容 DRF 常见分页格式：{ count, results }
-        if (res?.results) {
-          this.items = res.results;
-          this.total = res.count ?? res.results.length;
-        } else {
-          // 非分页：直接数组
-          this.items = Array.isArray(res) ? res : (res?.data ?? []);
-          this.total = this.items.length;
-        }
+      const res = await getTransactions(params);
 
-        return this.items;
-      } catch (e) {
-        this.error = e;
-        throw e;
-      } finally {
-        this.loading = false;
+      // 兼容 DRF 常见分页格式：{ count, results }
+      if (res?.results) {
+        items.value = res.results;
+        total.value = res.count ?? res.results.length;
+      } else {
+        // 非分页：直接数组
+        const list = Array.isArray(res) ? res : (res?.data ?? []);
+        items.value = list;
+        total.value = list.length;
       }
-    },
 
-    async refresh() {
-      return this.fetchList();
-    },
+      return items.value;
+    } catch (e) {
+      error.value = e;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
 
-    async fetchDetail(id, { useCache = true } = {}) {
-      if (useCache && this.detailMap[id]) return this.detailMap[id];
+  function refresh() {
+    return fetchList();
+  }
 
-      this.error = null;
-      try {
-        const res = await getTransactionDetail(id);
-        this.detailMap[id] = res;
-        return res;
-      } catch (e) {
-        this.error = e;
-        throw e;
-      }
-    },
+  async function fetchDetail(id, { useCache = true } = {}) {
+    if (useCache && detailMap[id]) return detailMap[id];
 
-    async createOne(payload) {
-      this.error = null;
-      try {
-        const res = await createTransaction(payload);
-        // 简单做法：创建后刷新列表，保证与后端一致
-        await this.refresh();
-        return res;
-      } catch (e) {
-        this.error = e;
-        throw e;
-      }
-    },
+    error.value = null;
+    try {
+      const res = await getTransactionDetail(id);
+      detailMap[id] = res;
+      return res;
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
 
-    async updateOne(id, payload) {
-      this.error = null;
-      try {
-        const res = await updateTransaction(id, payload);
-        // 更新缓存
-        this.detailMap[id] = res;
-        await this.refresh();
-        return res;
-      } catch (e) {
-        this.error = e;
-        throw e;
-      }
-    },
+  async function createOne(payload) {
+    error.value = null;
+    try {
+      const res = await createTransaction(payload);
+      // await refresh();
+      return res;
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
 
-    async patchOne(id, patch) {
-      this.error = null;
-      try {
-        const res = await patchTransaction(id, patch);
-        this.detailMap[id] = res;
-        await this.refresh();
-        return res;
-      } catch (e) {
-        this.error = e;
-        throw e;
-      }
-    },
+  async function updateOne(id, payload) {
+    error.value = null;
+    try {
+      const res = await updateTransaction(id, payload);
+      detailMap[id] = res;
+      await refresh();
+      return res;
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
 
-    async removeOne(id) {
-      this.error = null;
-      try {
-        await deleteTransaction(id);
-        delete this.detailMap[id];
-        await this.refresh();
-      } catch (e) {
-        this.error = e;
-        throw e;
-      }
-    },
-  },
+  async function patchOne(id, patch) {
+    error.value = null;
+    try {
+      const res = await patchTransaction(id, patch);
+      detailMap[id] = res;
+      await refresh();
+      return res;
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
+
+  async function removeOne(id) {
+    error.value = null;
+    try {
+      await deleteTransaction(id);
+      delete detailMap[id];
+      await refresh();
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
+
+  // expose
+  return {
+    // state
+    items,
+    total,
+    loading,
+    error,
+    filters,
+    detailMap,
+
+    // getters
+    hasFilters,
+
+    // actions
+    setFilters,
+    resetFilters,
+    fetchList,
+    refresh,
+    fetchDetail,
+    createOne,
+    updateOne,
+    patchOne,
+    removeOne,
+  };
 });
