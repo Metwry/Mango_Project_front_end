@@ -7,6 +7,7 @@ import {
   updateTransaction,
   patchTransaction,
   deleteTransaction,
+  reverseTransaction,
 } from "@/utils/transaction.js";
 
 export const useTransactionsStore = defineStore("transactions", () => {
@@ -156,7 +157,22 @@ export const useTransactionsStore = defineStore("transactions", () => {
     }
   }
 
-  // ✅ logout/切用户时用：清空交易相关状态
+  async function reverseOne(id) {
+    error.value = null;
+    try {
+      const res = await reverseTransaction(id);
+      const data = res?.data ?? res;
+
+      // 冲正后建议刷新当前页（或者回到第一页，你自选）
+      await fetchList({ page: filters.page, page_size: filters.page_size });
+
+      return data;
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
+
   function reset() {
     items.value = [];
     total.value = 0;
@@ -186,6 +202,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     updateOne,
     patchOne,
     removeOne,
+    reverseOne,
 
     reset, // ✅
   };

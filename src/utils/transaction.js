@@ -26,3 +26,7 @@ export function deleteTransaction(id) {
 export function patchTransaction(id, data) {
   return api.patch(`${BASE_URL}/${id}/`, data);
 }
+
+export function reverseTransaction(id) {
+  return api.post(`${BASE_URL}/${id}/reverse/`);
+}
