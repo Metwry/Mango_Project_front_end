@@ -42,10 +42,10 @@ async function onReverseTransaction(id) {
     try {
         await transactionsStore.reverseOne(id);
 
-        // 冲正会影响余额，刷新账户
+        // 撤销会影响余额，刷新账户
         await accountsStore.fetchAccounts({ force: true });
 
-        // 可选：冲正后保持当前页（reverseOne 已经刷新当前页了）
+        // 可选：撤销后保持当前页（reverseOne 已经刷新当前页了）
     } finally {
         submitting.value = false;
     }

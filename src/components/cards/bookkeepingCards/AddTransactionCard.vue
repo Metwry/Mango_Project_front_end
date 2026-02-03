@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watch, ref } from "vue"; // 1. 引入 ref
+import { reactive, watch, ref, onMounted } from "vue"; // 1. 引入 ref
 import DatePicker from "@/components/ui/DatePicker.vue";
 import AccountPicker from "@/components/ui/AccountPicker.vue";
 import dayjs from "dayjs";
@@ -13,6 +13,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["submit"]);
+
 
 // 2. 新增标记：记录用户是否手动修改过日期
 const isDateManuallyModified = ref(false);
@@ -69,6 +70,7 @@ watch(
     () => props.resetKey,
     () => clear(),
 );
+
 </script>
 
 <template>
@@ -116,7 +118,7 @@ watch(
             </button>
 
             <button type="button"
-                class="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white rounded-lg transition-all shadow-md shadow-green-500/30 bg-gradient-to-r from-green-500 to-green-600 cursor-pointer hover:from-green-600 hover:to-green-700 hover:shadow-lg hover:shadow-green-500/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:from-gray-400 disabled:to-gray-500"
+                class="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white rounded-lg transition-all shadow-md shadow-green-500/30 bg-inear-to-r from-green-500 to-green-600 cursor-pointer hover:from-green-600 hover:to-green-700 hover:shadow-lg hover:shadow-green-500/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:from-gray-400 disabled:to-gray-500"
                 :disabled="submitting || !form.account_id || !form.amount" @click="submit">
                 确认保存
             </button>

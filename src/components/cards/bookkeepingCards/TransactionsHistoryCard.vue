@@ -253,7 +253,7 @@ async function onReverseClick(tx) {
 
                 <div class="flex items-center gap-1">
                     <button
-                        class="p-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                        class="p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                         :disabled="loading || page <= 1" @click="goPage(page - 1)" title="上一页">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -265,7 +265,7 @@ async function onReverseClick(tx) {
                     </span>
 
                     <button
-                        class="p-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                        class="p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                         :disabled="loading || page >= totalPages" @click="goPage(page + 1)" title="下一页">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />

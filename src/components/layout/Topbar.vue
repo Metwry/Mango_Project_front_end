@@ -1,6 +1,10 @@
 <script setup>
 // 接收父组件传来的标题
 import BaseIcon from '../BaseIcon.vue';
+import UserMenu from './UserMenu.vue';
+
+const emit = defineEmits(['openSettings'])
+
 defineProps({
     title: {
         type: String,
@@ -27,7 +31,8 @@ defineProps({
 
         <div class="flex items-center gap-4">
             <slot name="actions"></slot>
-        </div>
 
+            <UserMenu @openSettings="emit('openSettings')" />
+        </div>
     </header>
 </template>

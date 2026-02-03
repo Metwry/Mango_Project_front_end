@@ -52,7 +52,6 @@ const UpdateAccount = async () => {
     try {
         if (!account.value.id) return
 
-        // ✅ 调用 store（内部会强制刷新列表）
         await accountsStore.updateAccount(account.value.id, account.value)
 
         emit('close')
@@ -67,12 +66,17 @@ const DeleteAccount = async () => {
     try {
         if (!account.value.id) return
 
-        // ✅ 调用 store（内部会强制刷新列表）
         await accountsStore.deleteAccount(account.value.id)
-
         emit('close')
+        alert('删除成功');
+
     } catch (error) {
         console.error('删除失败:', error)
+        if (error.response && error.response.status === 500) {
+            alert("删除失败：该账户下包含交易记录，请先清空账单后再删除。");
+        } else {
+            alert("删除失败，请稍后再试。");
+        }
     }
 }
 </script>

@@ -103,13 +103,11 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   async function deleteAccount(id) {
     saving.value = true;
-    error.value = null;
     try {
       await apiDeleteAccount(id);
       delete detailMap[id];
       await refreshAccounts();
     } catch (e) {
-      error.value = e;
       throw e;
     } finally {
       saving.value = false;
