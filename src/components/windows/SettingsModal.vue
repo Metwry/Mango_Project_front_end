@@ -2,12 +2,10 @@
 import { ref, onMounted } from 'vue'
 import BaseIcon from '../BaseIcon.vue'
 
-// 接收父组件传来的控制显示/隐藏的属性
 const props = defineProps({
     isOpen: Boolean
 })
 
-// 定义向父组件发送的事件
 const emit = defineEmits(['close'])
 
 // 当前主题状态

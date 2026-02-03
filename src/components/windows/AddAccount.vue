@@ -2,7 +2,9 @@
 import { ref, watch } from 'vue'
 import BaseIcon from '../BaseIcon.vue'
 import { createAccount } from '@/utils/accounts.js'
-const emit = defineEmits(['close'], ['refresh'])
+import { useAccountsStore } from '@/stores/accounts'
+const emit = defineEmits(['close'])
+const accountsStore = useAccountsStore()
 
 const props = defineProps({
     isOpen: Boolean
@@ -18,15 +20,10 @@ const account = ref({
 //添加账户
 async function AddAccount() {
     try {
-        const { data } = await createAccount(account.value);
-        console.log(data)
-
-        emit('refresh')
-        emit('close');
-
+        await accountsStore.createAccount(account.value)  // ✅ 调用 store（内部会强制刷新）
+        emit('close')
     } catch (e) {
         console.error(e)
-
     }
 }
 
@@ -90,7 +87,7 @@ watch(() => props.isOpen, (newVal) => {
             </div>
 
             <div class="mt-8 flex justify-end">
-                <button @click="AddAccount" class="ui-btn-primary">
+                <button @click="AddAccount" class="ui-btn-primary" :disabled="accountsStore.saving">
                     完成
                 </button>
             </div>

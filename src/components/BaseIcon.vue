@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { iconPaths } from '../assets/iconPaths' // 引入路径字典
+import { iconPaths } from '../assets/iconPaths'
 
 const props = defineProps({
     name: {
@@ -14,7 +14,7 @@ const currentPath = computed(() => {
     const path = iconPaths[props.name]
     if (!path) {
         console.warn(`[BaseIcon] Icon name "${props.name}" not found in iconPaths.`)
-        return '' // 或者返回一个默认的问号图标路径
+        return ''
     }
     return path
 })

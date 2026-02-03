@@ -1,88 +1,82 @@
 <script setup>
 import { ref, watch } from 'vue'
 import BaseIcon from '../BaseIcon.vue'
-// 确保你正确引入了 API 方法
-import { updateAccount, deleteAccount } from '@/utils/accounts.js'
+import { useAccountsStore } from '@/stores/accounts'  // ✅ 用 store
 
-const emit = defineEmits(['close', 'refresh'])
+const emit = defineEmits(['close'])
 
 const props = defineProps({
     isOpen: Boolean,
-    // 1. 新增：接收父组件传来的账户数据
     data: {
         type: Object,
         default: () => ({})
     }
 })
 
-// 本地表单数据 (建议改名为 form 以示区别，但这里保留你的 account 命名习惯)
+const accountsStore = useAccountsStore()
+
 const account = ref({
-    id: null, // 记得加上 ID，修改和删除都需要它
+    id: null,
     name: '',
     currency: 'CNY',
-    balance: 0,
+    balance: null,
     type: ''
 })
 
-// 2. 核心修改：监听 isOpen 和 data 的变化
+// 打开弹窗时，把 props.data 拷贝到本地表单
 watch(
     () => props.isOpen,
     (newVal) => {
         if (newVal && props.data) {
-            // 💡 关键步：把父组件传来的 data 复制给本地 account
-            // 使用 {...props.data} 进行浅拷贝，断开引用，避免在输入时直接影响列表页
             account.value = {
                 id: props.data.id,
                 name: props.data.name,
                 currency: props.data.currency || 'CNY',
-                balance: props.data.balance, // 注意：如果后端给的是字符串，可能需要 Number() 转换
+                balance: props.data.balance ?? null,
                 type: props.data.type
             }
         } else {
-            // 如果关闭或者是新建模式，重置为空
             account.value = {
                 id: null,
                 name: '',
-                currency: "CNY",
+                currency: 'CNY',
                 balance: null,
                 type: ''
             }
         }
     },
-    { immediate: true } // 立即执行一次
+    { immediate: true }
 )
 
-// 3. 实现更新逻辑
 const UpdateAccount = async () => {
     try {
-        if (!account.value.id) return; // 安全检查
+        if (!account.value.id) return
 
-        // 发送请求 (根据你的 API 定义，通常传入 id 和 数据)
-        await updateAccount(account.value.id, account.value)
+        await accountsStore.updateAccount(account.value.id, account.value)
 
-        // 成功后：
-        emit('refresh') // 通知父组件刷新列表
-        emit('close')   // 关闭弹窗
+        emit('close')
     } catch (error) {
         console.error('更新失败:', error)
-        // 这里可以加上 ElMessage.error(error.message)
     }
 }
 
-// 4. 实现删除逻辑
 const DeleteAccount = async () => {
-    // 增加一个确认提示，防止误删
-    if (!confirm('确定要删除这个账户吗？删除后无法恢复。')) return;
+    if (!confirm('确定要删除这个账户吗？删除后无法恢复。')) return
 
     try {
-        if (!account.value.id) return;
+        if (!account.value.id) return
 
-        await deleteAccount(account.value.id)
-
-        emit('refresh')
+        await accountsStore.deleteAccount(account.value.id)
         emit('close')
+        alert('删除成功');
+
     } catch (error) {
         console.error('删除失败:', error)
+        if (error.response && error.response.status === 500) {
+            alert("删除失败：该账户下包含交易记录，请先清空账单后再删除。");
+        } else {
+            alert("删除失败，请稍后再试。");
+        }
     }
 }
 </script>
@@ -130,11 +124,12 @@ const DeleteAccount = async () => {
             </div>
 
             <div class="mt-8 flex justify-between items-center">
-                <button @click="DeleteAccount" class="ui-btn-primary bg-red-500 hover:bg-red-600">
+                <button @click="DeleteAccount" class="ui-btn-primary bg-red-500 hover:bg-red-600"
+                    :disabled="accountsStore.saving">
                     删除账户
                 </button>
 
-                <button @click="UpdateAccount" class="ui-btn-primary">
+                <button @click="UpdateAccount" class="ui-btn-primary" :disabled="accountsStore.saving">
                     保存修改
                 </button>
             </div>
