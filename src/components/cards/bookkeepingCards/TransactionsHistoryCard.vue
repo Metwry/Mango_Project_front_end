@@ -3,6 +3,7 @@ import { computed, ref, reactive } from "vue";
 import dayjs from "dayjs";
 import DatePicker from "@/components/ui/DatePicker.vue";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
+import BaseIcon from "@/components/BaseIcon.vue";
 
 const props = defineProps({
     transactions: { type: Array, default: () => [] },
@@ -155,25 +156,25 @@ async function onReverseClick(tx) {
         <div class="px-6 py-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div class="flex flex-wrap gap-3 items-end">
 
-                <div class="flex-1 min-w-[250px]"> <label class="label-text">账户名</label>
+                <div class="flex-1 min-w-[250px]">
                     <SmallAccountPicker v-model="searchState.accountId" :accounts="accounts" />
                 </div>
 
-                <div class="flex-1 min-w-[100px]"> <label class="label-text">交易方</label>
+                <div class="flex-1 min-w-[100px]">
                     <input v-model="searchState.counterparty" type="text" placeholder="交易方" class="input-base"
                         @keydown.enter="emitSearch" />
                 </div>
 
-                <div class="flex-1 min-w-[80px]"> <label class="label-text">分类</label>
+                <div class="flex-1 min-w-[80px]">
                     <input v-model="searchState.category" type="text" placeholder="分类" class="input-base"
                         @keydown.enter="emitSearch" />
                 </div>
 
-                <div class="flex-[2] min-w-[100px]"> <label class="label-text">开始日期</label>
+                <div class="flex-[2] min-w-[100px]">
                     <DatePicker v-model="searchState.start" class="w-full" />
                 </div>
 
-                <div class="flex-[2] min-w-[100px]"> <label class="label-text">结束日期</label>
+                <div class="flex-[2] min-w-[100px]">
                     <DatePicker v-model="searchState.end" class="w-full" />
                 </div>
 
@@ -327,9 +328,7 @@ async function onReverseClick(tx) {
                 <button
                     class=" active:scale-90 p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                     :disabled="loading || page <= 1" @click="goPage(page - 1)" title="上一页">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
+                    <BaseIcon name="leftArrow" class="w-4 h-4" />
                 </button>
 
                 <span class="text-xs font-medium text-gray-600 dark:text-gray-300 px-2 tabular-nums whitespace-nowrap">
@@ -339,9 +338,7 @@ async function onReverseClick(tx) {
                 <button
                     class=" active:scale-90 p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                     :disabled="loading || page >= totalPages" @click="goPage(page + 1)" title="下一页">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                    <BaseIcon name="rightArrow" class="w-4 h-4" />
                 </button>
             </div>
 

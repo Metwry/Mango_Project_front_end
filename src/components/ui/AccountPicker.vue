@@ -7,7 +7,6 @@ const props = defineProps({
     accounts: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
     error: { type: [Boolean, Object, String, null], default: null },
-    label: { type: String, default: "账户" },
     placeholder: { type: String, default: "请选择账户" },
     searchPlaceholder: { type: String, default: "搜索账户名称 / 币种 / 类型..." },
 });
@@ -145,7 +144,7 @@ onUnmounted(() => {
 
 <template>
     <div class="relative md:col-span-1">
-        <label class="label-text">{{ label }}</label>
+
 
         <div v-if="loading" class="text-sm text-gray-500">正在加载账户...</div>
         <div v-else-if="error" class="text-sm text-red-600">账户加载失败</div>

@@ -89,8 +89,7 @@ const handleSetBudget = () => {
     <div class="card-base flex flex-col items-center">
         <div class="flex justify-between items-center w-full mb-2">
             <h3 class="font-bold text-gray-700 dark:text-gray-200">本月预算</h3>
-            <button @click="handleSetBudget"
-                class="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 transition-colors dark:bg-gray-700 dark:text-indigo-300">
+            <button @click="handleSetBudget" class="button-base">
                 设置预算
             </button>
         </div>

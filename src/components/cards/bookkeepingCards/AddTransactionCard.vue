@@ -67,29 +67,30 @@ watch(() => props.resetKey, clear);
 
 
         <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
+            <h3 class="font-bold text-base  text-gray-800 dark:text-gray-100 ">添加交易</h3>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <AccountPicker v-model="form.account_id" :accounts="accounts" :loading="accountsLoading"
-                    :error="accountsError" label="账户" />
+                    :error="accountsError" />
 
                 <div class="md:col-span-1">
-                    <label class="label-text">交易方</label>
+
                     <input v-model="form.counterparty" type="text" placeholder="输入交易方..." class=" input-base" />
                 </div>
 
                 <div class="md:col-span-1">
-                    <label class="label-text">分类</label>
+
                     <input v-model="form.category_name" type="text" placeholder="输入分类..." class="input-base" />
                 </div>
 
                 <div class="md:col-span-1">
-                    <label class="label-text">金额</label>
+
                     <input v-model="form.amount" type="number" inputmode="decimal" placeholder="0.00"
                         class="input-base" />
                 </div>
             </div>
 
             <div>
-                <label class="label-text">日期</label>
+
                 <DatePicker :model-value="form.add_date" @update:model-value="onDateChange" />
             </div>
         </div>
