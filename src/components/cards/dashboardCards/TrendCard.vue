@@ -1,6 +1,5 @@
 <template>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm min-h-112.5 flex flex-col h-full">
+    <div class="card-base">
         <div class="flex justify-between items-center mb-6">
             <h3 class="font-bold text-gray-700 dark:text-gray-200 text-lg">资产走势 (近 6 个月)</h3>
             <div class="flex gap-2">

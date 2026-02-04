@@ -1,191 +1,116 @@
-<script setup>
-import { computed, ref } from 'vue'
+    <script setup>
+    import { computed } from 'vue'
+    import { use } from 'echarts/core'
+    import { CanvasRenderer } from 'echarts/renderers'
+    import { PieChart } from 'echarts/charts'
+    import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
+    import VChart from 'vue-echarts'
 
-const props = defineProps({
-    accounts: { type: Array, default: () => [] },
-})
 
-const hoveredName = ref(null)
+    const props = defineProps({
+        accounts: { type: Array, default: () => [] },
+    })
 
-const toPositive = (val) => {
-    const num = Number(val)
-    if (!Number.isFinite(num)) return 0
-    return Math.max(0, num)
-}
+    // 注册必须的组件
+    use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent, GridComponent])
 
-const rows = computed(() => {
-    return (props.accounts || [])
-        .map((acc) => {
-            const name = String(acc?.name ?? '')
-            return {
-                name,
-                value: toPositive(acc?.balance ?? 0),
+    // 处理数据逻辑（保持和你之前一致）
+    const chartData = computed(() => {
+        const data = (props.accounts || [])
+            .map(acc => ({
+                name: String(acc?.name ?? ''),
+                value: Math.max(0, Number(acc?.balance ?? 0))
+            }))
+            .filter(x => x.name && x.value > 0)
+            .sort((a, b) => b.value - a.value)
+
+        if (data.length <= 5) return data
+
+        const top5 = data.slice(0, 5)
+        const others = data.slice(5).reduce((sum, item) => sum + item.value, 0)
+        return [...top5, { name: '其他', value: others }]
+    })
+
+    const total = computed(() => chartData.value.reduce((sum, x) => sum + x.value, 0))
+
+    // ECharts 配置项
+    const option = computed(() => ({
+        textStyle: {
+            fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif"
+        },
+        color: ['#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#9ca3af'],
+        tooltip: {
+            trigger: 'item',
+            formatter: '{b}: <b>{d}%</b>'
+        },
+        legend: {
+            orient: 'horizontal', // 保持横向
+            bottom: '0%',         // 距离底部高度
+            left: 'center',
+            width: '90%',         // 给足宽度，确保能横着排
+            icon: 'circle',
+            itemWidth: 10,
+            itemHeight: 10,
+            itemGap: 15,          // 缩小间距，确保一行能塞下 3 个
+            textStyle: {
+                color: '#6b7280',
+                fontSize: 12,
+                // 关键：给图例文字固定宽度，确保 3 个账户能平分一行
+                width: 70,
+                overflow: 'truncate' // 名字太长自动打点
+            },
+            formatter: (name) => name
+        },
+        series: [
+            {
+                name: '资金占比',
+                type: 'pie',
+                radius: '67%',
+                center: ['50%', '35%'],
+                avoidLabelOverlap: true,
+                itemStyle: {
+                    borderRadius: 6,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                // --- 关键修改：显示标签 ---
+                label: {
+                    show: true,
+                    position: 'inside', // 在扇形内部显示
+                    formatter: '{d}%',  // {d} 代表百分比
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    color: '#fff',      // 文字颜色设为白色，在彩色扇形中更清晰
+                    textBorderColor: 'rgba(0,0,0,0.3)', // 加个极细的描边，增加可读性
+                    textBorderWidth: 1
+                },
+                // 鼠标悬停时的高亮样式
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                    }
+                },
+                data: chartData.value
             }
-        })
-        .filter((x) => x.name)
-})
-
-const total = computed(() => rows.value.reduce((sum, x) => sum + toPositive(x.value), 0))
-
-const palette = [
-    '#4f46e5', // primary-600
-    '#10b981', // emerald-500
-    '#f59e0b', // amber-500
-    '#ec4899', // pink-500
-    '#8b5cf6', // violet-500
-    '#06b6d4', // cyan-500
-    '#ef4444', // red-500
-]
-
-const hashString = (str) => {
-    let hash = 0
-    for (let i = 0; i < str.length; i += 1) {
-        hash = (hash * 31 + str.charCodeAt(i)) >>> 0
-    }
-    return hash
-}
-
-const colorForName = (name) => {
-    if (!name) return '#d1d5db'
-    return palette[hashString(name) % palette.length]
-}
-
-const sortedRows = computed(() => {
-    return [...rows.value].sort((a, b) => toPositive(b.value) - toPositive(a.value))
-})
-
-const top5 = computed(() => sortedRows.value.slice(0, 5))
-
-const otherValue = computed(() => {
-    const rest = sortedRows.value.slice(5)
-    return rest.reduce((sum, x) => sum + toPositive(x.value), 0)
-})
-
-const legendItems = computed(() => {
-    const head = top5.value.map((x) => {
-        const value = toPositive(x.value)
-        return {
-            name: x.name,
-            ratio: total.value > 0 ? value / total.value : 0,
-            color: colorForName(x.name),
-            placeholder: false,
-        }
-    })
-
-    while (head.length < 5) {
-        head.push({
-            name: '',
-            ratio: 0,
-            color: colorForName(''),
-            placeholder: true,
-        })
-    }
-
-    head.push({
-        name: '其他',
-        ratio: total.value > 0 ? otherValue.value / total.value : 0,
-        color: '#9ca3af',
-        placeholder: false,
-    })
-
-    return head
-})
-
-const pieSegments = computed(() => {
-    if (total.value <= 0) return []
-
-    const segs = top5.value
-        .map((x) => {
-            const value = toPositive(x.value)
-            return {
-                name: x.name,
-                value,
-                ratio: total.value > 0 ? value / total.value : 0,
-                color: colorForName(x.name),
-            }
-        })
-        .filter((x) => x.value > 0)
-
-    if (otherValue.value > 0) {
-        segs.push({
-            name: '其他',
-            value: otherValue.value,
-            ratio: total.value > 0 ? otherValue.value / total.value : 0,
-            color: '#9ca3af',
-        })
-    }
-
-    return segs
-})
-
-const ring = computed(() => {
-    const r = 54
-    const c = 2 * Math.PI * r
-    let accLen = 0
-
-    return pieSegments.value.map((item, idx) => {
-        const len = c * item.ratio
-        const dasharray = `${len} ${Math.max(0, c - len)}`
-        const dashoffset = -accLen
-        accLen += len
-
-        const isHovered = hoveredName.value && hoveredName.value === item.name
-        const dimmed = hoveredName.value && !isHovered
-
-        return {
-            key: `${item.name}-${idx}`,
-            name: item.name,
-            dasharray,
-            dashoffset,
-            color: item.color,
-            opacity: dimmed ? 0.25 : 1,
-        }
-    })
-})
+        ]
+    }))
 </script>
 
-<template>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col h-full">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-gray-700 dark:text-gray-200">资金占比</h3>
-        </div>
-
-        <div v-if="total <= 0" class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
-            暂无账户数据
-        </div>
-
-        <div v-else class="flex-1 flex flex-col gap-5">
-            <div class="flex items-center justify-center">
-                <div class="relative w-44 h-44">
-                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
-                        <circle cx="80" cy="80" r="54" stroke="#f3f4f6" stroke-width="16" fill="none" />
-                        <circle v-for="seg in ring" :key="seg.key" cx="80" cy="80" r="54" :stroke="seg.color"
-                            stroke-width="16" fill="none" :stroke-dasharray="seg.dasharray"
-                            :stroke-dashoffset="seg.dashoffset" :opacity="seg.opacity"
-                            class="transition-opacity duration-200" />
-                    </svg>
-                </div>
+    <template>
+        <div class="card-base">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-gray-700 dark:text-gray-200">资金占比</h3>
             </div>
 
-            <div class="grid grid-cols-2 gap-x-6 gap-y-3">
-                <div v-for="(item, idx) in legendItems" :key="`${item.name || 'empty'}-${idx}`"
-                    class="flex items-center justify-between gap-3 min-w-0"
-                    :class="item.placeholder ? 'opacity-35' : ''"
-                    @mouseenter="item.name ? (hoveredName = item.name) : null" @mouseleave="hoveredName = null">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="w-3 h-3 rounded-full shrink-0" :style="{ backgroundColor: item.color }" />
-                        <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate cursor-pointer">
-                            <span v-if="item.name">{{ item.name }}</span>
-                            <span v-else>&nbsp;</span>
-                        </p>
-                    </div>
+            <div v-if="total <= 0" class="flex-1 flex items-center justify-center text-gray-400">
+                暂无账户数据
+            </div>
 
-                    <p class="text-xs font-bold text-gray-700 dark:text-gray-200 shrink-0">
-                        {{ Math.round(item.ratio * 100) }}%
-                    </p>
-                </div>
+            <div v-else class="flex-1 h-[350px]">
+                <v-chart :option="option" autoresize />
             </div>
         </div>
-    </div>
-</template>
+    </template>
+

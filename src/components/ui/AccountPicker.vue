@@ -144,7 +144,7 @@ onUnmounted(() => {
 
 <template>
     <div class="relative md:col-span-1">
-        <label class="block text-sm text-gray-600 dark:text-gray-300 mb-1">{{ label }}</label>
+        <label class="label-text">{{ label }}</label>
 
         <div v-if="loading" class="text-sm text-gray-500">正在加载账户...</div>
         <div v-else-if="error" class="text-sm text-red-600">账户加载失败</div>

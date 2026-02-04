@@ -18,7 +18,9 @@ api.interceptors.request.use(
     // 白名单：有些接口不需要 Token (如登录、注册)
     // 注意：刷新 Token 的接口也不能带旧的 Access Token，否则后端可能报错
     const whiteList = ["/api/login/", "/api/token/refresh/"];
+    config.headers = config.headers || {};
     if (whiteList.some((url) => config.url && config.url.startsWith(url))) {
+      if (config.headers.Authorization) delete config.headers.Authorization;
       return config;
     }
 
@@ -26,9 +28,9 @@ api.interceptors.request.use(
     if (auth.accessToken) {
       config.headers = config.headers || {};
       // 确保没有被手动覆盖过
-      if (!config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${auth.accessToken}`;
-      }
+      config.headers.Authorization = `Bearer ${auth.accessToken}`;
+    } else if (config.headers.Authorization) {
+      delete config.headers.Authorization;
     }
 
     return config;

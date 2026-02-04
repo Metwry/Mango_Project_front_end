@@ -106,8 +106,8 @@ async function onReverseClick(tx) {
         class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden h-full flex flex-col select-none">
 
         <div
-            class="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
-            <h3 class="font-bold text-lg text-gray-800 dark:text-gray-100 tracking-tight">交易记录</h3>
+            class="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
+            <h3 class="font-bold text-base sm:text-lg text-gray-800 dark:text-gray-100 tracking-tight">交易记录</h3>
         </div>
 
         <div v-if="loading" class="flex-1 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -127,29 +127,29 @@ async function onReverseClick(tx) {
 
         <div v-else
             class="flex-1 min-h-0 overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
-            <table class="w-full text-left border-collapse table-fixed">
+            <table class="w-full min-w-[900px] text-left border-collapse table-auto">
                 <thead class="bg-gray-50/80 dark:bg-gray-900/50 sticky top-0 z-10 backdrop-blur-sm">
                     <tr>
                         <th
-                            class="w-[15%] px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
                             账户</th>
                         <th
-                            class="w-[20%] px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            class="w-[20%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
                             交易方 / 标题</th>
                         <th
-                            class="w-[10%] px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            class="w-[10%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
                             分类</th>
                         <th
-                            class="w-[15%] px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
+                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
                             金额</th>
                         <th
-                            class="w-[15%] px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
+                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
                             余额</th>
                         <th
-                            class="w-[15%] px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
+                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
                             日期</th>
                         <th
-                            class="w-[10%] px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-center">
+                            class="w-[10%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-center">
                             操作</th>
                     </tr>
                 </thead>
@@ -158,36 +158,38 @@ async function onReverseClick(tx) {
                     <tr v-for="(tx, idx) in transactions" :key="rowKey(tx, idx)"
                         class="group transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
 
-                        <td class="px-6 py-4">
+                        <td class="px-4 sm:px-6 py-3 sm:py-4">
                             <div class="flex items-center">
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 truncate max-w-full">
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 truncate max-w-[10rem] sm:max-w-full leading-snug">
                                     {{ getAccount(tx)?.name ?? "-" }}
                                 </span>
                             </div>
                         </td>
 
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+                        <td class="px-4 sm:px-6 py-3 sm:py-4">
+                            <div class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-snug"
                                 :title="tx?.counterparty ?? tx?.title">
                                 {{ tx?.counterparty ?? tx?.title ?? "-" }}
                             </div>
                         </td>
 
-                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 truncate">
+                        <td
+                            class="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate leading-snug">
                             {{ tx?.category_name ?? tx?.category ?? "-" }}
                         </td>
 
-                        <td class="px-6 py-4 text-right">
-                            <span class="text-sm font-medium font-mono tracking-tight"
+                        <td class="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                            <span class="text-xs sm:text-sm font-medium font-mono tracking-tight leading-snug"
                                 :class="Number(tx?.amount) >= 0 ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white'">
                                 {{ formatMoney(tx?.amount, getAccount(tx)?.currency ?? tx?.currency ??
                                     tx?.account_currency) }}
                             </span>
                         </td>
 
-                        <td class="px-6 py-4 text-right">
-                            <span class="text-sm text-gray-500 dark:text-gray-400 font-mono tracking-tight">
+                        <td class="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                            <span
+                                class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono tracking-tight leading-snug">
                                 {{ tx?.balance_after !== undefined && tx?.balance_after !== null
                                     ? formatMoney(tx.balance_after, getAccount(tx)?.currency ?? tx?.currency ??
                                         tx?.account_currency)
@@ -195,13 +197,14 @@ async function onReverseClick(tx) {
                             </span>
                         </td>
 
-                        <td class="px-6 py-4 text-right text-sm text-gray-500 dark:text-gray-400 tabular-nums">
+                        <td
+                            class="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm text-gray-500 dark:text-gray-400 tabular-nums leading-snug">
                             {{ formatDate(tx?.add_date ?? tx?.date) }}
                         </td>
 
-                        <td class="px-6 py-4 text-center" @click.stop>
+                        <td class="px-4 sm:px-6 py-3 sm:py-4 text-center" @click.stop>
                             <button type="button"
-                                class="inline-flex items-center justify-center rounded-lg text-xs font-medium px-2.5 py-1.5 transition-colors
+                                class="inline-flex items-center justify-center rounded-lg text-[11px] sm:text-xs font-medium px-2.5 py-1.5 transition-colors
                                        text-gray-500 hover:text-red-600 hover:bg-red-50 
                                        dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20
                                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer disabled:hover:text-gray-500"
@@ -229,50 +232,53 @@ async function onReverseClick(tx) {
             </table>
         </div>
 
-        <div v-if="!loading && !error"
-            class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800 flex items-center justify-between gap-4">
+        <div v-if="!loading && !error" class="px-4 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800
+         flex flex-row flex-nowrap items-center justify-between gap-3">
 
-            <div class="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                共 <span class="font-medium text-gray-700 dark:text-gray-300">{{ total }}</span> 条记录
-            </div>
-
-            <div class="flex items-center gap-3">
+            <!-- 左：pageSize -->
+            <div class="flex items-center gap-2 shrink-0">
                 <div class="relative">
                     <select
                         class="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600 cursor-pointer"
                         :disabled="loading" :value="pageSize" @change="onPageSizeChange">
-                        <option :value="10">10 条/页</option>
-                        <option :value="20">20 条/页</option>
-                        <option :value="50">50 条/页</option>
-                        <option :value="100">100 条/页</option>
+                        <option :value="10">10 条</option>
+                        <option :value="20">20 条</option>
+                        <option :value="50">50 条</option>
+                        <option :value="100">100 条</option>
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                     </div>
                 </div>
+            </div>
 
-                <div class="flex items-center gap-1">
-                    <button
-                        class="p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                        :disabled="loading || page <= 1" @click="goPage(page - 1)" title="上一页">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
+            <!-- 中：分页按钮 -->
+            <div class="flex items-center justify-center gap-1 shrink-0">
+                <button
+                    class=" active:scale-90 p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                    :disabled="loading || page <= 1" @click="goPage(page - 1)" title="上一页">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
 
-                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300 px-2 tabular-nums">
-                        {{ page }} / {{ totalPages }}
-                    </span>
+                <span class="text-xs font-medium text-gray-600 dark:text-gray-300 px-2 tabular-nums whitespace-nowrap">
+                    {{ page }} / {{ totalPages }}
+                </span>
 
-                    <button
-                        class="p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                        :disabled="loading || page >= totalPages" @click="goPage(page + 1)" title="下一页">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
+                <button
+                    class=" active:scale-90 p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                    :disabled="loading || page >= totalPages" @click="goPage(page + 1)" title="下一页">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 右：总数 -->
+            <div class="text-xs text-gray-500 dark:text-gray-400 tabular-nums text-right shrink-0 whitespace-nowrap">
+                <span class="font-medium text-gray-700 dark:text-gray-300">{{ total }}</span> 条记录
             </div>
         </div>
+
     </div>
 </template>

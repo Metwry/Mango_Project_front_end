@@ -3,33 +3,33 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import TopBar from '@/components/layout/Topbar.vue'
-import SettingsModal from '@/components/windows/SettingsModal.vue'
 
-
-const Settings = ref(false) //设置窗口开关参数
 const route = useRoute()
 
-
-
 const currentTitle = computed(() => {
-    return route.meta.title
+    return route.meta.title || ''
 })
 const icon = computed(() => {
-    return route.meta.icon
+    return route.meta.icon || ''
 })
+
+const menuItems = [
+    { name: '仪表盘', path: '/dashboard', icon: 'dashboard' },
+    { name: '记账', path: '/bookkeeping', icon: 'bookkeeping' },
+    { name: '持仓', path: '/holdings', icon: 'holdings' },
+    { name: '行情', path: '/market', icon: 'market' },
+]
+
 </script>
 
 <template>
     <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
         <!-- 侧边栏 -->
-        <Sidebar />
-        <!-- 系统设置弹窗 -->
-        <SettingsModal :isOpen="Settings" @close="Settings = false" />
-
+        <Sidebar :menu-items="menuItems" />
         <!-- 主内容区域 -->
         <main class="flex-1 flex flex-col overflow-hidden">
             <!-- 顶部栏 -->
-            <TopBar :title="currentTitle" :icon="icon" @openSettings="Settings = true"></TopBar>
+            <TopBar :title="currentTitle" :icon="icon"></TopBar>
             <!-- 路由视图 -->
             <div class="flex-1 overflow-y-auto p-4 scroll-smooth">
                 <RouterView />

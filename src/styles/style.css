@@ -7,12 +7,43 @@
     -webkit-appearance: none;
     margin: 0;
   }
+
+  :root {
+    --color-chart-label: #9ca3af; /* 灰字 */
+    --color-chart-value: #374151; /* 亮色模式下的深色数字 */
+    --color-chart-border: #ffffff; /* 亮色模式下的分割线 */
+  }
+
+  .dark {
+    --color-chart-value: #f3f4f6; /* 暗黑模式下的浅色数字 */
+    --color-chart-border: #1f2937; /* 暗黑模式下的深色分割线 */
+  }
 }
 
 @layer components {
-  /* 标签字体样式 */
+  /* 卡片基础 */
+  .card-base {
+    @apply bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col h-full;
+  }
+
+  /* 按钮基础 */
+  .button-base {
+    @apply px-6 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-full
+    font-medium transition-colors cursor-pointer shadow-sm hover:shadow-md active:scale-90;
+  }
+
+  /* 标签字体 */
   .label-text {
-    @apply shrink-0 whitespace-nowrap text-base font-semibold text-gray-700 dark:text-gray-200;
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1;
+  }
+  /* 导航 */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 transform active:scale-90;
+    @apply text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-primary-600;
+  }
+  /* 导航激活 */
+  .nav-item-active {
+    @apply bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400;
   }
 
   .input-style {
@@ -32,11 +63,6 @@
 
   .field-row {
     @apply grid grid-cols-1 gap-y-2 md:grid-cols-[80px,1fr] md:items-center md:gap-x-4;
-  }
-
-  .ui-btn-primary {
-    @apply px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full
-    font-medium transition-colors cursor-pointer shadow-sm hover:shadow-md;
   }
 }
 

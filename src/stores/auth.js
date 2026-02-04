@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import axios from "axios";
-import { useAccountsStore } from "@/stores/accounts";
 
 export const useAuthStore = defineStore("auth", () => {
   // ===== state 初始化：从 localStorage 读 =====
@@ -27,12 +26,17 @@ export const useAuthStore = defineStore("auth", () => {
     localStorage.setItem("access_token", accessToken.value);
     localStorage.setItem("refresh_token", refreshToken.value);
     localStorage.setItem("user", JSON.stringify(user.value));
+
+    // 切换账号时，避免沿用上一个账号的缓存数据
+    import("@/stores/accounts")
+      .then(({ useAccountsStore }) => useAccountsStore().reset())
+      .catch(() => {});
+    import("@/stores/transaction")
+      .then(({ useTransactionsStore }) => useTransactionsStore().reset())
+      .catch(() => {});
   }
 
   function logout() {
-    const accountsStore = useAccountsStore();
-    const transactionsStore = useAccountsStore();
-
     accessToken.value = "";
     refreshToken.value = "";
     user.value = null;
@@ -41,8 +45,12 @@ export const useAuthStore = defineStore("auth", () => {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
 
-    accountsStore.reset();
-    transactionsStore.reset();
+    import("@/stores/accounts")
+      .then(({ useAccountsStore }) => useAccountsStore().reset())
+      .catch(() => {});
+    import("@/stores/transaction")
+      .then(({ useTransactionsStore }) => useTransactionsStore().reset())
+      .catch(() => {});
   }
 
   function setAccessToken(token) {
