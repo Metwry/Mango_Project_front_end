@@ -64,9 +64,7 @@ watch(() => props.resetKey, clear);
 <template>
     <div
         class="h-full w-full bg-white dark:bg-gray-800 rounded-2xl dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
-        <div class="px-6 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-            <h3 class="font-bold text-gray-700 dark:text-gray-200">添加交易</h3>
-        </div>
+
 
         <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -75,20 +73,18 @@ watch(() => props.resetKey, clear);
 
                 <div class="md:col-span-1">
                     <label class="label-text">交易方</label>
-                    <input v-model="form.counterparty" type="text"
-                        class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" />
+                    <input v-model="form.counterparty" type="text" placeholder="输入交易方..." class=" input-base" />
                 </div>
 
                 <div class="md:col-span-1">
                     <label class="label-text">分类</label>
-                    <input v-model="form.category_name" type="text" placeholder="例如：餐饮 / 工资 / 转账"
-                        class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" />
+                    <input v-model="form.category_name" type="text" placeholder="输入分类..." class="input-base" />
                 </div>
 
                 <div class="md:col-span-1">
                     <label class="label-text">金额</label>
                     <input v-model="form.amount" type="number" inputmode="decimal" placeholder="0.00"
-                        class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" />
+                        class="input-base" />
                 </div>
             </div>
 

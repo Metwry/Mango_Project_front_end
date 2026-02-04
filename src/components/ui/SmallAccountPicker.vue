@@ -1,149 +1,119 @@
 <script setup>
-import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick } from "vue";
+import { onClickOutside, useEventListener } from "@vueuse/core";
+import BaseIcon from "../BaseIcon.vue";
+
+// 1. 核心简化：直接双向绑定 (Vue 3.4+)
+const modelValue = defineModel({ type: [Number, String, null] });
 
 const props = defineProps({
-    modelValue: { type: [Number, String, null], default: null },
     accounts: { type: Array, default: () => [] },
-    loading: { type: Boolean, default: false },
-    error: { type: [Boolean, Object, String, null], default: null },
+    loading: Boolean,
+    error: [Boolean, Object, String],
     placeholder: { type: String, default: "全部账户" },
     searchPlaceholder: { type: String, default: "搜索账户名称..." },
 });
 
-const emit = defineEmits(["update:modelValue"]);
-
 const open = ref(false);
 const query = ref("");
-
 const triggerRef = ref(null);
 const panelRef = ref(null);
+const panelStyle = ref({});
 
-const selectedAccount = computed(() => {
-    return props.accounts.find((a) => a.id === props.modelValue) ?? null;
-});
 
+// 2. 数据逻辑：保持清晰
+const selectedAccount = computed(() => props.accounts.find((a) => a.id === modelValue.value));
 const filteredAccounts = computed(() => {
     const q = query.value.trim().toLowerCase();
-    if (!q) return props.accounts;
-    return props.accounts.filter((a) => `${a.name ?? ""}`.toLowerCase().includes(q));
+    return !q ? props.accounts : props.accounts.filter((a) => (a.name || "").toLowerCase().includes(q));
 });
 
-const panelPos = ref({ top: 0, left: 0, width: 0 });
-const panelStyle = computed(() => ({
-    position: "fixed",
-    top: `${panelPos.value.top}px`,
-    left: `${panelPos.value.left}px`,
-    width: `${panelPos.value.width}px`,
-    zIndex: 80,
-}));
+// 3. 交互逻辑：使用 VueUse 移除大量样板代码
+// 点击面板外部自动关闭，忽略触发按钮
+onClickOutside(panelRef, () => (open.value = false), { ignore: [triggerRef] });
 
-function computePosition() {
-    const el = triggerRef.value;
-    if (!el) return;
-
-    const rect = el.getBoundingClientRect();
+// 计算定位 (保留核心逻辑，但更紧凑)
+const updatePosition = () => {
+    if (!open.value || !triggerRef.value) return;
+    const rect = triggerRef.value.getBoundingClientRect();
     const gap = 8;
-    const panelHeightGuess = 260;
+    const heightGuess = 260;
 
-    let top = rect.bottom + gap;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    if (spaceBelow < panelHeightGuess && rect.top > panelHeightGuess) {
-        top = rect.top - gap - panelHeightGuess;
-    }
+    // 简单判断：如果下方空间不够且上方空间够，就向上翻
+    const showTop = (window.innerHeight - rect.bottom < heightGuess) && (rect.top > heightGuess);
 
-    panelPos.value = {
-        top: Math.max(8, top),
-        left: Math.max(8, rect.left),
-        width: rect.width,
+    panelStyle.value = {
+        position: "fixed",
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        zIndex: 80,
+        top: showTop ? `${rect.top - gap - heightGuess}px` : `${rect.bottom + gap}px`,
     };
-}
+};
 
-async function toggleOpen() {
+// 自动绑定与销毁事件监听
+useEventListener(window, "resize", updatePosition);
+useEventListener(window, "scroll", updatePosition, true);
+
+const toggleOpen = async () => {
     open.value = !open.value;
     if (open.value) {
         await nextTick();
-        computePosition();
+        updatePosition();
     }
-}
+};
 
-function close() {
-    open.value = false;
-}
-
-function pick(value) {
-    emit("update:modelValue", value);
+const pick = (id) => {
+    modelValue.value = id;
     query.value = "";
-    close();
-}
-
-function onWindowChange() {
-    if (open.value) computePosition();
-}
-
-function onDocClick(e) {
-    if (!open.value) return;
-    const t = e.target;
-    if (triggerRef.value?.contains(t)) return;
-    if (panelRef.value?.contains(t)) return;
-    close();
-}
-
-onMounted(() => {
-    window.addEventListener("resize", onWindowChange);
-    window.addEventListener("scroll", onWindowChange, true);
-    document.addEventListener("mousedown", onDocClick);
-});
-onUnmounted(() => {
-    window.removeEventListener("resize", onWindowChange);
-    window.removeEventListener("scroll", onWindowChange, true);
-    document.removeEventListener("mousedown", onDocClick);
-});
+    open.value = false;
+};
 </script>
 
 <template>
     <div class="relative">
-
-        <div v-if="loading" class="text-[11px] text-gray-500">正在加载账户...</div>
-        <div v-else-if="error" class="text-[11px] text-red-600">账户加载失败</div>
+        <div v-if="loading">正在加载账户...</div>
+        <div v-else-if="error" class=" text-red-600">账户加载失败</div>
 
         <div v-else>
-            <button ref="triggerRef" type="button" class="cursor-pointer w-full flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700
-               bg-white dark:bg-gray-800 px-3 py-2 text-[11px]
-               text-gray-700 dark:text-gray-200
-               hover:bg-gray-50 dark:hover:bg-gray-700
-               focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" @click="toggleOpen">
+            <button ref="triggerRef" type="button" @click="toggleOpen"
+                class="flex w-full cursor-pointer items-center justify-between button-base ">
                 <span class="truncate">
-                    <span v-if="selectedAccount">{{ selectedAccount.name }}</span>
-                    <span v-else class="text-gray-400 dark:text-gray-500">{{ placeholder }}</span>
+                    {{ selectedAccount?.name ?? placeholder }}
                 </span>
-
-                <svg class="h-4 w-4 opacity-70 cursor-pointer" viewBox="0 0 20 20" fill="currentColor"
-                    aria-hidden="true">
-                    <path fill-rule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                        clip-rule="evenodd" />
-                </svg>
+                <BaseIcon name="arrow" class="h-5 w-4" />
             </button>
 
             <teleport to="body">
-                <div v-if="open" ref="panelRef" :style="panelStyle" class="rounded-xl border border-gray-200 dark:border-gray-700
-                 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
-                    <div class="p-2 border-b border-gray-100 dark:border-gray-700">
-                        <input v-model="query" type="text" :placeholder="searchPlaceholder" class="w-full rounded-lg border border-gray-200 dark:border-gray-700
-                     bg-white dark:bg-gray-800 px-3 py-2 text-[11px]
-                     text-gray-700 dark:text-gray-200 outline-none
-                     focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" />
+                <div v-if="open" ref="panelRef" :style="panelStyle"
+                    class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+
+                    <div class="shrink-0 border-b border-gray-100 p-2 dark:border-gray-700">
+                        <input v-model="query" type="text" :placeholder="searchPlaceholder" class="input-base" />
                     </div>
 
-                    <div class="max-h-56 overflow-y-auto">
+                    <div class="max-h-56 overflow-y-auto p-1 space-y-1">
+                        <template v-for="item in [null, ...filteredAccounts]" :key="item?.id ?? 'all'">
+                            <button type="button" @click="pick(item?.id ?? '')"
+                                class="button-base border-0 w-full text-left truncate group">
 
+                                <template v-if="item">
+                                    <span class="text-gray-900 dark:text-gray-100">
+                                        {{ item.name }}
+                                    </span>
+                                </template>
 
-                        <button v-for="a in filteredAccounts" :key="a.id" type="button" class="cursor-pointer w-full text-left px-3 py-2 text-[11px]
-                     hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200" @click="pick(a.id)">
-                            <div class="truncate">{{ a.name }}</div>
-                        </button>
+                                <template v-else>
+                                    <span class="text-gray-500 dark:text-gray-400">
+                                        {{ placeholder }}
+                                    </span>
+                                </template>
 
-                        <div v-if="filteredAccounts.length === 0" class="px-3 py-3 text-[11px] text-gray-500">
+                            </button>
+                        </template>
+
+                        <div v-if="filteredAccounts.length === 0 && query"
+                            class="px-3 py-3 text-center text-xs text-gray-500 dark:text-gray-400">
                             没有匹配的账户
                         </div>
                     </div>

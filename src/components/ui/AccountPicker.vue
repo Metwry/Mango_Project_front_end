@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
+import BaseIcon from "../BaseIcon.vue";
 
 const props = defineProps({
     modelValue: { type: [Number, String, null], default: null },
@@ -151,11 +152,8 @@ onUnmounted(() => {
 
         <div v-else>
             <!-- 触发按钮 -->
-            <button ref="triggerRef" type="button" class="cursor-pointer w-full flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700
-               bg-white dark:bg-gray-800 px-3 py-2 text-sm
-               text-gray-700 dark:text-gray-200
-               hover:bg-gray-50 dark:hover:bg-gray-700
-               focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" @click="toggleOpen">
+            <button ref="triggerRef" type="button"
+                class="cursor-pointer w-full flex items-center justify-between button-base " @click="toggleOpen">
                 <span class="truncate">
                     <span v-if="selectedAccount">
                         {{ selectedAccount.name }} · {{ selectedAccount.currency }}
@@ -164,12 +162,7 @@ onUnmounted(() => {
                     <span v-else class="text-gray-400 dark:text-gray-500">{{ placeholder }}</span>
                 </span>
 
-                <svg class="h-4 w-4 opacity-70 cursor-pointer" viewBox="0 0 20 20" fill="currentColor"
-                    aria-hidden="true">
-                    <path fill-rule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                        clip-rule="evenodd" />
-                </svg>
+                <BaseIcon name="arrow" class="w-4 h-4" />
             </button>
 
             <!-- 悬浮下拉面板 -->
@@ -178,17 +171,13 @@ onUnmounted(() => {
                  bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
                     <!-- 搜索框 -->
                     <div class="p-2 border-b border-gray-100 dark:border-gray-700">
-                        <input v-model="query" type="text" :placeholder="searchPlaceholder" class=" w-full rounded-lg border border-gray-200 dark:border-gray-700
-                     bg-white dark:bg-gray-800 px-3 py-2 text-sm
-                     text-gray-700 dark:text-gray-200 outline-none
-                     focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" />
+                        <input v-model="query" type="text" :placeholder="searchPlaceholder" class=" input-base" />
                     </div>
 
                     <!-- 列表 -->
                     <div class="max-h-56 overflow-y-auto">
-                        <button v-for="a in filteredAccounts" :key="a.id" type="button" class="cursor-pointer w-full text-left px-3 py-2 text-sm
-                     hover:bg-gray-50 dark:hover:bg-gray-700
-                     flex items-center justify-between" @click="pick(a)">
+                        <button v-for="a in filteredAccounts" :key="a.id" type="button" class="cursor-pointer w-full text-left  
+                     flex items-center justify-between  border-0 button-base" @click="pick(a)">
                             <div class="min-w-0">
                                 <div class="truncate text-gray-800 dark:text-gray-100">{{ a.name }}</div>
                                 <div class="truncate text-xs text-gray-500 dark:text-gray-400">

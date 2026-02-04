@@ -14,11 +14,8 @@ const accountId = ref('')
 <template>
     <div class="card-base">
         <div class="flex justify-between items-center mb-6">
-            <div class="w-50">
-                <SmallAccountPicker v-model="accountId" :accounts="accounts" />
-            </div>
-            <h3 class="font-bold text-gray-700 dark:text-gray-200 text-lg">资产走势</h3>
 
+            <h3 class="font-bold text-gray-700 dark:text-gray-200 text-lg">资产走势</h3>
 
             <div class="flex gap-2">
 
@@ -26,6 +23,11 @@ const accountId = ref('')
                 <button class="button-base">近30天</button>
                 <button class="button-base">近7天</button>
             </div>
+            <div class="w-50">
+                <SmallAccountPicker v-model="accountId" :accounts="accounts" />
+            </div>
+
+
         </div>
         <div
             class="flex-1 bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-500">

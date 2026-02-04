@@ -155,19 +155,17 @@ async function onReverseClick(tx) {
         <div class="px-6 py-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div class="flex flex-wrap gap-3 items-end">
 
-                <div class="flex-1 min-w-[100px]"> <label class="label-text">账户名</label>
+                <div class="flex-1 min-w-[250px]"> <label class="label-text">账户名</label>
                     <SmallAccountPicker v-model="searchState.accountId" :accounts="accounts" />
                 </div>
 
                 <div class="flex-1 min-w-[100px]"> <label class="label-text">交易方</label>
-                    <input v-model="searchState.counterparty" type="text" placeholder="交易方"
-                        class="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
+                    <input v-model="searchState.counterparty" type="text" placeholder="交易方" class="input-base"
                         @keydown.enter="emitSearch" />
                 </div>
 
                 <div class="flex-1 min-w-[80px]"> <label class="label-text">分类</label>
-                    <input v-model="searchState.category" type="text" placeholder="分类"
-                        class="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
+                    <input v-model="searchState.category" type="text" placeholder="分类" class="input-base"
                         @keydown.enter="emitSearch" />
                 </div>
 
@@ -180,14 +178,10 @@ async function onReverseClick(tx) {
                 </div>
 
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button"
-                        class="px-3 py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        @click="emitSearch">
+                    <button type="button" class="button-base" @click="emitSearch">
                         搜索
                     </button>
-                    <button type="button"
-                        class="px-3 py-2 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
-                        :disabled="!hasSearch" @click="resetSearch">
+                    <button type="button" class="button-base" :disabled="!hasSearch" @click="resetSearch">
                         清空
                     </button>
                 </div>
@@ -281,8 +275,8 @@ async function onReverseClick(tx) {
 
                         <td class="px-4 sm:px-6 py-3 sm:py-4 text-center" @click.stop>
                             <button type="button"
-                                class="inline-flex items-center justify-center rounded-lg text-[11px] sm:text-xs font-medium px-2.5 py-1.5 transition-colors
-                                       text-gray-500 hover:text-red-600 hover:bg-red-50 
+                                class="inline-flex items-center justify-center 
+                                     hover:text-red-600 hover:bg-red-50 px-2 py-0 text-[12px] button-base
                                        dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20
                                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer disabled:hover:text-gray-500"
                                 :disabled="loading || !canReverse(tx) || reversingId === tx?.id"

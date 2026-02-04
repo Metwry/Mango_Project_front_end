@@ -57,6 +57,19 @@ const parse = (s) => {
     return isNaN(d.getTime()) ? null : d;
 };
 
+const isSelected = (d) => {
+    if (!d || !props.modelValue) return false;
+
+    const valDate = parse(props.modelValue);
+
+    if (!valDate) return false;
+
+    return toYMD(d) === toYMD(valDate);
+};
+
+const isToday = (d) => {
+    return d && ymd(d) === todayStr;
+};
 const today = new Date();
 const todayStr = toYMD(today);
 
@@ -201,13 +214,11 @@ onUnmounted(() => {
 });
 </script>
 
+
 <template>
     <div class="relative">
-        <button ref="triggerRef" type="button" class="cursor-pointer w-full flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700
-             bg-white dark:bg-gray-800 px-3 py-2 text-sm
-             text-gray-700 dark:text-gray-200
-             hover:bg-gray-50 dark:hover:bg-gray-700
-             focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600" @click="toggleOpen">
+        <button ref="triggerRef" type="button"
+            class="cursor-pointer w-full flex items-center justify-between button-base" @click="toggleOpen">
             <span class="truncate">
                 <span v-if="selectedStr">{{ selectedStr }}</span>
                 <span v-else class="text-gray-400 dark:text-gray-500">选择日期</span>
@@ -223,7 +234,6 @@ onUnmounted(() => {
         <teleport to="body">
             <div v-if="open" ref="panelRef" :style="panelStyle"
                 class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
-                <!-- header -->
                 <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                     <button type="button" class="cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                         @click="prevMonth">
@@ -245,7 +255,8 @@ onUnmounted(() => {
                    bg-white dark:bg-gray-800 px-2 text-xs
                    text-gray-700 dark:text-gray-200 outline-none
                    focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600">
-                        <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
+                        <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}
+                        </option>
                     </select>
 
                     <button type="button" class="cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -258,21 +269,27 @@ onUnmounted(() => {
                     </button>
                 </div>
 
-                <!-- week -->
                 <div class="grid grid-cols-7 px-3 pt-2 text-xs text-gray-500 dark:text-gray-400">
                     <div v-for="w in weekLabels" :key="w" class="text-center py-1">{{ w }}</div>
                 </div>
 
-                <!-- days -->
                 <div class="grid grid-cols-7 gap-0.5 px-2 pb-0">
-                    <button v-for="(d, idx) in cells" :key="idx" type="button"
-                        class="cursor-pointer h-9 rounded-lg text-sm flex items-center justify-center" :class="[
-                            !d ? 'pointer-events-none opacity-0' : 'hover:bg-gray-50 dark:hover:bg-gray-700',
-                            d && ymd(d) === todayStr ? 'ring-1 ring-gray-200 dark:ring-gray-600' : '',
-                            d && selectedStr && ymd(d) === selectedStr
-                                ? 'bg-gray-900 text-white hover:bg-gray-900'
-                                : 'text-gray-700 dark:text-gray-200'
-                        ]" @click="selectDay(d)">
+                    <button v-for="(d, idx) in cells" :key="idx" type="button" :class="[
+                        // 1. 基础类：交互与布局
+                        // 增加 'border' 确保所有按钮都有边框宽度，防止布局对齐问题
+                        d ? 'button-base' : 'pointer-events-none opacity-0',
+                        'h-9 w-9 p-0 flex items-center justify-center rounded-lg border',
+
+                        // 2. 颜色状态管理
+                        isSelected(d)
+                            // 选中态：浅灰背景 + 深灰边框 + 深色文字
+                            ? 'bg-gray-200 border-gray-300 text-gray-900 dark:bg-gray-600 dark:border-gray-500 dark:text-white'
+                            : isToday(d)
+                                // 今天：透明背景 + 淡灰边框 + 默认文字
+                                ? 'border-gray-300 bg-transparent text-gray-900 dark:border-gray-500 dark:text-white'
+                                // 普通态：透明背景 + 透明边框 (幽灵按钮)
+                                : 'border-transparent bg-transparent shadow-none hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ]" @click="selectDay(d)">
                         {{ d ? d.getDate() : '' }}
                     </button>
                 </div>
