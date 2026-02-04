@@ -34,7 +34,7 @@
 
   /* 标签字体 */
   .label-text {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1;
+    @apply block text-xs font-medium text-gray-700 dark:text-gray-300 ml-1 mb-1;
   }
   /* 导航 */
   .nav-item {
@@ -44,6 +44,10 @@
   /* 导航激活 */
   .nav-item-active {
     @apply bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400;
+  }
+  /* 字段列 */
+  .th-text {
+    @apply w-[10%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400;
   }
 
   .input-style {

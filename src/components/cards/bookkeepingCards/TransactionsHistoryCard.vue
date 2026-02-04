@@ -1,22 +1,46 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, reactive } from "vue";
 import dayjs from "dayjs";
+import DatePicker from "@/components/ui/DatePicker.vue";
+import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 
 const props = defineProps({
     transactions: { type: Array, default: () => [] },
     accounts: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
     error: { type: [Boolean, Object, String, null], default: null },
-
-    // 分页
     page: { type: Number, default: 1 },
     pageSize: { type: Number, default: 20 },
     total: { type: Number, default: 0 },
 });
 
-const emit = defineEmits(["page-change", "page-size-change", "reverse"]);
+const emit = defineEmits([
+    "page-change",
+    "page-size-change",
+    "reverse",
+    "search-change",
+    "search-reset",
+]);
 
 const reversingId = ref(null);
+
+const searchState = reactive({
+    accountId: "",
+    counterparty: "",
+    category: "",
+    start: "",
+    end: "",
+});
+
+const hasSearch = computed(() => {
+    return !!(
+        searchState.accountId ||
+        searchState.counterparty ||
+        searchState.category ||
+        searchState.start ||
+        searchState.end
+    );
+});
 
 const accountMap = computed(() => {
     const map = new Map();
@@ -55,6 +79,25 @@ function formatDate(v) {
 
 function rowKey(tx, idx) {
     return tx?.id ?? `${idx}`;
+}
+
+function emitSearch() {
+    emit("search-change", {
+        account_id: searchState.accountId || "",
+        counterparty: searchState.counterparty?.trim() || "",
+        category: searchState.category?.trim() || "",
+        start: searchState.start || "",
+        end: searchState.end || "",
+    });
+}
+
+function resetSearch() {
+    searchState.accountId = "";
+    searchState.counterparty = "";
+    searchState.category = "";
+    searchState.start = "";
+    searchState.end = "";
+    emit("search-reset");
 }
 
 // ===== 分页 =====
@@ -102,12 +145,53 @@ async function onReverseClick(tx) {
 </script>
 
 <template>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden h-full flex flex-col select-none">
+    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm overflow-hidden h-full flex flex-col select-none">
 
         <div
-            class="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
-            <h3 class="font-bold text-base sm:text-lg text-gray-800 dark:text-gray-100 tracking-tight">交易记录</h3>
+            class="px-6  py-2  border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
+            <h3 class="font-bold text-base  text-gray-800 dark:text-gray-100 ">交易记录</h3>
+        </div>
+
+        <div class="px-6 py-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div class="flex flex-wrap gap-3 items-end">
+
+                <div class="flex-1 min-w-[100px]"> <label class="label-text">账户名</label>
+                    <SmallAccountPicker v-model="searchState.accountId" :accounts="accounts" />
+                </div>
+
+                <div class="flex-1 min-w-[100px]"> <label class="label-text">交易方</label>
+                    <input v-model="searchState.counterparty" type="text" placeholder="交易方"
+                        class="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
+                        @keydown.enter="emitSearch" />
+                </div>
+
+                <div class="flex-1 min-w-[80px]"> <label class="label-text">分类</label>
+                    <input v-model="searchState.category" type="text" placeholder="分类"
+                        class="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600"
+                        @keydown.enter="emitSearch" />
+                </div>
+
+                <div class="flex-[2] min-w-[100px]"> <label class="label-text">开始日期</label>
+                    <DatePicker v-model="searchState.start" class="w-full" />
+                </div>
+
+                <div class="flex-[2] min-w-[100px]"> <label class="label-text">结束日期</label>
+                    <DatePicker v-model="searchState.end" class="w-full" />
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button"
+                        class="px-3 py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        @click="emitSearch">
+                        搜索
+                    </button>
+                    <button type="button"
+                        class="px-3 py-2 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+                        :disabled="!hasSearch" @click="resetSearch">
+                        清空
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div v-if="loading" class="flex-1 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -130,26 +214,19 @@ async function onReverseClick(tx) {
             <table class="w-full min-w-[900px] text-left border-collapse table-auto">
                 <thead class="bg-gray-50/80 dark:bg-gray-900/50 sticky top-0 z-10 backdrop-blur-sm">
                     <tr>
-                        <th
-                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                        <th class="th-text">
                             账户</th>
-                        <th
-                            class="w-[20%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                        <th class="th-text">
                             交易方 / 标题</th>
-                        <th
-                            class="w-[10%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                        <th class="th-text ">
                             分类</th>
-                        <th
-                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
+                        <th class="th-text text-right">
                             金额</th>
-                        <th
-                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
+                        <th class="th-text text-right">
                             余额</th>
-                        <th
-                            class="w-[15%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-right">
+                        <th class="th-text text-right">
                             日期</th>
-                        <th
-                            class="w-[10%] px-4 sm:px-6 py-3 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 text-center">
+                        <th class="th-text text-center">
                             操作</th>
                     </tr>
                 </thead>

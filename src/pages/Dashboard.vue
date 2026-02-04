@@ -54,7 +54,7 @@ onMounted(() => {
         </div>
         <!-- todo -->
         <div class="col-span-1 md:col-span-2 xl:col-span-3 min-h-[24rem]">
-            <TrendCard />
+            <TrendCard :accounts="accounts" />
         </div>
 
         <div class="col-span-1 md:col-span-2 xl:col-span-1 h-auto min-h-[24rem]">
