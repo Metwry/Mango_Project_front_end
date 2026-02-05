@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, nextTick } from "vue";
 import { onClickOutside, useEventListener } from "@vueuse/core";
-import BaseIcon from "../BaseIcon.vue";
+import BaseIcon from "./BaseIcon.vue";
 
 // 1. 核心简化：直接双向绑定 (Vue 3.4+)
 const modelValue = defineModel({ type: [Number, String, null] });

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
-import BaseIcon from "../BaseIcon.vue";
+import BaseIcon from "./BaseIcon.vue";
 
 const props = defineProps({
     modelValue: { type: [Number, String, null], default: null },

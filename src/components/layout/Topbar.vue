@@ -1,5 +1,5 @@
 <script setup>
-import BaseIcon from '../BaseIcon.vue';
+import BaseIcon from '../ui/BaseIcon.vue';
 import UserMenu from './UserMenu.vue';
 
 defineProps({

@@ -96,13 +96,14 @@ watch(() => props.resetKey, clear);
         </div>
 
         <div class="px-5 py-2 flex justify-end gap-5">
-            <button type="button" class="button-base gap-2  !bg-transparent text-gray-500 " :disabled="submitting"
-                @click="clear">
+            <button type="button" class="button-base gap-2  disabled:opacity-60 !bg-transparent  "
+                :disabled="submitting" @click="clear">
                 重置
             </button>
 
-            <button type="button" class="button-base gap-2  rounded-lg 
-           bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 " :disabled="!canSubmit" @click="submit">
+            <button type="button"
+                class="button-base gap-2 text-white bg-green-600  hover:bg-green-700 disabled:opacity-60 "
+                :disabled="!canSubmit" @click="submit">
                 确认保存
             </button>
         </div>

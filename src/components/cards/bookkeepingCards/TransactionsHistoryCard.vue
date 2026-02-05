@@ -3,7 +3,7 @@ import { computed, ref, reactive } from "vue";
 import dayjs from "dayjs";
 import DatePicker from "@/components/ui/DatePicker.vue";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
-import BaseIcon from "@/components/BaseIcon.vue";
+import BaseIcon from "@/components/ui/BaseIcon.vue";
 
 const props = defineProps({
     transactions: { type: Array, default: () => [] },
@@ -252,7 +252,7 @@ async function onReverseClick(tx) {
                         </td>
 
                         <td class="px-4 sm:px-6 py-3 sm:py-4 text-right">
-                            <span class="text-xs sm:text-sm font-medium font-mono tracking-tight leading-snug"
+                            <span class="text-xs sm:text-sm font-medium  tracking-tight leading-snug"
                                 :class="Number(tx?.amount) >= 0 ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white'">
                                 {{ formatMoney(tx?.amount, getAccount(tx)?.currency ?? tx?.currency ??
                                     tx?.account_currency) }}
@@ -261,7 +261,7 @@ async function onReverseClick(tx) {
 
                         <td class="px-4 sm:px-6 py-3 sm:py-4 text-right">
                             <span
-                                class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono tracking-tight leading-snug">
+                                class="text-xs sm:text-sm text-gray-500 dark:text-gray-400  tracking-tight leading-snug">
                                 {{ tx?.balance_after !== undefined && tx?.balance_after !== null
                                     ? formatMoney(tx.balance_after, getAccount(tx)?.currency ?? tx?.currency ??
                                         tx?.account_currency)

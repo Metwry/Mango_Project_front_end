@@ -7,6 +7,11 @@
     -webkit-appearance: none;
     margin: 0;
   }
+  html,
+  body {
+    font-family:
+      "Times New Roman", Times, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
 }
 
 @layer components {
@@ -31,13 +36,24 @@
   /* 按钮基础 */
   .button-base {
     /* 布局 */
-    @apply px-3 py-2 cursor-pointer flex items-center justify-between;
-    /* 字体与形状 */
-    @apply text-sm font-medium rounded-2xl;
-    /* 交互与动画 */
-    @apply cursor-pointer  transition-all duration-200 transform active:scale-90;
-    /* 颜色 */
-    @apply focus:outline-none focus:ring-2 focus:ring-gray-300 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700  bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700;
+    @apply px-3 py-2 flex items-center justify-between rounded-2xl;
+    /* 字体 */
+    @apply text-sm font-medium;
+    /* 交互 */
+    @apply cursor-pointer active:scale-95;
+    /* 只过渡颜色/阴影/transform，别用 all */
+    @apply transition-colors transition-shadow duration-200 ease-out;
+
+    /* 颜色：用更“柔”的 dark 方案（透明度） */
+    @apply bg-white text-gray-700 border border-gray-200;
+    @apply hover:bg-gray-50;
+
+    @apply dark:bg-gray-800/60 dark:text-gray-200 dark:border-gray-700/60;
+    @apply dark:hover:bg-gray-700/50;
+
+    /* focus：light/dark 都柔一点 */
+    @apply focus:outline-none focus:ring-2 focus:ring-gray-300/70;
+    @apply dark:focus:ring-gray-500/40;
   }
 
   /* 导航项 (保持原样，仅为了完整性列出) */

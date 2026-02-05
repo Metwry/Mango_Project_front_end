@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
-import BaseIcon from '../BaseIcon.vue'
+import BaseIcon from '../ui/BaseIcon.vue'
 import { useAccountsStore } from '@/stores/accounts'
 
 const emit = defineEmits(['close'])
@@ -64,18 +64,18 @@ watch(() => props.isOpen, (newVal) => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">账户名称:</label>
-                        <input v-model="account.name" type="text" class="input-style w-full"
+                        <input v-model="account.name" type="text" class="input-base w-full"
                             placeholder="例如：招商银行 / 现金" />
                     </div>
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">账户类型:</label>
-                        <input v-model="account.type" type="text" class="input-style w-full" placeholder="例如：储蓄卡、基金" />
+                        <input v-model="account.type" type="text" class="input-base w-full" placeholder="例如：储蓄卡、基金" />
                     </div>
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">初始金额:</label>
-                        <input v-model.number="account.balance" type="number" class="input-style w-full"
+                        <input v-model.number="account.balance" type="number" class="input-base w-full"
                             placeholder="0.00" />
                     </div>
 

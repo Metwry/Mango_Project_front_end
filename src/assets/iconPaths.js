@@ -47,4 +47,6 @@ export const iconPaths = {
   rightArrow: "M9 5l7 7-7 7",
   //左箭头
   leftArrow: "M15 19l-7-7 7-7",
+  // 日历
+  date: "M6 2a1 1 0 012 0v1h4V2a1 1 0 112 0v1h1a2 2 0 012 2v2H3V5a2 2 0 012-2h1V2zm13 7H3v7a2 2 0 002 2h12a2 2 0 002-2V9z",
 };

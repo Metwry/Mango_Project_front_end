@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { onClickOutside } from '@vueuse/core'
-import BaseIcon from '../BaseIcon.vue'
+import BaseIcon from '../ui/BaseIcon.vue'
 import SettingsModal from '../windows/SettingsModal.vue'
 
 const router = useRouter()
