@@ -15,13 +15,7 @@ const props = defineProps({
     total: { type: Number, default: 0 },
 });
 
-const emit = defineEmits([
-    "page-change",
-    "page-size-change",
-    "reverse",
-    "search-change",
-    "search-reset",
-]);
+const emit = defineEmits(["page-change", "page-size-change", "reverse", "search-change", "search-reset"]);
 
 const reversingId = ref(null);
 
@@ -33,15 +27,7 @@ const searchState = reactive({
     end: "",
 });
 
-const hasSearch = computed(() => {
-    return !!(
-        searchState.accountId ||
-        searchState.counterparty ||
-        searchState.category ||
-        searchState.start ||
-        searchState.end
-    );
-});
+const hasSearch = computed(() => Object.values(searchState).some(Boolean));
 
 const accountMap = computed(() => {
     const map = new Map();
@@ -82,22 +68,32 @@ function rowKey(tx, idx) {
     return tx?.id ?? `${idx}`;
 }
 
+const trimOrEmpty = (v) => (v ? String(v).trim() : "");
+
 function emitSearch() {
     emit("search-change", {
         account_id: searchState.accountId || "",
-        counterparty: searchState.counterparty?.trim() || "",
-        category: searchState.category?.trim() || "",
+        counterparty: trimOrEmpty(searchState.counterparty),
+        category: trimOrEmpty(searchState.category),
         start: searchState.start || "",
         end: searchState.end || "",
     });
 }
 
+function getDisplayBalance(tx) {
+    if (tx?.balance_after == null) return "-";
+    const currency = getAccount(tx)?.currency ?? tx?.currency ?? tx?.account_currency;
+    return formatMoney(tx.balance_after, currency);
+}
+
 function resetSearch() {
-    searchState.accountId = "";
-    searchState.counterparty = "";
-    searchState.category = "";
-    searchState.start = "";
-    searchState.end = "";
+    Object.assign(searchState, {
+        accountId: "",
+        counterparty: "",
+        category: "",
+        start: "",
+        end: "",
+    });
     emit("search-reset");
 }
 
@@ -117,9 +113,7 @@ function onPageSizeChange(e) {
     emit("page-size-change", ps);
 }
 
-// ===== 冲正 =====
 function canReverse(tx) {
-    // 原交易：reversal_of 为空；未冲正：reversed_at 为空
     return !tx?.reversal_of && !tx?.reversed_at;
 }
 
@@ -129,31 +123,21 @@ function reverseLabel(tx) {
     return "撤销";
 }
 
-async function onReverseClick(tx) {
-    if (!tx?.id) return;
-    if (!canReverse(tx)) return;
+function onReverseClick(tx) {
+    if (!tx?.id || !canReverse(tx)) return;
 
-    // 简单前端防抖：同一条冲正中禁点
     reversingId.value = tx.id;
-    try {
-        emit("reverse", tx.id);
-    } finally {
-        // 这里不等父组件完成也可以清空；
-        // 如果你希望严格等父组件完成，可以让父组件传一个 props 再控制
-        setTimeout(() => (reversingId.value = null), 300);
-    }
+    emit("reverse", tx.id);
+    setTimeout(() => (reversingId.value = null), 300);
 }
 </script>
 
 <template>
-    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm overflow-hidden h-full flex flex-col select-none">
+    <div class="card-base">
+        <div class="card-title">交易记录</div>
 
-        <div
-            class="px-6  py-2  border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
-            <h3 class="font-bold text-base  text-gray-800 dark:text-gray-100 ">交易记录</h3>
-        </div>
-
-        <div class="px-6 py-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <!-- 查询栏 -->
+        <div class="px-6 py-2 ">
             <div class="flex flex-wrap gap-3 items-end">
 
                 <div class="flex-1 min-w-[250px]">
@@ -178,173 +162,103 @@ async function onReverseClick(tx) {
                     <DatePicker v-model="searchState.end" class="w-full" />
                 </div>
 
-                <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" class="button-base" @click="emitSearch">
-                        搜索
+                <div class="flex gap-3">
+                    <button type="button" class="button-base text-base" @click="emitSearch">
+                        查询
                     </button>
-                    <button type="button" class="button-base" :disabled="!hasSearch" @click="resetSearch">
+                    <button type="button" class="button-base text-base" :disabled="!hasSearch" @click="resetSearch">
                         清空
                     </button>
                 </div>
             </div>
         </div>
 
-        <div v-if="loading" class="flex-1 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
-                viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                </path>
-            </svg>
-            加载数据中...
+        <div v-if="loading" class="text-base">
+            <BaseIcon name="spinner" spin :size="30" />
         </div>
-        <div v-else-if="error"
-            class="flex-1 flex items-center justify-center text-sm text-red-600 bg-red-50 dark:bg-red-900/20">
+        <div v-else-if="error" class="text-base">
             加载失败，请重试
         </div>
 
-        <div v-else
-            class="flex-1 min-h-0 overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
-            <table class="w-full min-w-[900px] text-left border-collapse table-auto">
-                <thead class="bg-gray-50/80 dark:bg-gray-900/50 sticky top-0 z-10 backdrop-blur-sm">
+        <div v-else class="flex-1 overflow-x-auto overflow-y-auto scrollbar-thin">
+            <table class="w-full min-w-[900px] text-left border-collapse table-auto ">
+                <thead class="sticky top-0 z-10 backdrop-blur-xl bg-gray-100 dark:bg-gray-900 ">
                     <tr>
-                        <th class="th-text">
-                            账户</th>
-                        <th class="th-text">
-                            交易方 / 标题</th>
-                        <th class="th-text ">
-                            分类</th>
-                        <th class="th-text text-right">
-                            金额</th>
-                        <th class="th-text text-right">
-                            余额</th>
-                        <th class="th-text text-right">
-                            日期</th>
-                        <th class="th-text text-center">
-                            操作</th>
+                        <th class="th-text">账户</th>
+                        <th class="th-text">交易方 / 标题</th>
+                        <th class="th-text ">分类</th>
+                        <th class="th-text text-right">金额</th>
+                        <th class="th-text text-right">余额</th>
+                        <th class="th-text text-right">日期</th>
+                        <th class="th-text text-center">操作</th>
                     </tr>
                 </thead>
 
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
                     <tr v-for="(tx, idx) in transactions" :key="rowKey(tx, idx)"
-                        class="group transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+                        class=" transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
 
-                        <td class="px-4 sm:px-6 py-3 sm:py-4">
-                            <div class="flex items-center">
-                                <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 truncate max-w-[10rem] sm:max-w-full leading-snug">
-                                    {{ getAccount(tx)?.name ?? "-" }}
-                                </span>
-                            </div>
-                        </td>
-
-                        <td class="px-4 sm:px-6 py-3 sm:py-4">
-                            <div class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-snug"
-                                :title="tx?.counterparty ?? tx?.title">
-                                {{ tx?.counterparty ?? tx?.title ?? "-" }}
-                            </div>
-                        </td>
-
-                        <td
-                            class="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate leading-snug">
-                            {{ tx?.category_name ?? tx?.category ?? "-" }}
-                        </td>
-
-                        <td class="px-4 sm:px-6 py-3 sm:py-4 text-right">
-                            <span class="text-xs sm:text-sm font-medium  tracking-tight leading-snug"
-                                :class="Number(tx?.amount) >= 0 ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white'">
-                                {{ formatMoney(tx?.amount, getAccount(tx)?.currency ?? tx?.currency ??
-                                    tx?.account_currency) }}
-                            </span>
-                        </td>
-
-                        <td class="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                        <td class="px-2 py-2">
                             <span
-                                class="text-xs sm:text-sm text-gray-500 dark:text-gray-400  tracking-tight leading-snug">
-                                {{ tx?.balance_after !== undefined && tx?.balance_after !== null
-                                    ? formatMoney(tx.balance_after, getAccount(tx)?.currency ?? tx?.currency ??
-                                        tx?.account_currency)
-                                    : "-" }}
+                                class="inline-flex text-xs px-2 py-1.5 font-medium rounded-xl bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 truncate  ">
+                                {{ getAccount(tx)?.name ?? "-" }}
                             </span>
                         </td>
-
-                        <td
-                            class="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm text-gray-500 dark:text-gray-400 tabular-nums leading-snug">
-                            {{ formatDate(tx?.add_date ?? tx?.date) }}
+                        <td class="td-cell "> {{ tx?.counterparty ?? tx?.title ?? "-" }}</td>
+                        <td class="td-cell ">{{ tx?.category_name ?? tx?.category ?? "-" }}</td>
+                        <td class="td-cell text-right">{{ formatMoney(tx?.amount, getAccount(tx)?.currency ??
+                            tx?.currency ?? tx?.account_currency) }}
                         </td>
-
-                        <td class="px-4 sm:px-6 py-3 sm:py-4 text-center" @click.stop>
-                            <button type="button"
-                                class="inline-flex items-center justify-center 
-                                     hover:text-red-600 hover:bg-red-50 px-2 py-0 text-[12px] button-base
-                                       dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20
-                                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer disabled:hover:text-gray-500"
-                                :disabled="loading || !canReverse(tx) || reversingId === tx?.id"
-                                @click="onReverseClick(tx)">
+                        <td class="td-cell text-right">{{ getDisplayBalance(tx) }}</td>
+                        <td class="td-cell text-right ">{{ formatDate(tx?.add_date ?? tx?.date) }}</td>
+                        <td class="td-cell text-center" @click.stop>
+                            <button class="button-base inline-flex  text-[11px]
+                                hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20
+                                " @click="onReverseClick(tx)">
                                 {{ reversingId === tx?.id ? "处理中..." : reverseLabel(tx) }}
                             </button>
                         </td>
                     </tr>
 
+                    <!-- 无交易记录 -->
                     <tr v-if="transactions.length === 0">
                         <td colspan="7" class="px-6 py-16 text-center">
-                            <div class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
-                                <svg class="w-10 h-10 mb-3 opacity-50" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                                    </path>
-                                </svg>
-                                <span class="text-sm">暂无交易记录</span>
-                            </div>
+                            <span class=" text-gray-400 dark:text-gray-500">暂无交易记录</span>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div v-if="!loading && !error" class="px-4 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800
-         flex flex-row flex-nowrap items-center justify-between gap-3">
+        <!-- 分页栏 -->
+        <div class="px-1 py-1 flex flex-row  items-center justify-between ">
 
-            <!-- 左：pageSize -->
-            <div class="flex items-center gap-2 shrink-0">
-                <div class="relative">
-                    <select
-                        class="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600 cursor-pointer"
-                        :disabled="loading" :value="pageSize" @change="onPageSizeChange">
-                        <option :value="10">10 条</option>
-                        <option :value="20">20 条</option>
-                        <option :value="50">50 条</option>
-                        <option :value="100">100 条</option>
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                    </div>
-                </div>
+            <div class="relative">
+                <select class="select-style h-9 text-sm" :disabled="loading" :value="pageSize"
+                    @change="onPageSizeChange">
+                    <option :value="10">10 条</option>
+                    <option :value="20">20 条</option>
+                    <option :value="50">50 条</option>
+                    <option :value="100">100 条</option>
+                </select>
             </div>
 
-            <!-- 中：分页按钮 -->
             <div class="flex items-center justify-center gap-1 shrink-0">
-                <button
-                    class=" active:scale-90 p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                    :disabled="loading || page <= 1" @click="goPage(page - 1)" title="上一页">
-                    <BaseIcon name="leftArrow" class="w-4 h-4" />
+                <button class="button-base" :disabled="loading || page <= 1" @click="goPage(page - 1)">
+                    <BaseIcon name="leftArrow" class="!w-3 !h-3" />
                 </button>
 
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300 px-2 tabular-nums whitespace-nowrap">
+                <span class="text-base">
                     {{ page }} / {{ totalPages }}
                 </span>
 
-                <button
-                    class=" active:scale-90 p-1.5 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-white hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                    :disabled="loading || page >= totalPages" @click="goPage(page + 1)" title="下一页">
-                    <BaseIcon name="rightArrow" class="w-4 h-4" />
+                <button class="button-base" :disabled="loading || page >= totalPages" @click="goPage(page + 1)">
+                    <BaseIcon name="rightArrow" class="!w-3 !h-3" />
                 </button>
             </div>
 
-            <!-- 右：总数 -->
             <div class="text-xs text-gray-500 dark:text-gray-400 tabular-nums text-right shrink-0 whitespace-nowrap">
-                <span class="font-medium text-gray-700 dark:text-gray-300">{{ total }}</span> 条记录
+                {{ total }} 条记录
             </div>
         </div>
 
