@@ -35,9 +35,9 @@ const openEditModal = (account) => {
 
 <template>
     <div class="card-base">
-        <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-6 flex justify-between items-center">
+        <div class="card-title">
             账户列表
-        </h3>
+        </div>
 
         <div class="space-y-5">
             <div v-for="acc in accounts" :key="acc.id" class="flex justify-between items-center">
@@ -48,7 +48,7 @@ const openEditModal = (account) => {
                     </div>
                     <div>
                         <p class="text-sm font-bold  text-gray-800 dark:text-gray-200 flex gap-1">{{ acc.name
-                            }}
+                        }}
                             <button class=" border-0  px-0 py-0 button-base active:scale-75 "
                                 @click="openEditModal(acc)">
                                 <BaseIcon name='bookkeeping' class=" w-5 h-5 " />

@@ -15,7 +15,7 @@ const formatCurrency = (val) => {
         </div>
 
         <div class="relative z-10">
-            <p class="text-gray-400 text-xl mb-1">总资产</p>
+            <div class="card-title">总资产</div>
             <h2 class="text-5xl font-bold mb-4 tracking-tight">{{ formatCurrency(amount) }}</h2>
             <div class="flex items-center gap-2">
                 <span

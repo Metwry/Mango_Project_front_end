@@ -86,9 +86,9 @@ const handleSetBudget = () => {
 </script>
 
 <template>
-    <div class="card-base flex flex-col items-center">
+    <div class="card-base">
         <div class="flex justify-between items-center w-full mb-2">
-            <h3 class="font-bold text-gray-700 dark:text-gray-200">本月预算</h3>
+            <div class="card-title">本月预算</div>
             <button @click="handleSetBudget" class="button-base">
                 设置预算
             </button>
@@ -98,20 +98,6 @@ const handleSetBudget = () => {
             <v-chart :option="option" autoresize />
         </div>
 
-        <div class="mt-2 text-center">
-            <p class="text-sm text-gray-500 dark:text-gray-300">
-                剩余额度:
-                <span class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
-                    ¥{{ remaining.toLocaleString() }}
-                </span>
-            </p>
-        </div>
+        <div class="mt-2 text-center text-base">剩余额度:¥{{ remaining.toLocaleString() }}</div>
     </div>
 </template>
-
-<style scoped>
-.card-base {
-    padding: 1.25rem;
-    min-width: 260px;
-}
-</style>
