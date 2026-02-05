@@ -3,13 +3,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { onClickOutside } from '@vueuse/core'
-import BaseIcon from '../BaseIcon.vue'
+import BaseIcon from '../ui/BaseIcon.vue'
+import SettingsModal from '../windows/SettingsModal.vue'
 
-const emit = defineEmits(['openSettings'])
 const router = useRouter()
 const authStore = useAuthStore()
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)
+const isOpenSetting = ref(false)
 // 逻辑：退出登录
 const handleLogout = () => {
     authStore.logout()
@@ -17,7 +18,8 @@ const handleLogout = () => {
 }
 // 逻辑：触发设置并关闭菜单
 const triggerSettings = () => {
-    emit('openSettings')
+    isOpenSetting.value = true
+
     showUserMenu.value = false
 }
 // 点击外部自动关闭
@@ -27,6 +29,11 @@ onClickOutside(userMenuRef, () => {
 </script>
 
 <template>
+
+    <!-- 系统设置弹窗 -->
+    <SettingsModal :is-Open="isOpenSetting" @close="isOpenSetting = false" />
+
+
     <div class="relative flex items-center h-full" ref="userMenuRef">
 
         <div v-if="showUserMenu"

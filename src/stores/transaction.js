@@ -3,7 +3,6 @@ import { ref, reactive, computed } from "vue";
 import {
   getTransactions,
   createTransaction,
-  getTransactionDetail,
   updateTransaction,
   patchTransaction,
   deleteTransaction,
@@ -16,15 +15,16 @@ export const useTransactionsStore = defineStore("transactions", () => {
   const loading = ref(false);
   const error = ref(null);
 
+  //默认查询条件
   const defaultFilters = () => ({
     account_id: null,
+    counterparty: null,
     category: null,
     start: null,
     end: null,
-    search: "",
-    ordering: "-created_at", // ✅ 原来 -date，后端没有这个字段就会无效
+    ordering: "-add_date",
     page: 1,
-    page_size: 20,
+    page_size: 10,
   });
 
   const filters = reactive(defaultFilters());
@@ -33,10 +33,10 @@ export const useTransactionsStore = defineStore("transactions", () => {
   const hasFilters = computed(() => {
     return !!(
       filters.account_id ||
+      filters.counterparty ||
       filters.category ||
       filters.start ||
-      filters.end ||
-      filters.search
+      filters.end
     );
   });
 
@@ -46,17 +46,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
 
   function resetFilters() {
     Object.assign(filters, defaultFilters());
-  }
-
-  function normalizeListPayload(payload) {
-    if (payload && Array.isArray(payload.results)) {
-      return {
-        list: payload.results,
-        total: payload.count ?? payload.results.length,
-      };
-    }
-    if (Array.isArray(payload)) return { list: payload, total: payload.length };
-    return { list: [], total: 0 };
   }
 
   async function fetchList(extraParams = {}) {
@@ -71,8 +60,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
       });
 
       const res = await getTransactions(params);
-      const payload = res?.data ?? res; // ✅ 兼容 utils 返回 data/response
-
+      const payload = res?.data ?? res;
       const normalized = normalizeListPayload(payload);
       items.value = normalized.list;
       total.value = normalized.total;
@@ -90,26 +78,11 @@ export const useTransactionsStore = defineStore("transactions", () => {
     return fetchList();
   }
 
-  async function fetchDetail(id, { useCache = true } = {}) {
-    if (useCache && detailMap[id]) return detailMap[id];
-
-    error.value = null;
-    try {
-      const res = await getTransactionDetail(id);
-      const payload = res?.data ?? res;
-      if (payload) detailMap[id] = payload;
-      return payload;
-    } catch (e) {
-      error.value = e;
-      throw e;
-    }
-  }
-
   async function createOne(payload) {
     error.value = null;
     try {
       const res = await createTransaction(payload);
-      // 这里你现在不 refresh，是合理的（列表接口不稳时避免中断）
+
       return res?.data ?? res;
     } catch (e) {
       error.value = e;
@@ -163,7 +136,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
       const res = await reverseTransaction(id);
       const data = res?.data ?? res;
 
-      // 冲正后建议刷新当前页（或者回到第一页，你自选）
       await fetchList({ page: filters.page, page_size: filters.page_size });
 
       return data;
@@ -183,6 +155,18 @@ export const useTransactionsStore = defineStore("transactions", () => {
     Object.keys(detailMap).forEach((k) => delete detailMap[k]);
   }
 
+  //*标准化数据防报错
+  function normalizeListPayload(payload) {
+    if (payload && Array.isArray(payload.results)) {
+      return {
+        list: payload.results,
+        total: payload.count ?? payload.results.length,
+      };
+    }
+    if (Array.isArray(payload)) return { list: payload, total: payload.length };
+    return { list: [], total: 0 };
+  }
+
   return {
     items,
     total,
@@ -190,20 +174,17 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error,
     filters,
     detailMap,
-
     hasFilters,
 
     setFilters,
     resetFilters,
     fetchList,
     refresh,
-    fetchDetail,
     createOne,
     updateOne,
     patchOne,
     removeOne,
     reverseOne,
-
-    reset, // ✅
+    reset,
   };
 });

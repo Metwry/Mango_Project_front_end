@@ -36,6 +36,24 @@ function onPageSizeChange(pageSize) {
     return transactionsStore.fetchList({ page: 1, page_size: pageSize });
 }
 
+function onSearchChange(filters) {
+    transactionsStore.setFilters({ page: 1, ...filters });
+    return transactionsStore.fetchList({ page: 1, ...filters });
+}
+
+function onSearchReset() {
+    transactionsStore.setFilters({
+        page: 1,
+        account_id: null,
+        counterparty: null,
+        category: null,
+        start: null,
+        end: null,
+        search: "",
+    });
+    return transactionsStore.fetchList({ page: 1 });
+}
+
 async function onReverseTransaction(id) {
     // 用 submitting 复用也行；想区分可以另建 reversing 状态
     submitting.value = true;
@@ -84,7 +102,8 @@ async function onSubmitTransaction(payload) {
                     <TransactionsHistoryCard :transactions="transactions" :accounts="accounts"
                         :loading="transactionsLoading" :error="transactionsError" :page="txFilters.page"
                         :page-size="txFilters.page_size" :total="transactionsTotal" @page-change="onPageChange"
-                        @page-size-change="onPageSizeChange" @reverse="onReverseTransaction" />
+                        @page-size-change="onPageSizeChange" @reverse="onReverseTransaction"
+                        @search-change="onSearchChange" @search-reset="onSearchReset" />
                 </section>
             </div>
         </div>

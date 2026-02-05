@@ -1,15 +1,8 @@
 <script setup>
-import BaseIcon from '../BaseIcon.vue';
-import UserMenu from './UserMenu.vue'; // 引入新组件
-
-const emit = defineEmits(['openSettings'])
-
-const menuItems = [
-    { name: '仪表盘', path: '/dashboard', icon: 'dashboard' },
-    { name: '记账', path: '/bookkeeping', icon: 'bookkeeping' },
-    { name: '持仓', path: '/holdings', icon: 'holdings' },
-    { name: '行情', path: '/market', icon: 'market' }
-]
+import BaseIcon from '../ui/BaseIcon.vue';
+defineProps({
+    menuItems: { type: Array, default: () => [] }
+})
 </script>
 
 <template>
@@ -21,14 +14,11 @@ const menuItems = [
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2">
-            <RouterLink v-for="item in menuItems" :key="item.path" :to="item.path"
-                active-class="bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
-                class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl font-medium transition-all duration-200 transform active:scale-90">
+            <RouterLink v-for="item in menuItems" :key="item.path" :to="item.path" active-class="nav-item-active"
+                class="nav-item">
                 <BaseIcon :name="item.icon" class="w-5 h-5" />
                 {{ item.name }}
             </RouterLink>
         </nav>
-
-        <!-- <UserMenu @openSettings="emit('openSettings')" /> -->
     </aside>
 </template>

@@ -10,9 +10,8 @@ const formatCurrency = (val) => {
 </script>
 
 <template>
-    <div
-        class="bg-linear-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col justify-between h-full">
-        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-20 -mt-20"></div>
+    <div class="card-base relative overflow-hidden">
+        <div class="pointer-events-none absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-20 -mt-20"></div>
 
         <div class="relative z-10">
             <p class="text-gray-400 text-xl mb-1">总资产</p>
