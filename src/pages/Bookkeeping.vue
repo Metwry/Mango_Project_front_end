@@ -22,23 +22,23 @@ const {
 const submitting = ref(false);
 const resetKey = ref(0);
 
-onMounted(async () => {
-    await Promise.all([accountsStore.fetchAccounts(), transactionsStore.fetchList()]);
-});
+onMounted(() => Promise.all([accountsStore.fetchAccounts(), transactionsStore.fetchList()]));
 
-function onPageChange(page) {
-    transactionsStore.setFilters({ page });
-    return transactionsStore.fetchList({ page });
+function updateAndFetch(patch) {
+    transactionsStore.setFilters(patch);
+    return transactionsStore.fetchList(patch);
 }
 
-function onPageSizeChange(pageSize) {
-    transactionsStore.setFilters({ page: 1, page_size: pageSize });
-    return transactionsStore.fetchList({ page: 1, page_size: pageSize });
+function onPageChange(page) {
+    return updateAndFetch({ page });
+}
+
+function onPageSizeChange(page_size) {
+    return updateAndFetch({ page: 1, page_size });
 }
 
 function onSearchChange(filters) {
-    transactionsStore.setFilters({ page: 1, ...filters });
-    return transactionsStore.fetchList({ page: 1, ...filters });
+    return updateAndFetch({ page: 1, ...filters });
 }
 
 function onSearchReset() {
@@ -55,15 +55,10 @@ function onSearchReset() {
 }
 
 async function onReverseTransaction(id) {
-    // 用 submitting 复用也行；想区分可以另建 reversing 状态
     submitting.value = true;
     try {
         await transactionsStore.reverseOne(id);
-
-        // 撤销会影响余额，刷新账户
         await accountsStore.fetchAccounts({ force: true });
-
-        // 可选：撤销后保持当前页（reverseOne 已经刷新当前页了）
     } finally {
         submitting.value = false;
     }
@@ -75,7 +70,6 @@ async function onSubmitTransaction(payload) {
         await transactionsStore.createOne(payload);
         resetKey.value += 1;
 
-        // 新增后回到第一页看最新，并同步 filters
         transactionsStore.setFilters({ page: 1 });
 
         await Promise.all([
@@ -92,7 +86,7 @@ async function onSubmitTransaction(payload) {
     <div class="h-full w-full bg-gray-50 dark:bg-gray-900">
         <div class="h-full w-full">
             <div class="flex h-full w-full flex-col gap-4">
-                <section class="h-[350px] w-full overflow-hidden">
+                <section class="h-100 w-full overflow-hidden">
                     <AddTransactionCard :accounts="accounts" :accounts-loading="accountsLoading"
                         :accounts-error="accountsError" :submitting="submitting" :reset-key="resetKey"
                         @submit="onSubmitTransaction" />

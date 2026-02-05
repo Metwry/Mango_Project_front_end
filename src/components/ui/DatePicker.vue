@@ -127,7 +127,7 @@ const onYearCommit = () => (viewYear.value = clampYear(viewYear.value));
 
 <template>
     <div class="relative">
-        <button ref="triggerRef" type="button" class="w-full button-base active:scale-95" @click="toggleOpen">
+        <button ref="triggerRef" type="button" class="w-full button-base active:scale-99" @click="toggleOpen">
             <span class="truncate">
                 <span v-if="selectedStr">{{ selectedStr }}</span>
                 <span v-else class="text-gray-400 dark:text-gray-500">选择日期</span>

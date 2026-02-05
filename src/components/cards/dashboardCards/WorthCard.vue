@@ -11,10 +11,11 @@ const formatCurrency = (val) => {
 
 <template>
     <div class="card-base relative overflow-hidden">
-        <div class="pointer-events-none absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-20 -mt-20"></div>
+        <div class="pointer-events-none absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-20 -mt-20">
+        </div>
 
         <div class="relative z-10">
-            <p class="text-gray-400 text-xl mb-1">总资产</p>
+            <div class="card-title">总资产</div>
             <h2 class="text-5xl font-bold mb-4 tracking-tight">{{ formatCurrency(amount) }}</h2>
             <div class="flex items-center gap-2">
                 <span
