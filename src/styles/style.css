@@ -40,9 +40,9 @@
     /* 字体 */
     @apply text-sm font-medium;
     /* 交互 */
-    @apply cursor-pointer active:scale-95;
+    @apply cursor-pointer active:scale-95 select-none;
     /* 只过渡颜色/阴影/transform，别用 all */
-    @apply transition-colors transition-shadow duration-200 ease-out;
+    @apply transition-all transform duration-200 ease-out;
 
     /* 颜色：用更“柔”的 dark 方案（透明度） */
     @apply bg-white text-gray-700 border border-gray-200;

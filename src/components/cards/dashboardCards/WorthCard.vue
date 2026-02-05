@@ -11,7 +11,8 @@ const formatCurrency = (val) => {
 
 <template>
     <div class="card-base relative overflow-hidden">
-        <div class="pointer-events-none absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-20 -mt-20"></div>
+        <div class="pointer-events-none absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-20 -mt-20">
+        </div>
 
         <div class="relative z-10">
             <p class="text-gray-400 text-xl mb-1">总资产</p>
@@ -26,13 +27,6 @@ const formatCurrency = (val) => {
             </div>
         </div>
 
-        <div class="mt-8 h-12 flex items-end gap-2 opacity-50">
-            <div class="w-12 bg-white h-1/2 rounded-t"></div>
-            <div class="w-12 bg-white h-2/3 rounded-t"></div>
-            <div class="w-12 bg-white h-1/3 rounded-t"></div>
-            <div class="w-12 bg-white h-3/4 rounded-t"></div>
-            <div class="w-12 bg-white h-full rounded-t"></div>
-            <div class="w-12 bg-primary-400 h-2/3 rounded-t"></div>
-        </div>
+
     </div>
 </template>
