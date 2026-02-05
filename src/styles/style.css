@@ -18,11 +18,15 @@
   /* 卡片基础 */
   .card-base {
     /* 布局 */
-    @apply flex flex-col h-full p-4;
+    @apply flex flex-col h-full px-4 py-3 select-none overflow-hidden;
     /* 形状 */
     @apply rounded-2xl border shadow-sm;
     /* 颜色 */
     @apply bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700;
+  }
+  /* 卡片标题 */
+  .card-title {
+    @apply select-none px-2 py-2 flex justify-between items-center font-bold text-base text-gray-800 dark:text-gray-100;
   }
 
   /* 字段行布局 */
@@ -36,13 +40,13 @@
   /* 按钮基础 */
   .button-base {
     /* 布局 */
-    @apply px-3 py-2 flex items-center justify-between rounded-2xl;
+    @apply px-3 py-2 flex items-center justify-between rounded-2xl shrink-0;
     /* 字体 */
     @apply text-sm font-medium;
     /* 交互 */
     @apply cursor-pointer active:scale-95 select-none;
     /* 只过渡颜色/阴影/transform，别用 all */
-    @apply transition-all transform duration-200 ease-out;
+    @apply transition-all duration-200 transform active:scale-95  ease-out;
 
     /* 颜色：用更“柔”的 dark 方案（透明度） */
     @apply bg-white text-gray-700 border border-gray-200;
@@ -59,7 +63,7 @@
   /* 导航项 (保持原样，仅为了完整性列出) */
   .nav-item {
     /* 布局 */
-    @apply flex items-center gap-3 px-4 py-3;
+    @apply flex items-center gap-3 px-4 py-4 select-none;
     /* 字体与形状 */
     @apply rounded-xl font-medium;
     /* 变化 */
@@ -76,7 +80,7 @@
   /* 标签字体 */
   .label-text {
     /* 布局 */
-    @apply block ml-1 mb-1;
+    @apply block ml-1 mb-1 select-none;
     /* 字体 */
     @apply text-xs font-medium;
     /* 颜色 */
@@ -98,7 +102,7 @@
     /* 布局 */
     @apply w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 
     px-3 py-2 text-sm text-gray-700 dark:text-gray-200 
-    outline-none focus:ring-2 focus:ring-gray-500;
+    outline-none focus:ring-gray-300/70;
   }
 
   .input-mini {
@@ -136,6 +140,24 @@
     @apply hover:border-primary-400 dark:hover:border-primary-400;
     @apply focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20;
   }
+}
+
+/* 表格单元格 */
+.td-cell {
+  @apply px-4 py-3 border-b border-gray-100 dark:border-gray-600/50;
+
+  @apply text-xs sm:text-sm text-gray-600 dark:text-gray-100;
+
+  @apply leading-snug;
+
+  @apply truncate;
+
+  @apply align-middle;
+}
+
+/* 文字样式 */
+.text-base {
+  @apply flex flex-1 items-center justify-center text-sm text-gray-500 dark:text-gray-400;
 }
 
 @theme {
