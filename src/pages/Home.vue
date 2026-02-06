@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import TopBar from '@/components/layout/Topbar.vue'
 
+
 const route = useRoute()
 
 const currentTitle = computed(() => {
@@ -31,7 +32,7 @@ const menuItems = [
             <!-- 顶部栏 -->
             <TopBar :title="currentTitle" :icon="icon"></TopBar>
             <!-- 路由视图 -->
-            <div class="flex-1 overflow-y-auto p-4 scroll-smooth">
+            <div class="flex-1 overflow-y-auto p-3 scroll-smooth">
                 <RouterView />
             </div>
         </main>

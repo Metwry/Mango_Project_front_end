@@ -22,7 +22,7 @@ const {
 const submitting = ref(false);
 const resetKey = ref(0);
 
-onMounted(() => Promise.all([accountsStore.fetchAccounts(), transactionsStore.fetchList()]));
+onMounted(() => Promise.all([accountsStore.fetchAccounts(), onSearchReset()]));
 
 function updateAndFetch(patch) {
     transactionsStore.setFilters(patch);

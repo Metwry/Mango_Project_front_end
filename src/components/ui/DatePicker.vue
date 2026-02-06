@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch } from "vue";
 import BaseIcon from "./BaseIcon.vue";
-
-import { onClickOutside, useEventListener } from "@vueuse/core";
+import { onClickOutside } from "@vueuse/core";
+// 1. 引入 Floating UI
+import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/vue";
 
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -12,8 +13,22 @@ const props = defineProps({ modelValue: { type: String, default: "" } });
 const emit = defineEmits(["update:modelValue"]);
 
 const open = ref(false);
-const triggerRef = ref(null);
-const panelRef = ref(null);
+
+// ===== Floating UI 配置 =====
+const referenceRef = ref(null); // 触发按钮
+const floatingRef = ref(null);  // 弹窗面板
+
+const { floatingStyles } = useFloating(referenceRef, floatingRef, {
+    placement: "bottom-start",
+    whileElementsMounted: autoUpdate,
+    middleware: [
+        offset(8), // 垂直间距
+        flip(),    // 空间不足自动翻转
+        shift(),   // 防止溢出屏幕
+        // 注意：日期选择器通常不需要 size 中间件，保持自身宽度即可
+    ],
+});
+// ===========================
 
 const YEAR_MIN = 1900, YEAR_MAX = 2100;
 const clampYear = (y) => Math.min(YEAR_MAX, Math.max(YEAR_MIN, (Number(y) | 0) || YEAR_MIN));
@@ -66,50 +81,17 @@ const isSelected = (d) => {
 const isToday = (d) => !!d && dayjs(d).format(YMD) === todayStr.value;
 const isFuture = (d) => !!d && dayjs(d).isAfter(today.value, "day");
 
-const panelPos = ref({ top: 0, left: 0, width: 0 });
-const panelStyle = computed(() => ({
-    position: "fixed",
-    top: `${panelPos.value.top}px`,
-    left: `${panelPos.value.left}px`,
-    width: `${panelPos.value.width}px`,
-    zIndex: 60,
-}));
-
-const computePanelPosition = () => {
-    const el = triggerRef.value;
-    if (!el) return;
-    const r = el.getBoundingClientRect(), gap = 8, guessH = 320;
-    const below = !(window.innerHeight - r.bottom < guessH && r.top > guessH);
-    panelPos.value = {
-        top: Math.max(8, below ? r.bottom + gap : r.top - gap - guessH),
-        left: Math.max(8, r.left),
-        width: r.width,
-    };
-};
-
 const close = () => (open.value = false);
+const toggleOpen = () => (open.value = !open.value);
 
-const toggleOpen = async () => {
-    open.value = !open.value;
-    if (open.value) await nextTick(), computePanelPosition();
-};
-
-// 用 VueUse 替代 document/window 手写监听
-onClickOutside(panelRef, (e) => {
-    if (!open.value) return;
-    if (triggerRef.value?.contains(e.target)) return;
-    close();
-});
-useEventListener(window, "resize", () => open.value && computePanelPosition());
-useEventListener(window, "scroll", () => open.value && computePanelPosition(), { capture: true });
+// 点击外部关闭 (目标改为 floatingRef 和 referenceRef)
+onClickOutside(floatingRef, () => close(), { ignore: [referenceRef] });
 
 const selectDay = (cellDate) => {
     if (!cellDate || isFuture(cellDate)) return;
-
     const t = now();
     const picked = dayjs(cellDate)
         .hour(t.hour()).minute(t.minute()).second(t.second()).millisecond(t.millisecond());
-
     emit("update:modelValue", picked.format(FULL));
     close();
 };
@@ -127,7 +109,7 @@ const onYearCommit = () => (viewYear.value = clampYear(viewYear.value));
 
 <template>
     <div class="relative">
-        <button ref="triggerRef" type="button" class="w-full button-base active:scale-99" @click="toggleOpen">
+        <button ref="referenceRef" type="button" class="w-full button-base active:scale-99" @click="toggleOpen">
             <span class="truncate">
                 <span v-if="selectedStr">{{ selectedStr }}</span>
                 <span v-else class="text-gray-400 dark:text-gray-500">选择日期</span>
@@ -136,49 +118,54 @@ const onYearCommit = () => (viewYear.value = clampYear(viewYear.value));
         </button>
 
         <teleport to="body">
-            <div v-if="open" ref="panelRef" :style="panelStyle"
-                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
-                <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                    <button type="button" class="cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                        @click="prevMonth">
+            <div v-if="open" ref="floatingRef" :style="floatingStyles"
+                class="z-50 w-[280px] sm:w-[320px] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden flex flex-col">
+
+                <div
+                    class="px-3 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-1">
+                    <button class="button-base" @click="prevMonth">
                         <BaseIcon name="leftArrow" class="w-4 h-4" />
                     </button>
 
-                    <input v-model.number="viewYear" type="number" :min="YEAR_MIN" :max="YEAR_MAX" inputmode="numeric"
-                        class="w-28 h-8 input-base" @blur="onYearCommit" @keydown.enter.prevent="onYearCommit" />
+                    <div class="flex  gap-2  flex-1">
+                        <input v-model.number="viewYear" type="number" :min="YEAR_MIN" :max="YEAR_MAX"
+                            inputmode="numeric" class=" input-base " @blur="onYearCommit"
+                            @keydown.enter.prevent="onYearCommit" />
 
-                    <select v-model.number="viewMonth" class="cursor-pointer w-24 h-8 rounded-lg border border-gray-200 dark:border-gray-700
-                   bg-white dark:bg-gray-800 px-2 text-xs
-                   text-gray-700 dark:text-gray-200 outline-none
-                   focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600">
-                        <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </select>
+                        <select v-model.number="viewMonth" class="select-base">
+                            <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
+                        </select>
+                    </div>
 
-                    <button type="button" class="cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                        @click="nextMonth">
+                    <button class="button-base" @click="nextMonth">
                         <BaseIcon name="rightArrow" class="w-4 h-4" />
                     </button>
                 </div>
 
-                <div class="grid grid-cols-7 px-3 pt-2 text-xs text-gray-500 dark:text-gray-400">
-                    <div v-for="w in weekLabels" :key="w" class="text-center py-1">{{ w }}</div>
-                </div>
+                <div class="p-3">
+                    <div class="grid grid-cols-7 gap-1 mb-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div v-for="w in weekLabels" :key="w" class="h-8 flex items-center justify-center font-medium">
+                            {{ w }}
+                        </div>
+                    </div>
 
-                <div class="grid grid-cols-7 gap-0.5 px-2 pb-0">
-                    <button v-for="(d, idx) in cells" :key="idx" type="button" :disabled="!d || isFuture(d)" :class="[
-                        d ? 'button-base' : 'pointer-events-none opacity-0',
-                        'h-9 w-9 p-0 flex items-center justify-center rounded-lg border',
+                    <div class="grid grid-cols-7 gap-1">
+                        <button v-for="(d, idx) in cells" :key="idx" type="button" :disabled="!d || isFuture(d)" :class="[
+                            d ? 'button-base' : 'pointer-events-none opacity-0',
+                            // 移除固定的 w-9，改为 w-full 让 grid 控制宽度，同时使用 aspect-square 保持正方形
+                            'w-full aspect-square p-0 flex items-center justify-center rounded-lg border text-sm',
 
-                        d && isFuture(d)
-                            ? 'opacity-40 cursor-not-allowed border-transparent bg-transparent shadow-none'
-                            : isSelected(d)
-                                ? 'bg-gray-200 border-gray-300 text-gray-900 dark:bg-gray-600 dark:border-gray-500 dark:text-white'
-                                : isToday(d)
-                                    ? 'border-gray-300 bg-transparent text-gray-900 dark:border-gray-500 dark:text-white'
-                                    : 'border-transparent bg-transparent shadow-none hover:bg-gray-100 dark:hover:bg-gray-700'
-                    ]" @click="selectDay(d)">
-                        {{ d ? d.getDate() : "" }}
-                    </button>
+                            d && isFuture(d)
+                                ? 'opacity-40 cursor-not-allowed border-transparent bg-transparent shadow-none'
+                                : isSelected(d)
+                                    ? 'bg-gray-200 border-gray-300 text-gray-900 dark:bg-gray-600 dark:border-gray-500 dark:text-white'
+                                    : isToday(d)
+                                        ? 'border-gray-300 bg-transparent text-gray-900 dark:border-gray-500 dark:text-white font-semibold'
+                                        : 'border-transparent bg-transparent shadow-none hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ]" @click="selectDay(d)">
+                            {{ d ? d.getDate() : "" }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </teleport>

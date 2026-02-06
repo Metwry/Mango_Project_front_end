@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, nextTick } from "vue";
-import { onClickOutside, useEventListener } from "@vueuse/core";
+import { ref, computed } from "vue";
+import { onClickOutside } from "@vueuse/core";
+import { useFloating, offset, flip, shift, size, autoUpdate } from "@floating-ui/vue";
 import BaseIcon from "./BaseIcon.vue";
 
 // 1. 核心简化：直接双向绑定 (Vue 3.4+)
@@ -16,51 +17,43 @@ const props = defineProps({
 
 const open = ref(false);
 const query = ref("");
-const triggerRef = ref(null);
-const panelRef = ref(null);
-const panelStyle = ref({});
 
+// ===== 替换部分开始：引入 Floating UI =====
+const referenceRef = ref(null); // 对应原来的 triggerRef
+const floatingRef = ref(null);  // 对应原来的 panelRef
 
-// 2. 数据逻辑：保持清晰
+const { floatingStyles } = useFloating(referenceRef, floatingRef, {
+    placement: "bottom-start",
+    whileElementsMounted: autoUpdate, // 自动处理滚动、Resize、防抖动
+    middleware: [
+        offset(8), // 间距 8px
+        flip(),    // 自动翻转
+        shift(),   // 防止溢出
+        size({     // 宽度同步
+            apply({ rects, elements }) {
+                Object.assign(elements.floating.style, {
+                    width: `${rects.reference.width}px`,
+                });
+            },
+        }),
+    ],
+});
+// ===== 替换部分结束 =====
+
+// 2. 数据逻辑：保持清晰 (完全未动)
 const selectedAccount = computed(() => props.accounts.find((a) => a.id === modelValue.value));
 const filteredAccounts = computed(() => {
     const q = query.value.trim().toLowerCase();
     return !q ? props.accounts : props.accounts.filter((a) => (a.name || "").toLowerCase().includes(q));
 });
 
-// 3. 交互逻辑：使用 VueUse 移除大量样板代码
-// 点击面板外部自动关闭，忽略触发按钮
-onClickOutside(panelRef, () => (open.value = false), { ignore: [triggerRef] });
+// 3. 交互逻辑：点击外部关闭
+// 注意：这里把 ignore 的目标改为了新的 referenceRef
+onClickOutside(floatingRef, () => (open.value = false), { ignore: [referenceRef] });
 
-// 计算定位 (保留核心逻辑，但更紧凑)
-const updatePosition = () => {
-    if (!open.value || !triggerRef.value) return;
-    const rect = triggerRef.value.getBoundingClientRect();
-    const gap = 8;
-    const heightGuess = 260;
-
-    // 简单判断：如果下方空间不够且上方空间够，就向上翻
-    const showTop = (window.innerHeight - rect.bottom < heightGuess) && (rect.top > heightGuess);
-
-    panelStyle.value = {
-        position: "fixed",
-        left: `${rect.left}px`,
-        width: `${rect.width}px`,
-        zIndex: 80,
-        top: showTop ? `${rect.top - gap - heightGuess}px` : `${rect.bottom + gap}px`,
-    };
-};
-
-// 自动绑定与销毁事件监听
-useEventListener(window, "resize", updatePosition);
-useEventListener(window, "scroll", updatePosition, true);
-
-const toggleOpen = async () => {
+const toggleOpen = () => {
     open.value = !open.value;
-    if (open.value) {
-        await nextTick();
-        updatePosition();
-    }
+    // 不需要 nextTick 和手动计算了
 };
 
 const pick = (id) => {
@@ -76,7 +69,7 @@ const pick = (id) => {
         <div v-else-if="error" class=" text-red-600">账户加载失败</div>
 
         <div v-else>
-            <button ref="triggerRef" type="button" @click="toggleOpen"
+            <button ref="referenceRef" type="button" @click="toggleOpen"
                 class="flex w-full cursor-pointer items-center justify-between button-base ">
                 <span class="truncate">
                     {{ selectedAccount?.name ?? placeholder }}
@@ -85,8 +78,8 @@ const pick = (id) => {
             </button>
 
             <teleport to="body">
-                <div v-if="open" ref="panelRef" :style="panelStyle"
-                    class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                <div v-if="open" ref="floatingRef" :style="floatingStyles"
+                    class="z-50 flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
 
                     <div class="shrink-0 border-b border-gray-100 p-2 dark:border-gray-700">
                         <input v-model="query" type="text" :placeholder="searchPlaceholder" class="input-base" />

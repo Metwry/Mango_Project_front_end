@@ -19,12 +19,8 @@ const account = ref({
 
 //添加账户
 async function AddAccount() {
-    try {
-        await accountsStore.createAccount(account.value)  // ✅ 调用 store（内部会强制刷新）
-        emit('close')
-    } catch (e) {
-        console.error(e)
-    }
+    await accountsStore.createAccount(account.value)
+    emit('close')
 }
 
 
@@ -81,7 +77,7 @@ watch(() => props.isOpen, (newVal) => {
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">币种:</label>
-                        <select v-model="account.currency" class="select-style w-full">
+                        <select v-model="account.currency" class="select-base w-full">
                             <option value="CNY">人民币(CNY)</option>
                             <option value="USD">美元(USD)</option>
                             <option value="EUR">欧元 (EUR)</option>

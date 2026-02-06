@@ -1,10 +1,11 @@
 <script setup>
 import { ref, watch } from 'vue'
 import BaseIcon from '../ui/BaseIcon.vue'
-import { useAccountsStore } from '@/stores/accounts'  // ✅ 用 store
+import { useAccountsStore } from '@/stores/accounts'
+import { ElMessage, ElMessageBox } from "element-plus";
+
 
 const emit = defineEmits(['close'])
-
 const props = defineProps({
     isOpen: Boolean,
     data: {
@@ -23,7 +24,6 @@ const account = ref({
     type: ''
 })
 
-// 打开弹窗时，把 props.data 拷贝到本地表单
 watch(
     () => props.isOpen,
     (newVal) => {
@@ -61,21 +61,24 @@ const UpdateAccount = async () => {
 }
 
 const DeleteAccount = async () => {
-    if (!confirm('确定要删除这个账户吗？删除后无法恢复。')) return
+    try {
+        await ElMessageBox.confirm('确定删除？删除后无法恢复。')
+    } catch {
+        return
+    }
 
     try {
         if (!account.value.id) return
 
         await accountsStore.deleteAccount(account.value.id)
         emit('close')
-        alert('删除成功');
+        ElMessage.success("删除成功");
 
     } catch (error) {
-        console.error('删除失败:', error)
         if (error.response && error.response.status === 500) {
-            alert("删除失败：该账户下包含交易记录，请先清空账单后再删除。");
+            ElMessage.error("删除失败：该账户下包含交易记录…");
         } else {
-            alert("删除失败，请稍后再试。");
+            ElMessage.error("删除失败");
         }
     }
 }
@@ -118,7 +121,7 @@ const DeleteAccount = async () => {
 
                     <div class="space-y-2">
                         <label class="label-text">币种:</label>
-                        <select v-model="account.currency" class="select-style w-full">
+                        <select v-model="account.currency" class="select-base w-full">
                             <option value="CNY">人民币(CNY)</option>
                             <option value="USD">美元(USD)</option>
                             <option value="EUR">欧元 (EUR)</option>

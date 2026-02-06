@@ -13,7 +13,6 @@ const showAddAccount = ref(false)
 const showChangeAccount = ref(false)
 const selectedAccount = ref()
 
-// 货币符号
 const currencySymbol = (currency) => {
     const map = {
         CNY: '¥',
@@ -39,19 +38,19 @@ const openEditModal = (account) => {
             账户列表
         </div>
 
-        <div class="space-y-5">
+        <div class="space-y-4">
             <div v-for="acc in accounts" :key="acc.id" class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <div
-                        class="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 flex items-center justify-center font-bold text-sm shadow-sm">
+                        class="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 flex items-center justify-center  text-sm">
                         {{ (acc.type || '?').substring(0, 1).toUpperCase() }}
                     </div>
                     <div>
                         <p class="text-sm font-bold  text-gray-800 dark:text-gray-200 flex gap-1">{{ acc.name
-                        }}
-                            <button class=" border-0  px-0 py-0 button-base active:scale-75 "
+                            }}
+                            <button class=" border-0 ring-0 px-0 py-0 button-base active:scale-85 "
                                 @click="openEditModal(acc)">
-                                <BaseIcon name='bookkeeping' class=" w-5 h-5 " />
+                                <BaseIcon name='bookkeeping' class=" w-5 h-5" />
                             </button>
                         </p>
                         <p class="text-xs text-gray-400">{{ acc.type }}</p>
@@ -63,10 +62,11 @@ const openEditModal = (account) => {
                 </span>
             </div>
 
-            <button @click="showAddAccount = true" class="button-base w-full border-0 px-0 py-0 ">
+            <button @click="showAddAccount = true"
+                class=" button-base ring-0 bg-transparent w-full border-0 px-0 py-0 ">
                 <div class="flex items-center gap-3">
                     <div
-                        class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center font-bold text-sm">
+                        class=" rounded-full w-10 h-10  bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center font-bold text-sm">
                         +</div>
                     <p class="text-sm font-medium text-gray-400">添加账户</p>
                 </div>

@@ -138,8 +138,6 @@ api.interceptors.response.use(
       }
     }
 
-    // --- 情况 3: 其他错误 (400, 403, 404, 500 等) ---
-    // 这里的逻辑就是把你之前问的“小弹窗”集成进来了
     let message = "请求失败";
 
     if (data) {
@@ -156,15 +154,10 @@ api.interceptors.response.use(
       else if (typeof data === "object") {
         const keys = Object.keys(data);
         if (keys.length > 0) {
-          const firstKey = keys[0]; // 获取第一个错误字段，例如 "name"
-          const firstValue = data[firstKey]; // 获取值，例如 ["不能为空"]
+          const firstKey = keys[0];
+          const firstValue = data[firstKey];
 
-          // DRF 的字段错误通常是一个数组，我们要取数组的第0个
           if (Array.isArray(firstValue) && firstValue.length > 0) {
-            // 拼接字段名和错误信息，让用户知道是哪里错了
-            // message = `${firstKey}: ${firstValue[0]}` // 结果如 "name: 不能为空"
-
-            // 或者直接显示错误信息（通常这样对用户更友好）
             message = firstValue[0];
           } else {
             message = String(firstValue);
@@ -173,7 +166,6 @@ api.interceptors.response.use(
       }
     }
 
-    // 只有非 401 错误才弹窗
     if (status !== 401) {
       ElMessage.error(message);
     }

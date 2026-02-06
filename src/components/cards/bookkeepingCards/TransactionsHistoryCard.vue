@@ -137,7 +137,7 @@ function onReverseClick(tx) {
         <div class="card-title">交易记录</div>
 
         <!-- 查询栏 -->
-        <div class="px-6 py-2 ">
+        <div class="px-1 py-2 ">
             <div class="flex flex-wrap gap-3 items-end">
 
                 <div class="flex-1 min-w-[250px]">
@@ -163,10 +163,10 @@ function onReverseClick(tx) {
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" class="button-base text-base" @click="emitSearch">
+                    <button class="button-base " @click="emitSearch">
                         查询
                     </button>
-                    <button type="button" class="button-base text-base" :disabled="!hasSearch" @click="resetSearch">
+                    <button class="button-base" :disabled="!hasSearch" @click="resetSearch">
                         清空
                     </button>
                 </div>
@@ -212,7 +212,7 @@ function onReverseClick(tx) {
                         <td class="td-cell text-right">{{ getDisplayBalance(tx) }}</td>
                         <td class="td-cell text-right ">{{ formatDate(tx?.add_date ?? tx?.date) }}</td>
                         <td class="td-cell text-center" @click.stop>
-                            <button class="button-base inline-flex  text-[11px]
+                            <button class="button-base ring-0 inline-flex  text-xs
                                 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20
                                 " @click="onReverseClick(tx)">
                                 {{ reversingId === tx?.id ? "处理中..." : reverseLabel(tx) }}
@@ -234,7 +234,7 @@ function onReverseClick(tx) {
         <div class="px-1 py-1 flex flex-row  items-center justify-between ">
 
             <div class="relative">
-                <select class="select-style h-9 text-sm" :disabled="loading" :value="pageSize"
+                <select class="select-base h-9 text-sm" :disabled="loading" :value="pageSize"
                     @change="onPageSizeChange">
                     <option :value="10">10 条</option>
                     <option :value="20">20 条</option>

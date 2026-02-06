@@ -14,6 +14,7 @@ export const useAccountsStore = defineStore("accounts", () => {
   const loading = ref(false);
   const saving = ref(false);
   const error = ref(null);
+  const actionError = ref(null);
 
   const fetched = ref(false);
   const lastFetchedAt = ref(null);
@@ -70,13 +71,13 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   async function createAccount(payload) {
     saving.value = true;
-    error.value = null;
+    actionError.value = null;
     try {
       const res = await apiCreateAccount(payload);
       await refreshAccounts();
       return res?.data ?? res;
     } catch (e) {
-      error.value = e;
+      actionError.value = e;
       throw e;
     } finally {
       saving.value = false;
@@ -85,7 +86,7 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   async function updateAccount(id, payload) {
     saving.value = true;
-    error.value = null;
+    actionError.value = null;
     try {
       const res = await apiUpdateAccount(id, payload);
       const data = res?.data ?? res;
@@ -94,7 +95,7 @@ export const useAccountsStore = defineStore("accounts", () => {
       await refreshAccounts();
       return data;
     } catch (e) {
-      error.value = e;
+      actionError.value = e;
       throw e;
     } finally {
       saving.value = false;
@@ -103,11 +104,14 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   async function deleteAccount(id) {
     saving.value = true;
+    actionError.value = null;
     try {
       await apiDeleteAccount(id);
       delete detailMap[id];
       await refreshAccounts();
     } catch (e) {
+      actionError.value = e;
+      console.log(e);
       throw e;
     } finally {
       saving.value = false;
@@ -117,14 +121,14 @@ export const useAccountsStore = defineStore("accounts", () => {
   async function fetchAccountDetail(id, { useCache = true } = {}) {
     if (useCache && detailMap[id]) return detailMap[id];
 
-    error.value = null;
+    actionError.value = null;
     try {
       const res = await getAccountDetail(id);
       const detail = res?.data ?? res;
       if (detail) detailMap[id] = detail;
       return detail;
     } catch (e) {
-      error.value = e;
+      actionError.value = e;
       throw e;
     }
   }
@@ -134,6 +138,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     loading.value = false;
     saving.value = false;
     error.value = null;
+    actionError.value = null;
 
     fetched.value = false;
     lastFetchedAt.value = null;
@@ -148,6 +153,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     loading,
     saving,
     error,
+    actionError,
     fetched,
     lastFetchedAt,
     detailMap,
