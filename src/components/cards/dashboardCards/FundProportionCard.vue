@@ -101,7 +101,7 @@
     <template>
         <div class="card-base">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-gray-700 dark:text-gray-200">资金占比</h3>
+                <h3 class="card-title">资金占比</h3>
             </div>
 
             <div v-if="total <= 0" class="flex-1 flex items-center justify-center text-gray-400">

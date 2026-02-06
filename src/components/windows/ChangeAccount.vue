@@ -47,16 +47,14 @@ watch(
     },
     { immediate: true }
 )
-// todo  美化提示框
+
 const UpdateAccount = async () => {
     try {
         if (!account.value.id) return
-
         await accountsStore.updateAccount(account.value.id, account.value)
-
         emit('close')
     } catch (error) {
-        console.error('更新失败:', error)
+        ElMessage.error("更新失败");
     }
 }
 
@@ -86,41 +84,42 @@ const DeleteAccount = async () => {
 
 <template>
     <Transition name="modal">
-        <div v-if="isOpen"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-hidden">
+        <div v-if="isOpen" class="fixed items-center justify-center inset-0 z-50 flex bg-black/50 backdrop-blur-sm">
+            <div class="w-full max-w-xl rounded-4xl bg-white p-6 dark:bg-gray-800">
+                <div class="mb-10 grid grid-cols-[1fr_auto_1fr] items-center">
+                    <div></div>
 
-            <div
-                class="modal-content relative w-full max-w-2xl max-h-[85vh] overflow-auto rounded-3xl bg-white p-6 md:p-8 dark:bg-gray-800 shadow-2xl">
-
-                <div class="relative mb-8">
-                    <h2 class="text-center text-2xl font-bold text-gray-900 dark:text-white">
+                    <div class="text-center text-2xl font-bold text-gray-900 dark:text-white">
                         修改账户
-                    </h2>
-                    <button @click="emit('close')"
-                        class="absolute right-0 top-1 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-                        <BaseIcon name="closeIcon" class="h-5 w-5 cursor-pointer" />
-                    </button>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button @click="emit('close')" class="p-2 button-base">
+                            <BaseIcon name="closeIcon" class="h-5 w-5" />
+                        </button>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+
+                <div class="grid grid-cols-2 gap-5">
                     <div class="space-y-2">
-                        <label class="label-text">账户名称:</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">账户名称:</label>
                         <input v-model="account.name" type="text" class="input-base w-full" placeholder="例如：招商银行" />
                     </div>
 
                     <div class="space-y-2">
-                        <label class="label-text">账户类型:</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">账户类型:</label>
                         <input v-model="account.type" type="text" class="input-base w-full" placeholder="例如：储蓄卡、基金" />
                     </div>
 
                     <div class="space-y-2">
-                        <label class="label-text">当前余额:</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">当前余额:</label>
                         <input v-model.number="account.balance" type="number" class="input-base w-full"
                             placeholder="0.00" />
                     </div>
 
                     <div class="space-y-2">
-                        <label class="label-text">币种:</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">币种:</label>
                         <select v-model="account.currency" class="select-base w-full">
                             <option value="CNY">人民币(CNY)</option>
                             <option value="USD">美元(USD)</option>
@@ -129,16 +128,13 @@ const DeleteAccount = async () => {
                     </div>
                 </div>
 
-                <div class="mt-10 flex justify-between items-center">
-                    <button @click="DeleteAccount"
-                        class="button-base bg-red-500 hover:bg-red-600 transform active:scale-90 transition-all"
+                <div class="mt-10 flex items-center justify-between">
+                    <button @click="DeleteAccount" class="button-base bg-red-500 hover:bg-red-600"
                         :disabled="accountsStore.saving">
                         删除账户
                     </button>
 
-                    <button @click="UpdateAccount"
-                        class="button-base px-8 py-2.5 transform active:scale-90 transition-all"
-                        :disabled="accountsStore.saving">
+                    <button @click="UpdateAccount" class="button-base" :disabled="accountsStore.saving">
                         {{ accountsStore.saving ? '保存中...' : '保存修改' }}
                     </button>
                 </div>
@@ -146,5 +142,6 @@ const DeleteAccount = async () => {
         </div>
     </Transition>
 </template>
+
 
 <style scoped src="@/styles/modal.css"></style>

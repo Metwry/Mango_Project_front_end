@@ -15,6 +15,10 @@
 }
 
 @layer components {
+  .center {
+    @apply flex justify-between items-center;
+  }
+
   /* 卡片基础 */
   .card-base {
     /* 布局 */
