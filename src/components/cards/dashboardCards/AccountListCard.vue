@@ -22,20 +22,23 @@ const currencySymbol = (currency) => {
         GBP: '£',
         HKD: 'HK$',
     }
-    return map[(currency || '').toUpperCase()] || (currency ? `${currency} ` : '')
+    return map[currency]
 }
 
-const openEditModal = (account) => {
-    selectedAccount.value = account  // 先赋值
-    showChangeAccount.value = true   // 再打开
-    console.log(selectedAccount)
+const openEditModal = (item) => {
+    selectedAccount.value = item
+    showChangeAccount.value = true
 }
 </script>
 
 <template>
     <div class="card-base">
 
-        <div class="card-title">账户列表</div>
+        <div class="center">
+            <div class="card-title">账户列表</div>
+            <button class="button-base ring-0">转账</button>
+        </div>
+
 
         <div class="py-5 space-y-4">
             <div v-for="item in accounts" :key="item.id" class="center">

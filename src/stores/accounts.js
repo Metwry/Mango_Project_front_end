@@ -22,9 +22,6 @@ export const useAccountsStore = defineStore("accounts", () => {
   const fetchPromise = ref(null);
   const detailMap = reactive({});
 
-  // ===== getters =====
-  const byId = computed(() => (id) => accounts.value.find((a) => a.id === id));
-
   // ===== actions =====
   async function fetchAccounts({ force = false } = {}) {
     if (fetched.value && !force) return accounts.value;
@@ -157,8 +154,6 @@ export const useAccountsStore = defineStore("accounts", () => {
     fetched,
     lastFetchedAt,
     detailMap,
-
-    byId,
 
     fetchAccounts,
     refreshAccounts,

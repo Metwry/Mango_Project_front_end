@@ -73,9 +73,10 @@ watch(() => props.isOpen, (newVal) => {
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ">币种:</label>
                         <select v-model="account.currency" class="select-base w-full">
-                            <option value="CNY">人民币(CNY)</option>
-                            <option value="USD">美元(USD)</option>
+                            <option value="CNY">人民币 (CNY)</option>
+                            <option value="USD">美元 (USD)</option>
                             <option value="EUR">欧元 (EUR)</option>
+                            <option value="JPY">日元 (JPY)</option>
                         </select>
                     </div>
                 </div>

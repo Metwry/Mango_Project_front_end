@@ -35,14 +35,6 @@ watch(
                 balance: props.data.balance ?? null,
                 type: props.data.type
             }
-        } else {
-            account.value = {
-                id: null,
-                name: '',
-                currency: 'CNY',
-                balance: null,
-                type: ''
-            }
         }
     },
     { immediate: true }
@@ -59,25 +51,19 @@ const UpdateAccount = async () => {
 }
 
 const DeleteAccount = async () => {
+    const id = account.value.id
+    if (!id) return
     try {
         await ElMessageBox.confirm('确定删除？删除后无法恢复。')
-    } catch {
-        return
-    }
-
-    try {
-        if (!account.value.id) return
-
-        await accountsStore.deleteAccount(account.value.id)
+        await accountsStore.deleteAccount(id)
         emit('close')
-        ElMessage.success("删除成功");
-
-    } catch (error) {
-        if (error.response && error.response.status === 500) {
-            ElMessage.error("删除失败：该账户下包含交易记录…");
-        } else {
-            ElMessage.error("删除失败");
-        }
+        ElMessage.success("删除成功")
+    } catch (e) {
+        if (e === 'cancel') return
+        const msg = e.response?.status === 500
+            ? "删除失败：该账户包含交易记录"
+            : "删除失败"
+        ElMessage.error(msg)
     }
 }
 </script>
@@ -124,6 +110,7 @@ const DeleteAccount = async () => {
                             <option value="CNY">人民币(CNY)</option>
                             <option value="USD">美元(USD)</option>
                             <option value="EUR">欧元 (EUR)</option>
+                            <option value="JPY">日元 (JPY)</option>
                         </select>
                     </div>
                 </div>

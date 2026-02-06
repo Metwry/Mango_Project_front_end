@@ -15,7 +15,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
   const loading = ref(false);
   const error = ref(null);
 
-  //默认查询条件
   const defaultFilters = () => ({
     account_id: null,
     counterparty: null,
@@ -30,15 +29,15 @@ export const useTransactionsStore = defineStore("transactions", () => {
   const filters = reactive(defaultFilters());
   const detailMap = reactive({});
 
-  const hasFilters = computed(() => {
-    return !!(
-      filters.account_id ||
-      filters.counterparty ||
-      filters.category ||
-      filters.start ||
-      filters.end
-    );
-  });
+  const hasFilters = computed(() =>
+    [
+      filters.account_id,
+      filters.counterparty,
+      filters.category,
+      filters.start,
+      filters.end,
+    ].some(Boolean),
+  );
 
   function setFilters(patch) {
     Object.assign(filters, patch);
