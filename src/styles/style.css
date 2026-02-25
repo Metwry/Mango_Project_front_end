@@ -122,15 +122,15 @@
   }
 
   .market-search-dropdown {
-    @apply absolute left-0 right-0 top-[calc(100%+8px)] z-40 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5;
+    @apply absolute left-0 right-0 top-[calc(100%+8px)] z-40 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-800 dark:ring-white/10;
   }
 
   .market-search-head {
-    @apply grid grid-cols-[120px_1fr_88px] items-center gap-3 px-3 py-2 text-xs text-gray-400 bg-gray-50 border-b border-gray-100;
+    @apply grid grid-cols-[120px_1fr_88px] items-center gap-3 px-3 py-2 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 dark:text-gray-500 dark:bg-gray-700/60 dark:border-gray-700;
   }
 
   .market-search-item {
-    @apply w-full cursor-pointer text-left px-3 py-2 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition;
+    @apply w-full cursor-pointer text-left px-3 py-2 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition dark:border-gray-700 dark:hover:bg-gray-700/50;
   }
 
   .market-search-grid {
@@ -138,7 +138,7 @@
   }
 
   .market-market-tag {
-    @apply inline-flex px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600;
+    @apply inline-flex px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300;
   }
 }
 

@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref } from "vue";
+﻿import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   addWatchlistInstrument,
@@ -20,15 +20,11 @@ const AUTO_REFRESH_DELAY_MS = 5000;
 const SEARCH_DEBOUNCE_MS = 250;
 
 function normalizeMarketCode(value) {
-  return String(value ?? "")
-    .trim()
-    .toUpperCase();
+  return String(value ?? "").trim().toUpperCase();
 }
 
 function normalizeSearchQuery(value) {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, " ");
+  return String(value ?? "").trim().replace(/\s+/g, " ");
 }
 
 export function useMarketPage() {
@@ -62,11 +58,9 @@ export function useMarketPage() {
 
   const marketButtons = computed(() => {
     const counter = new Map();
-
     for (const block of markets.value) {
       const market = normalizeMarketCode(block?.market);
       if (!market) continue;
-
       const quotes = Array.isArray(block?.quotes) ? block.quotes : [];
       counter.set(market, (counter.get(market) ?? 0) + quotes.length);
     }
@@ -105,9 +99,7 @@ export function useMarketPage() {
   });
 
   const selectedMarketLabel = computed(() => {
-    return selectedMarket.value === "ALL"
-      ? "全部"
-      : getMarketLabel(selectedMarket.value);
+    return selectedMarket.value === "ALL" ? "全部" : getMarketLabel(selectedMarket.value);
   });
 
   async function fetchMarkets({ silent = false } = {}) {
@@ -122,13 +114,8 @@ export function useMarketPage() {
       updatedAt.value = payload?.updated_at ?? "";
       markets.value = Array.isArray(payload?.markets) ? payload.markets : [];
 
-      const availableMarkets = new Set(
-        marketButtons.value.map((x) => x.market),
-      );
-      if (
-        selectedMarket.value !== "ALL" &&
-        !availableMarkets.has(selectedMarket.value)
-      ) {
+      const availableMarkets = new Set(marketButtons.value.map((x) => x.market));
+      if (selectedMarket.value !== "ALL" && !availableMarkets.has(selectedMarket.value)) {
         selectedMarket.value = "ALL";
       }
     } catch (e) {
@@ -150,9 +137,7 @@ export function useMarketPage() {
   function getMsToNextRefreshTick(now = new Date()) {
     const next = new Date(now);
     const minute = next.getMinutes();
-    const nextMinute =
-      Math.floor(minute / AUTO_REFRESH_MINUTES) * AUTO_REFRESH_MINUTES +
-      AUTO_REFRESH_MINUTES;
+    const nextMinute = Math.floor(minute / AUTO_REFRESH_MINUTES) * AUTO_REFRESH_MINUTES + AUTO_REFRESH_MINUTES;
 
     if (nextMinute >= 60) {
       next.setHours(next.getHours() + 1, 0, 0, 0);
@@ -160,10 +145,7 @@ export function useMarketPage() {
       next.setMinutes(nextMinute, 0, 0);
     }
 
-    return Math.max(
-      1000,
-      next.getTime() - now.getTime() + AUTO_REFRESH_DELAY_MS,
-    );
+    return Math.max(1000, next.getTime() - now.getTime() + AUTO_REFRESH_DELAY_MS);
   }
 
   function scheduleAutoRefresh() {
@@ -203,11 +185,9 @@ export function useMarketPage() {
 
     showSearchDropdown.value = true;
 
-    if (
-      query === lastSearchedQuery &&
-      (searchResults.value.length > 0 || searchLoading.value)
-    )
+    if (query === lastSearchedQuery && (searchResults.value.length > 0 || searchLoading.value)) {
       return;
+    }
 
     const cached = searchResultCache.get(query);
     if (cached) {
@@ -242,10 +222,7 @@ export function useMarketPage() {
 
   function scheduleSearch(rawQuery) {
     clearSearchDebounceTimer();
-    searchDebounceTimer = setTimeout(
-      () => executeSearch(rawQuery),
-      SEARCH_DEBOUNCE_MS,
-    );
+    searchDebounceTimer = setTimeout(() => executeSearch(rawQuery), SEARCH_DEBOUNCE_MS);
   }
 
   function onSearchInput() {
@@ -326,6 +303,7 @@ export function useMarketPage() {
       ElMessage.error("添加失败，请稍后重试。");
       return;
     }
+
     showSearchDropdown.value = false;
   }
 
@@ -335,9 +313,7 @@ export function useMarketPage() {
 
   async function onDeleteClick(row) {
     const market = normalizeMarketCode(row?.market);
-    const shortCode = String(row?.short_code ?? "")
-      .trim()
-      .toUpperCase();
+    const shortCode = String(row?.short_code ?? "").trim().toUpperCase();
 
     if (!market || !shortCode) {
       ElMessage.error("标的代码无效，无法删除");
@@ -385,12 +361,12 @@ export function useMarketPage() {
     return `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
   }
 
-  function changeClass(value) {
+  function changeBadgeClass(value) {
     const n = Number(value);
-    if (!Number.isFinite(n)) return "text-gray-500";
-    if (n > 0) return "text-green-600";
-    if (n < 0) return "text-red-600";
-    return "text-gray-700";
+    if (!Number.isFinite(n)) return "border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-300";
+    if (n > 0) return "border-green-200 bg-green-50 text-green-700 dark:border-green-700/60 dark:bg-green-900/20 dark:text-green-300";
+    if (n < 0) return "border-red-200 bg-red-50 text-red-700 dark:border-red-700/60 dark:bg-red-900/20 dark:text-red-300";
+    return "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200";
   }
 
   function formatUpdatedAt(value) {
@@ -415,7 +391,7 @@ export function useMarketPage() {
 
   return {
     allQuotes,
-    changeClass,
+    changeBadgeClass,
     chooseMarket,
     formatPercent,
     formatPrice,
