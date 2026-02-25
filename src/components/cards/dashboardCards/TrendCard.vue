@@ -19,6 +19,7 @@ const accountId = ref('')
 
             <div class="flex gap-2">
 
+                <button class="button-base">至今为止</button>
                 <button class="button-base">近7天</button>
                 <button class="button-base">近30天</button>
                 <button class="button-base">近1年</button>

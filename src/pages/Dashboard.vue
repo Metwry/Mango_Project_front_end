@@ -28,12 +28,7 @@ const budgetProgress = ref(88)
 const budgetRemaining = ref(4000)
 
 // 最近活动记录
-const recentTransactions = ref([
-    { id: 1, title: 'Apple Store', date: '2026-01-09', category: '', amount: -8999, type: 'expense' },
-    { id: 2, title: '', date: '2026-01-05', category: '', amount: 25000, type: 'income' },
-    { id: 3, title: '', date: '2026-01-04', category: '', amount: -35, type: 'expense' },
-    { id: 4, title: '', date: '2026-01-02', category: '', amount: 1200, type: 'income' },
-])
+
 
 
 
@@ -44,29 +39,24 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <!-- todo -->
-        <div class="col-span-1 md:col-span-2 xl:col-span-2  min-h-[20rem]">
-            <WorthCard :amount="totalWorth" :change="monthlyChange" />
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_1fr] gap-4 h-full">
+
+        <div class="col-span-1 md:col-span-2 xl:col-span-2 min-h-[14rem]">
+            <WorthCard :amount="totalWorth" :change="monthlyChange" class="h-full" />
         </div>
-        <!-- todo -->
-        <div class="col-span-1 md:col-span-1 xl:col-span-1  min-h-[20rem]">
-            <BudgetCard :progress="budgetProgress" :remaining="budgetRemaining" />
+        <div class="col-span-1 md:col-span-1 xl:col-span-1 min-h-[14rem]">
+            <BudgetCard :progress="budgetProgress" :remaining="budgetRemaining" class="h-full" />
         </div>
-        <div class="col-span-1 md:col-span-1 xl:col-span-1  min-h-[20rem]">
-            <FundProportionCard :accounts="accounts" />
+        <div class="col-span-1 md:col-span-1 xl:col-span-1 min-h-[14rem]">
+            <FundProportionCard :accounts="accounts" class="h-full" />
         </div>
-        <!-- todo -->
-        <div class="col-span-1 md:col-span-2 xl:col-span-3 min-h-[24rem]">
-            <TrendCard :accounts="accounts" />
+
+        <div class="col-span-1 md:col-span-2 xl:col-span-3 min-h-[30rem] xl:min-h-0 xl:h-full ">
+            <TrendCard :accounts="accounts" class="h-full" />
         </div>
-        <!-- done -->
-        <div class="col-span-1 md:col-span-2 xl:col-span-1 h-auto min-h-[24rem]">
-            <AccountListCard :accounts="accounts" />
+        <div class="col-span-1 md:col-span-2 xl:col-span-1 min-h-[30rem] xl:min-h-0 xl:h-full overflow-hidden">
+            <AccountListCard :accounts="accounts" class="h-full" />
         </div>
-        <!-- todo -->
-        <div class="col-span-1 md:col-span-2 xl:col-span-4">
-            <ActivityCard :transactions="recentTransactions" />
-        </div>
+
     </div>
 </template>

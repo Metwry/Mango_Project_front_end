@@ -28,7 +28,6 @@ const { floatingStyles } = useFloating(referenceRef, floatingRef, {
         // 注意：日期选择器通常不需要 size 中间件，保持自身宽度即可
     ],
 });
-// ===========================
 
 const YEAR_MIN = 1900, YEAR_MAX = 2100;
 const clampYear = (y) => Math.min(YEAR_MAX, Math.max(YEAR_MIN, (Number(y) | 0) || YEAR_MIN));
@@ -109,7 +108,7 @@ const onYearCommit = () => (viewYear.value = clampYear(viewYear.value));
 
 <template>
     <div class="relative">
-        <button ref="referenceRef" type="button" class="w-full button-base active:scale-98" @click="toggleOpen">
+        <button ref="referenceRef" type="button" class="w-full button-base active:scale-99" @click="toggleOpen">
             <span class="truncate">
                 <span v-if="selectedStr">{{ selectedStr }}</span>
                 <span v-else class="text-gray-400 dark:text-gray-500">选择日期</span>

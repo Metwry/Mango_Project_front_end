@@ -68,10 +68,10 @@ watch(() => props.resetKey, clear);
                     <input v-model="form.counterparty" type="text" placeholder="输入交易方" class=" input-base" />
                 </div>
                 <div class="md:col-span-1">
-                    <input v-model="form.category_name" type="text" placeholder="输入分类" class="input-base" />
+                    <input v-model="form.category_name" type="text" placeholder="输入类型" class="input-base" />
                 </div>
                 <div class="md:col-span-1">
-                    <input v-model="form.amount" type="number" inputmode="decimal" placeholder="0.00" class="input-base"
+                    <input v-model="form.amount" type="number" inputmode="decimal" placeholder="输入金额" class="input-base"
                         @keydown.enter="submit" />
                 </div>
             </div>

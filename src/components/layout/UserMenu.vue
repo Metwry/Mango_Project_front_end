@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { onClickOutside } from '@vueuse/core'
 import BaseIcon from '../ui/BaseIcon.vue'
 import SettingsModal from '../windows/SettingsModal.vue'
+import { ElMessage, ElMessageBox } from "element-plus";
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -26,6 +27,14 @@ const triggerSettings = () => {
 onClickOutside(userMenuRef, () => {
     showUserMenu.value = false
 })
+
+// 功能未开发放
+function todo() {
+    ElMessage.error("该功能未开发")
+}
+
+
+
 </script>
 
 <template>
@@ -44,11 +53,11 @@ onClickOutside(userMenuRef, () => {
                 系统设置
             </button>
 
-            <a href="#"
-                class="flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 transition-colors">
+            <button @click="todo()"
+                class="w-full cursor-pointer  flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 transition-colors">
                 <BaseIcon name="export" class="w-4 h-4" />
                 导出数据
-            </a>
+            </button>
 
             <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
 

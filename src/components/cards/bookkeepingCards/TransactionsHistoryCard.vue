@@ -134,7 +134,7 @@ function onReverseClick(tx) {
 
 <template>
     <div class="card-base">
-        <div class="card-title">交易记录</div>
+        <div class="card-title">活动记录</div>
 
         <!-- 查询栏 -->
         <div class="px-1 py-2 ">
@@ -150,7 +150,7 @@ function onReverseClick(tx) {
                 </div>
 
                 <div class="flex-1 min-w-[80px]">
-                    <input v-model="searchState.category" type="text" placeholder="分类" class="input-base"
+                    <input v-model="searchState.category" type="text" placeholder="类型" class="input-base"
                         @keydown.enter="emitSearch" />
                 </div>
 
@@ -185,8 +185,8 @@ function onReverseClick(tx) {
                 <thead class="sticky top-0 z-10 backdrop-blur-xl bg-gray-100 dark:bg-gray-900 ">
                     <tr>
                         <th class="th-text">账户</th>
-                        <th class="th-text">交易方 / 标题</th>
-                        <th class="th-text ">分类</th>
+                        <th class="th-text">交易方</th>
+                        <th class="th-text ">类型</th>
                         <th class="th-text text-right">金额</th>
                         <th class="th-text text-right">余额</th>
                         <th class="th-text text-right">日期</th>

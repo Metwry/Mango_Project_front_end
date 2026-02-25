@@ -16,7 +16,7 @@ const icon = computed(() => {
 
 const menuItems = [
     { name: '仪表盘', path: '/dashboard', icon: 'dashboard' },
-    { name: '记账', path: '/bookkeeping', icon: 'bookkeeping' },
+    { name: '记录', path: '/bookkeeping', icon: 'bookkeeping' },
     { name: '投资', path: '/holdings', icon: 'holdings' },
     { name: '行情', path: '/market', icon: 'market' },
     { name: '数据分析', path: '/analysis', icon: 'market' },
