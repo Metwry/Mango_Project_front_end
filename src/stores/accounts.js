@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, reactive, computed } from "vue";
+import { ref, reactive } from "vue";
 import {
   getAccounts,
   createAccount as apiCreateAccount,
@@ -7,6 +7,10 @@ import {
   deleteAccount as apiDeleteAccount,
   getAccountDetail,
 } from "@/utils/accounts";
+import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
+
+const AUTO_REFRESH_INTERVAL_MINUTES = 10;
+const AUTO_REFRESH_SECOND = 5;
 
 export const useAccountsStore = defineStore("accounts", () => {
   // ===== state =====
@@ -21,6 +25,37 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   const fetchPromise = ref(null);
   const detailMap = reactive({});
+  let autoRefreshTimer = null;
+
+  function clearAutoRefreshTimer() {
+    if (!autoRefreshTimer) return;
+    clearTimeout(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+
+  function scheduleNextAutoRefresh() {
+    clearAutoRefreshTimer();
+    autoRefreshTimer = setTimeout(async () => {
+      try {
+        await fetchAccounts({ force: true });
+      } catch {
+        // Keep scheduler alive even when one refresh fails.
+      }
+
+      scheduleNextAutoRefresh();
+    }, getMsToNextMinuteTick({
+      intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
+      second: AUTO_REFRESH_SECOND,
+    }));
+  }
+
+  function startAccountsAutoRefresh() {
+    scheduleNextAutoRefresh();
+  }
+
+  function stopAccountsAutoRefresh() {
+    clearAutoRefreshTimer();
+  }
 
   // ===== actions =====
   async function fetchAccounts({ force = false } = {}) {
@@ -131,6 +166,8 @@ export const useAccountsStore = defineStore("accounts", () => {
   }
 
   function reset() {
+    stopAccountsAutoRefresh();
+
     accounts.value = [];
     loading.value = false;
     saving.value = false;
@@ -161,6 +198,8 @@ export const useAccountsStore = defineStore("accounts", () => {
     updateAccount,
     deleteAccount,
     fetchAccountDetail,
+    startAccountsAutoRefresh,
+    stopAccountsAutoRefresh,
 
     reset,
   };

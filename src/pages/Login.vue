@@ -1,30 +1,165 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 
-const showPassword = ref(false)
-const loading = ref(false)
+const modeOptions = [
+  { key: 'emailLogin', label: '邮箱登录' },
+  { key: 'smsLogin', label: '短信登录' },
+  { key: 'emailRegister', label: '邮箱注册' }
+]
 
-const email = ref('')
-const password = ref('')
+const activeMode = ref('emailLogin')
+const loading = ref(false)
 const errorMsg = ref('')
 
+const emailLoginForm = ref({
+  email: '',
+  password: '',
+  remember: true
+})
 
-async function handleLogin() {
+const smsLoginForm = ref({
+  phone: '',
+  code: ''
+})
+
+const emailRegisterForm = ref({
+  email: '',
+  code: '',
+  password: '',
+  confirmPassword: '',
+  agree: false
+})
+
+const smsCodeCountdown = ref(0)
+const emailCodeCountdown = ref(0)
+const smsCodeTimerRef = ref(null)
+const emailCodeTimerRef = ref(null)
+
+const previousModeIndex = ref(0)
+const slideDirection = ref('next')
+
+const modeIndex = computed(() => modeOptions.findIndex((mode) => mode.key === activeMode.value))
+
+const transitionName = computed(() => {
+  return slideDirection.value === 'next' ? 'mode-slide-next' : 'mode-slide-prev'
+})
+
+const modeTitle = computed(() => {
+  const map = {
+    emailLogin: '欢迎回来',
+    smsLogin: '短信快速登录',
+    emailRegister: '创建新账号'
+  }
+  return map[activeMode.value]
+})
+
+const modeSubtitle = computed(() => {
+  const map = {
+    emailLogin: '使用邮箱和密码登录你的资金看板',
+    smsLogin: '输入手机号与验证码完成登录',
+    emailRegister: '邮箱注册后可统一管理你的账户数据'
+  }
+  return map[activeMode.value]
+})
+
+const submitLabel = computed(() => {
+  const map = {
+    emailLogin: '登录',
+    smsLogin: '短信登录',
+    emailRegister: '注册账号'
+  }
+  return map[activeMode.value]
+})
+
+const isValidEmail = (value) => {
+  const email = String(value ?? '').trim()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+const isValidPhone = (value) => {
+  const phone = String(value ?? '').trim()
+  return /^1\d{10}$/.test(phone)
+}
+
+const stopTimer = (timerRef) => {
+  if (!timerRef.value) return
+  clearInterval(timerRef.value)
+  timerRef.value = null
+}
+
+const startCountdown = (target, timerRef) => {
+  stopTimer(timerRef)
+  target.value = 60
+  timerRef.value = setInterval(() => {
+    if (target.value <= 1) {
+      target.value = 0
+      stopTimer(timerRef)
+      return
+    }
+    target.value -= 1
+  }, 1000)
+}
+
+const sendSmsCode = () => {
+  if (smsCodeCountdown.value > 0) return
+
+  if (!isValidPhone(smsLoginForm.value.phone)) {
+    ElMessage.warning('请输入正确的 11 位手机号')
+    return
+  }
+
+  startCountdown(smsCodeCountdown, smsCodeTimerRef)
+  ElMessage.success('验证码已发送（演示）')
+}
+
+const sendEmailCode = () => {
+  if (emailCodeCountdown.value > 0) return
+
+  if (!isValidEmail(emailRegisterForm.value.email)) {
+    ElMessage.warning('请输入正确的邮箱地址')
+    return
+  }
+
+  startCountdown(emailCodeCountdown, emailCodeTimerRef)
+  ElMessage.success('邮箱验证码已发送（演示）')
+}
+
+const withLoading = async (message) => {
+  loading.value = true
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    ElMessage.success(message)
+  } finally {
+    loading.value = false
+  }
+}
+
+const submitEmailLogin = async () => {
   errorMsg.value = ''
 
-  if (!email.value || !password.value) {
+  const email = String(emailLoginForm.value.email ?? '').trim()
+  const password = String(emailLoginForm.value.password ?? '')
+  const isTestAccount = email === 'test'
+
+  if (!email || !password) {
     errorMsg.value = '邮箱和密码不能为空'
+    return
+  }
+
+  if (!isTestAccount && !isValidEmail(email)) {
+    errorMsg.value = '请输入正确的邮箱地址'
     return
   }
 
   loading.value = true
   try {
-    await auth.login(email.value, password.value)
+    await auth.login(email, password, { remember: emailLoginForm.value.remember })
     router.replace('/dashboard')
   } catch (err) {
     if (err.response?.data?.detail) {
@@ -36,286 +171,260 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+const submitSmsLogin = async () => {
+  const { phone, code } = smsLoginForm.value
+
+  if (!isValidPhone(phone)) {
+    ElMessage.warning('请输入正确的 11 位手机号')
+    return
+  }
+
+  if (!/^\d{4,6}$/.test(String(code ?? '').trim())) {
+    ElMessage.warning('请输入 4-6 位短信验证码')
+    return
+  }
+
+  await withLoading('短信登录表单校验通过，待接入接口')
+}
+
+const submitEmailRegister = async () => {
+  const { email, code, password, confirmPassword, agree } = emailRegisterForm.value
+
+  if (!isValidEmail(email)) {
+    ElMessage.warning('请输入正确的邮箱地址')
+    return
+  }
+
+  if (!/^\d{4,6}$/.test(String(code ?? '').trim())) {
+    ElMessage.warning('请输入 4-6 位邮箱验证码')
+    return
+  }
+
+  if (!password || password.length < 6) {
+    ElMessage.warning('密码至少 6 位')
+    return
+  }
+
+  if (password !== confirmPassword) {
+    ElMessage.warning('两次输入的密码不一致')
+    return
+  }
+
+  if (!agree) {
+    ElMessage.warning('请先勾选协议后再注册')
+    return
+  }
+
+  await withLoading('注册表单校验通过，待接入接口')
+}
+
+const handleSubmit = async () => {
+  if (activeMode.value === 'emailLogin') {
+    await submitEmailLogin()
+    return
+  }
+
+  if (activeMode.value === 'smsLogin') {
+    await submitSmsLogin()
+    return
+  }
+
+  await submitEmailRegister()
+}
+
+const switchMode = (mode) => {
+  if (mode === activeMode.value) return
+
+  const nextIndex = modeOptions.findIndex((item) => item.key === mode)
+  slideDirection.value = nextIndex > previousModeIndex.value ? 'next' : 'prev'
+  previousModeIndex.value = nextIndex
+
+  activeMode.value = mode
+  errorMsg.value = ''
+}
+
+onUnmounted(() => {
+  stopTimer(smsCodeTimerRef)
+  stopTimer(emailCodeTimerRef)
+})
 </script>
 
 <template>
-  <div class="login-page">
+  <div
+    class="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-100 px-4 py-6 sm:px-8 sm:py-8">
+    <div class="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-indigo-200/50 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-24 -right-20 h-72 w-72 rounded-full bg-slate-300/40 blur-3xl">
+    </div>
 
-    <!-- 登录容器 -->
-    <div class="login-container">
-      <!-- 登录卡片 -->
-      <section class="login-card">
-        <h1 class="login-title">用户登录</h1>
-        <p class="login-subtitle">请输入您的登录信息</p>
-        <!-- 邮箱输入框 -->
-        <div class="login-field">
-          <label class="login-label">邮箱</label>
-          <el-input v-model="email" class="login-input" placeholder="请输入邮箱" clearable @keydown.space.prevent />
+    <div
+      class="relative mx-auto grid w-full max-w-6xl grid-cols-1 overflow-hidden rounded-3xl border border-white/70 bg-white/70 shadow-xl backdrop-blur-md md:grid-cols-[1.05fr_1fr]">
+      <section
+        class="relative hidden flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 px-10 py-12 text-white md:flex">
+        <div>
+          <p class="inline-flex rounded-full border border-white/20 px-3 py-1 text-xs tracking-wide text-white/80">Mango
+            Finance</p>
+          <h1 class="mt-5 text-3xl font-bold leading-tight">资金全景，一页掌控</h1>
+          <p class="mt-4 max-w-sm text-sm leading-6 text-slate-200/90">
+            延续你当前看板风格，登录后快速查看资产趋势、账户分布和交易节奏。
+          </p>
         </div>
-        <!-- 密码输入框 -->
-        <div class="login-field">
-          <label class="login-label">密码</label>
-          <div class="password-wrapper">
-            <el-input v-model="password" class="login-input" :type="showPassword ? 'text' : 'password'" clearable
-              placeholder="请输入密码" maxlength="20" show-password @keydown.space.prevent @keydown.enter="handleLogin" />
+
+        <div class="space-y-3 text-sm text-slate-200/90">
+          <div class="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2">
+            <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
+            卡片化布局与仪表盘风格一致
           </div>
-        </div>
-        <!-- 记住账号 忘记密码 -->
-        <div class="login-extra">
-          <label class="remember-me">
-            <input type="checkbox" />
-            <span>记住账号</span>
-          </label>
-          <button type="button" class="link-button">忘记密码？</button>
-        </div>
-        <!-- 登录按钮 -->
-        <p v-if="errorMsg" style="color: red; margin-bottom: 8px;">
-          {{ errorMsg }}
-        </p>
-        <button type="button" class="login-button" @click="handleLogin">登录</button>
-
-        <div class="register-tip">
-          还没有账号？
-          <button type="button" class="link-button">立即注册</button>
+          <div class="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2">
+            <span class="h-2 w-2 rounded-full bg-sky-300"></span>
+            支持邮箱注册与短信验证码流程
+          </div>
         </div>
       </section>
 
-      <!-- logo -->
-      <section class="login-illustration" aria-hidden="true">
-        <div class="smile-face">
-          <div class="eye eye-left"></div>
-          <div class="eye eye-right"></div>
-          <div class="smile"></div>
+      <section class="p-6 sm:p-10 md:p-12">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">{{ modeTitle }}</h2>
+          <p class="mt-2 text-sm text-slate-500">{{ modeSubtitle }}</p>
         </div>
+
+        <div class="mb-6 rounded-2xl bg-slate-100 p-1">
+          <div class="relative grid grid-cols-3">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 w-1/3 rounded-xl bg-white shadow-sm transition-transform duration-300 ease-out"
+              :style="{ transform: `translateX(${modeIndex * 100}%)` }"></div>
+            <button v-for="mode in modeOptions" :key="mode.key" type="button" @click="switchMode(mode.key)"
+              class="relative z-10 rounded-xl px-2 py-2 text-xs font-medium transition-colors sm:text-sm"
+              :class="activeMode === mode.key ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'">
+              {{ mode.label }}
+            </button>
+          </div>
+        </div>
+
+        <form class="space-y-4" @submit.prevent="handleSubmit">
+          <div class="relative min-h-[320px] overflow-hidden sm:min-h-[340px]">
+            <Transition :name="transitionName" mode="out-in">
+              <div :key="activeMode" class="space-y-4">
+                <template v-if="activeMode === 'emailLogin'">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">邮箱</label>
+                    <input v-model.trim="emailLoginForm.email" type="text" class="input-base px-4 py-3"
+                      placeholder="name@example.com" autocomplete="username" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">密码</label>
+                    <input v-model="emailLoginForm.password" type="password" class="input-base px-4 py-3"
+                      placeholder="请输入密码" autocomplete="current-password" />
+                  </div>
+
+                  <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-500">
+                    <input v-model="emailLoginForm.remember" type="checkbox"
+                      class="h-4 w-4 rounded border-slate-300 text-indigo-600" />
+                    记住登录状态
+                  </label>
+
+                  <p v-if="errorMsg" class="rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-500">
+                    {{ errorMsg }}
+                  </p>
+                </template>
+
+                <template v-else-if="activeMode === 'smsLogin'">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">手机号</label>
+                    <input v-model.trim="smsLoginForm.phone" type="tel" class="input-base px-4 py-3"
+                      placeholder="请输入 11 位手机号" autocomplete="tel" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">短信验证码</label>
+                    <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                      <input v-model.trim="smsLoginForm.code" type="text" maxlength="6" class="input-base px-4 py-3"
+                        placeholder="请输入验证码" />
+                      <button type="button" @click="sendSmsCode" :disabled="smsCodeCountdown > 0"
+                        class="button-base justify-center px-4 py-3 text-sm sm:min-w-[120px]"
+                        :class="smsCodeCountdown > 0 ? 'cursor-not-allowed opacity-60' : ''">
+                        {{ smsCodeCountdown > 0 ? `${smsCodeCountdown}s` : '发送验证码' }}
+                      </button>
+                    </div>
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">注册邮箱</label>
+                    <input v-model.trim="emailRegisterForm.email" type="email" class="input-base px-4 py-3"
+                      placeholder="name@example.com" autocomplete="email" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">邮箱验证码</label>
+                    <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                      <input v-model.trim="emailRegisterForm.code" type="text" maxlength="6"
+                        class="input-base px-4 py-3" placeholder="请输入验证码" />
+                      <button type="button" @click="sendEmailCode" :disabled="emailCodeCountdown > 0"
+                        class="button-base justify-center px-4 py-3 text-sm sm:min-w-[120px]"
+                        :class="emailCodeCountdown > 0 ? 'cursor-not-allowed opacity-60' : ''">
+                        {{ emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送验证码' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-slate-700">设置密码</label>
+                      <input v-model="emailRegisterForm.password" type="password" class="input-base px-4 py-3"
+                        placeholder="至少 6 位" autocomplete="new-password" />
+                    </div>
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-slate-700">确认密码</label>
+                      <input v-model="emailRegisterForm.confirmPassword" type="password" class="input-base px-4 py-3"
+                        placeholder="再次输入密码" autocomplete="new-password" />
+                    </div>
+                  </div>
+
+                  <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-500">
+                    <input v-model="emailRegisterForm.agree" type="checkbox"
+                      class="h-4 w-4 rounded border-slate-300 text-indigo-600" />
+                    我已阅读并同意《用户协议》与《隐私政策》
+                  </label>
+                </template>
+              </div>
+            </Transition>
+          </div>
+
+          <button type="submit"
+            class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            :disabled="loading">
+            {{ loading ? '处理中...' : submitLabel }}
+          </button>
+
+          <p class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
+            当前为页面演示版：短信登录和邮箱注册接口尚未接入。
+          </p>
+        </form>
       </section>
     </div>
   </div>
 </template>
 
 <style scoped>
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* background: #020617; */
-  padding: 24px;
-  box-sizing: border-box;
-  background: rgba(241, 245, 249, 0.6);
-  /* 半透明底色 */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: url('/src/assets/bg.jpg') center/cover fixed no-repeat;
+.mode-slide-next-enter-active,
+.mode-slide-next-leave-active,
+.mode-slide-prev-enter-active,
+.mode-slide-prev-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
 }
 
-.checkbox {
-  cursor: pointer;
+.mode-slide-next-enter-from,
+.mode-slide-prev-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
 }
 
-.login-container {
-  display: flex;
-  width: 1400px;
-  max-width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-}
-
-.login-card {
-  width: 600px;
-  max-width: 100%;
-  height: 500px;
-  border-radius: 32px;
-  padding: 36px 40px;
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.login-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 8px;
-  text-align: center;
-  user-select: none;
-}
-
-.login-subtitle {
-  font-size: 12px;
-  color: #94a3b8;
-  margin-bottom: 32px;
-  margin-top: 20px;
-  text-align: center;
-  user-select: none;
-}
-
-.login-field {
-  margin-bottom: 16px;
-}
-
-.login-label {
-  display: block;
-  font-size: 14px;
-  color: #475569;
-  margin-bottom: 10px;
-  margin-left: 12px;
-  user-select: none;
-}
-
-.password-wrapper {
-  position: relative;
-}
-
-.login-input :deep(.el-input__wrapper) {
-  width: 100%;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  padding: 10px 40px 10px 16px;
-  font-size: 14px;
-  outline: none;
-  transition: border 0.2s, background 0.2s;
-  box-sizing: border-box;
-  user-select: none;
-}
-
-.login-input:focus {
-  border-color: #0f172a;
-  background: #fff;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  font-size: 14px;
-  color: #94a3b8;
-  cursor: pointer;
-}
-
-.remember-me {
-  font-size: 15px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.login-extra {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-
-.remember-me input {
-  width: 12px;
-  height: 12px;
-}
-
-.remember-me:hover {
-  color: #0f172a;
-}
-
-.link-button {
-  font-size: 15px;
-  background: none;
-  border: none;
-  color: #475569;
-  cursor: pointer;
-  padding: 0;
-  user-select: none;
-}
-
-.link-button:hover {
-  color: #0f172a;
-}
-
-.login-button {
-  width: 100%;
-  border: none;
-  border-radius: 999px;
-  background: #020617;
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 12px 16px;
-  cursor: pointer;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.35);
-  transition: background 0.2s;
-  user-select: none;
-}
-
-.login-button:hover {
-  background: #000;
-}
-
-.register-tip {
-  margin-top: 28px;
-  text-align: center;
-  font-size: 13px;
-  color: #94a3b8;
-  user-select: none;
-}
-
-.login-illustration {
-  display: none;
-  flex: 1;
-  justify-content: center;
-}
-
-.smile-face {
-  position: relative;
-  width: 256px;
-  height: 256px;
-  border-radius: 50%;
-  background: #2563eb;
-  box-shadow: 0 30px 80px rgba(37, 99, 235, 0.5);
-}
-
-.eye {
-  position: absolute;
-  top: 80px;
-  width: 20px;
-  height: 20px;
-  background: #fff;
-  border-radius: 50%;
-}
-
-.eye-left {
-  left: 80px;
-}
-
-.eye-right {
-  right: 80px;
-}
-
-.smile {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 48px;
-  border-bottom-left-radius: 120px;
-  border-bottom-right-radius: 120px;
-  background: #020617;
-}
-
-
-/* 只有当屏幕宽度大于或等于 768 像素（通常是平板或电脑）时，才显示那个右边的蓝色笑脸插图 */
-@media (min-width: 768px) {
-  .login-illustration {
-    display: flex;
-  }
+.mode-slide-next-leave-to,
+.mode-slide-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-24px);
 }
 </style>

@@ -76,9 +76,11 @@ const {
                 </div>
               </div>
 
-              <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">更新时间：{{
-                formatUpdatedAt(updatedAt)
-              }}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">
+                <每10分钟刷新> 更新时间：{{
+                  formatUpdatedAt(updatedAt)
+                }}
+              </span>
             </div>
 
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">当前：{{ selectedMarketLabel }}，共 {{

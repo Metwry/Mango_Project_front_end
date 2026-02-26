@@ -6,6 +6,7 @@ import {
   getUserMarkets,
   searchMarketInstruments,
 } from "@/utils/markets";
+import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
 
 const MARKET_META = {
   CN: { label: "A股", pricePrefix: "¥" },
@@ -16,7 +17,7 @@ const MARKET_META = {
 };
 
 const AUTO_REFRESH_MINUTES = 10;
-const AUTO_REFRESH_DELAY_MS = 5000;
+const AUTO_REFRESH_SECOND = 5;
 const SEARCH_DEBOUNCE_MS = 250;
 
 function normalizeMarketCode(value) {
@@ -134,26 +135,15 @@ export function useMarketPage() {
     autoRefreshTimer = null;
   }
 
-  function getMsToNextRefreshTick(now = new Date()) {
-    const next = new Date(now);
-    const minute = next.getMinutes();
-    const nextMinute = Math.floor(minute / AUTO_REFRESH_MINUTES) * AUTO_REFRESH_MINUTES + AUTO_REFRESH_MINUTES;
-
-    if (nextMinute >= 60) {
-      next.setHours(next.getHours() + 1, 0, 0, 0);
-    } else {
-      next.setMinutes(nextMinute, 0, 0);
-    }
-
-    return Math.max(1000, next.getTime() - now.getTime() + AUTO_REFRESH_DELAY_MS);
-  }
-
   function scheduleAutoRefresh() {
     clearAutoRefreshTimer();
     autoRefreshTimer = setTimeout(async () => {
       if (!document.hidden) await fetchMarkets({ silent: true });
       scheduleAutoRefresh();
-    }, getMsToNextRefreshTick());
+    }, getMsToNextMinuteTick({
+      intervalMinutes: AUTO_REFRESH_MINUTES,
+      second: AUTO_REFRESH_SECOND,
+    }));
   }
 
   function handleVisibilityChange() {

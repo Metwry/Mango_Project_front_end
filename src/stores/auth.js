@@ -1,20 +1,73 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import axios from "axios";
 
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+const USER_KEY = "user";
+
+const getInitialStorage = () => {
+  const hasLocalAuth =
+    !!localStorage.getItem(ACCESS_TOKEN_KEY) ||
+    !!localStorage.getItem(REFRESH_TOKEN_KEY);
+  const hasSessionAuth =
+    !!sessionStorage.getItem(ACCESS_TOKEN_KEY) ||
+    !!sessionStorage.getItem(REFRESH_TOKEN_KEY);
+
+  if (hasLocalAuth) return localStorage;
+  if (hasSessionAuth) return sessionStorage;
+  return localStorage;
+};
+
+const parseUser = (raw) => {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const clearStorage = (storage) => {
+  storage.removeItem(ACCESS_TOKEN_KEY);
+  storage.removeItem(REFRESH_TOKEN_KEY);
+  storage.removeItem(USER_KEY);
+};
+
 export const useAuthStore = defineStore("auth", () => {
-  // ===== state 初始化：从 localStorage 读 =====
-  const accessToken = ref(localStorage.getItem("access_token") ?? "");
-  const refreshToken = ref(localStorage.getItem("refresh_token") ?? "");
+  const activeStorage = ref(getInitialStorage());
 
-  const userRaw = localStorage.getItem("user");
-  const user = ref(userRaw ? JSON.parse(userRaw) : null);
+  const accessToken = ref(activeStorage.value.getItem(ACCESS_TOKEN_KEY) ?? "");
+  const refreshToken = ref(activeStorage.value.getItem(REFRESH_TOKEN_KEY) ?? "");
+  const user = ref(parseUser(activeStorage.value.getItem(USER_KEY)));
 
-  // ===== getters =====
   const isLoggedIn = computed(() => !!accessToken.value);
+  const rememberLogin = computed(() => activeStorage.value === localStorage);
 
-  // ===== actions =====
-  async function login(username, password) {
+  const persistAuthState = ({ remember }) => {
+    const targetStorage = remember ? localStorage : sessionStorage;
+    const shadowStorage = remember ? sessionStorage : localStorage;
+
+    clearStorage(shadowStorage);
+
+    if (accessToken.value) {
+      targetStorage.setItem(ACCESS_TOKEN_KEY, accessToken.value);
+    } else {
+      targetStorage.removeItem(ACCESS_TOKEN_KEY);
+    }
+
+    if (refreshToken.value) {
+      targetStorage.setItem(REFRESH_TOKEN_KEY, refreshToken.value);
+    } else {
+      targetStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
+
+    targetStorage.setItem(USER_KEY, JSON.stringify(user.value));
+    activeStorage.value = targetStorage;
+  };
+
+  async function login(username, password, options = {}) {
+    const remember = options?.remember ?? true;
     const res = await axios.post("/api/login/", { username, password });
 
     const { access, refresh, user: u } = res.data;
@@ -23,11 +76,8 @@ export const useAuthStore = defineStore("auth", () => {
     refreshToken.value = refresh ?? "";
     user.value = u ?? null;
 
-    localStorage.setItem("access_token", accessToken.value);
-    localStorage.setItem("refresh_token", refreshToken.value);
-    localStorage.setItem("user", JSON.stringify(user.value));
+    persistAuthState({ remember });
 
-    // 切换账号时，避免沿用上一个账号的缓存数据
     import("@/stores/accounts")
       .then(({ useAccountsStore }) => useAccountsStore().reset())
       .catch(() => {});
@@ -41,9 +91,9 @@ export const useAuthStore = defineStore("auth", () => {
     refreshToken.value = "";
     user.value = null;
 
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
+    clearStorage(localStorage);
+    clearStorage(sessionStorage);
+    activeStorage.value = localStorage;
 
     import("@/stores/accounts")
       .then(({ useAccountsStore }) => useAccountsStore().reset())
@@ -55,24 +105,20 @@ export const useAuthStore = defineStore("auth", () => {
 
   function setAccessToken(token) {
     accessToken.value = token ?? "";
-    localStorage.setItem("access_token", accessToken.value);
+    persistAuthState({ remember: rememberLogin.value });
   }
 
   function setRefreshToken(token) {
     refreshToken.value = token ?? "";
-    localStorage.setItem("refresh_token", refreshToken.value);
+    persistAuthState({ remember: rememberLogin.value });
   }
 
   return {
-    // state
     accessToken,
     refreshToken,
     user,
-
-    // getters
     isLoggedIn,
-
-    // actions
+    rememberLogin,
     login,
     logout,
     setAccessToken,
