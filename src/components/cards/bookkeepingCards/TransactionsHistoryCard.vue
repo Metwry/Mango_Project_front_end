@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import DatePicker from "@/components/ui/DatePicker.vue";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
+import { formatCurrencyAmount } from "@/utils/formatters";
 
 const props = defineProps({
     transactions: { type: Array, default: () => [] },
@@ -41,22 +42,9 @@ function getAccount(tx) {
     return accountMap.value.get(v) ?? null;
 }
 
-function formatMoney(amount, currency) {
-    const n = Number(amount);
-    if (!Number.isFinite(n)) return "-";
-
-    const c = (currency || "CNY").toUpperCase();
-    try {
-        return new Intl.NumberFormat("zh-CN", {
-            style: "currency",
-            currency: c,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(n);
-    } catch {
-        return n.toFixed(2);
-    }
-}
+const formatMoney = (amount, currency) => {
+    return formatCurrencyAmount(amount, currency, { invalidText: "-" });
+};
 
 function formatDate(v) {
     if (!v) return "-";

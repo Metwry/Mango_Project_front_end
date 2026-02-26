@@ -1,21 +1,17 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
+import { toSafeNumber } from '@/utils/formatters'
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
 })
 
 use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent, GridComponent])
-
-const toSafeNumber = (value) => {
-    const n = Number(value)
-    return Number.isFinite(n) ? n : 0
-}
 
 const chartData = computed(() => {
     const data = (props.accounts || [])
@@ -34,6 +30,35 @@ const chartData = computed(() => {
 })
 
 const total = computed(() => chartData.value.reduce((sum, x) => sum + x.value, 0))
+const animatedData = ref([])
+let rafId = null
+
+const replayEnterAnimation = () => {
+    if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+    }
+
+    animatedData.value = []
+    rafId = requestAnimationFrame(() => {
+        animatedData.value = chartData.value
+        rafId = null
+    })
+}
+
+onMounted(() => {
+    replayEnterAnimation()
+})
+
+watch(chartData, () => {
+    replayEnterAnimation()
+})
+
+onUnmounted(() => {
+    if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+    }
+})
 
 const option = computed(() => ({
     textStyle: {
@@ -90,7 +115,7 @@ const option = computed(() => ({
                     fontWeight: 'bold'
                 }
             },
-            data: chartData.value
+            data: animatedData.value
         }
     ]
 }))

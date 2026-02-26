@@ -96,7 +96,7 @@ export function normalizeUsdPerCurrencyRates(payload) {
   return normalized;
 }
 
-export function getUsdPerCurrencyRate(account, usdPerCurrencyRates) {
+function getUsdPerCurrencyRate(account, usdPerCurrencyRates) {
   const customRate = Number(account?.usd_rate ?? account?.usdRate);
   if (isFinitePositive(customRate)) return customRate;
 
@@ -108,7 +108,7 @@ export function getUsdPerCurrencyRate(account, usdPerCurrencyRates) {
   );
 }
 
-export function calculateAccountValue(account, usdPerCurrencyRates) {
+function calculateAccountValue(account, usdPerCurrencyRates) {
   const balance = Number(account?.balance ?? 0);
   if (!Number.isFinite(balance)) {
     return {
@@ -174,10 +174,6 @@ export function buildAccountsValuation(accounts, usdPerCurrencyRates) {
     totalValueUsd,
     totalValueCny,
   };
-}
-
-export function calculateAccountsTotalInCny(accounts, usdPerCurrencyRates) {
-  return buildAccountsValuation(accounts, usdPerCurrencyRates).totalValueCny;
 }
 
 export { DEFAULT_USD_PER_CURRENCY_RATES };

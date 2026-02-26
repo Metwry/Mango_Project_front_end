@@ -1,85 +1,26 @@
 <script setup>
-import { onMounted, ref } from "vue";
-import { storeToRefs } from "pinia";
 import TransactionsHistoryCard from "@/components/cards/bookkeepingCards/TransactionsHistoryCard.vue";
 import AddTransactionCard from "@/components/cards/bookkeepingCards/AddTransactionCard.vue";
-import { useAccountsStore } from "@/stores/accounts";
-import { useTransactionsStore } from "@/stores/transaction";
-
-const accountsStore = useAccountsStore();
-const transactionsStore = useTransactionsStore();
-
-const { accounts, loading: accountsLoading, error: accountsError } = storeToRefs(accountsStore);
+import { useBookkeepingPage } from "@/composables/useBookkeepingPage";
 
 const {
-    items: transactions,
-    total: transactionsTotal,
-    filters: txFilters,
-    loading: transactionsLoading,
-    error: transactionsError,
-} = storeToRefs(transactionsStore);
-
-const submitting = ref(false);
-const resetKey = ref(0);
-
-onMounted(() => Promise.all([accountsStore.fetchAccounts(), onSearchReset()]));
-
-function updateAndFetch(patch) {
-    transactionsStore.setFilters(patch);
-    return transactionsStore.fetchList(patch);
-}
-
-function onPageChange(page) {
-    return updateAndFetch({ page });
-}
-
-function onPageSizeChange(page_size) {
-    return updateAndFetch({ page: 1, page_size });
-}
-
-function onSearchChange(filters) {
-    return updateAndFetch({ page: 1, ...filters });
-}
-
-function onSearchReset() {
-    transactionsStore.setFilters({
-        page: 1,
-        account_id: null,
-        counterparty: null,
-        category: null,
-        start: null,
-        end: null,
-        search: "",
-    });
-    return transactionsStore.fetchList({ page: 1 });
-}
-
-async function onReverseTransaction(id) {
-    submitting.value = true;
-    try {
-        await transactionsStore.reverseOne(id);
-        await accountsStore.fetchAccounts({ force: true });
-    } finally {
-        submitting.value = false;
-    }
-}
-
-async function onSubmitTransaction(payload) {
-    submitting.value = true;
-    try {
-        await transactionsStore.createOne(payload);
-        resetKey.value += 1;
-
-        transactionsStore.setFilters({ page: 1 });
-
-        await Promise.all([
-            accountsStore.fetchAccounts({ force: true }),
-            transactionsStore.fetchList({ page: 1 }),
-        ]);
-    } finally {
-        submitting.value = false;
-    }
-}
+    accounts,
+    accountsLoading,
+    accountsError,
+    transactions,
+    transactionsTotal,
+    txFilters,
+    transactionsLoading,
+    transactionsError,
+    submitting,
+    resetKey,
+    onPageChange,
+    onPageSizeChange,
+    onSearchChange,
+    onSearchReset,
+    onReverseTransaction,
+    onSubmitTransaction,
+} = useBookkeepingPage();
 </script>
 
 <template>

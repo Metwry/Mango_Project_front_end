@@ -7,6 +7,7 @@ import {
   deleteAccount as apiDeleteAccount,
   getAccountDetail,
 } from "@/utils/accounts";
+import { getPayload, getResultsList } from "@/utils/apiPayload";
 import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;
@@ -74,10 +75,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     const p = (async () => {
       try {
         const res = await getAccounts();
-        const payload = res?.data ?? res;
-        const list = Array.isArray(payload)
-          ? payload
-          : (payload?.results ?? []);
+        const list = getResultsList(res);
         accounts.value = list;
 
         fetched.value = true;
@@ -107,7 +105,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     try {
       const res = await apiCreateAccount(payload);
       await refreshAccounts();
-      return res?.data ?? res;
+      return getPayload(res);
     } catch (e) {
       actionError.value = e;
       throw e;
@@ -121,7 +119,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     actionError.value = null;
     try {
       const res = await apiUpdateAccount(id, payload);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
       if (data) detailMap[id] = data;
 
       await refreshAccounts();
@@ -156,7 +154,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     actionError.value = null;
     try {
       const res = await getAccountDetail(id);
-      const detail = res?.data ?? res;
+      const detail = getPayload(res);
       if (detail) detailMap[id] = detail;
       return detail;
     } catch (e) {

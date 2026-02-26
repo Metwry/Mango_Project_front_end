@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useFloating, offset, flip, shift, size, autoUpdate } from "@floating-ui/vue";
 import BaseIcon from "./BaseIcon.vue";
+import { formatCurrencyAmount } from "@/utils/formatters";
 
 const props = defineProps({
     modelValue: { type: [Number, String, null], default: null },
@@ -44,33 +45,6 @@ const selectedAccount = computed(() => {
     if (mv === null || mv === undefined) return null;
     return props.accounts.find((a) => String(a.id) === String(mv)) ?? null;
 });
-
-/** 金额格式化 (保持原逻辑) */
-function formatMoney(amount, currency) {
-    const n = Number(amount);
-    if (!Number.isFinite(n)) return "";
-    const c = (currency || "CNY").toUpperCase();
-    try {
-        return new Intl.NumberFormat("zh-CN", {
-            style: "currency",
-            currency: c,
-            currencyDisplay: "symbol",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(n);
-    } catch {
-        const symbol = currencySymbol(c);
-        return `${symbol}${n.toFixed(2)}`;
-    }
-}
-
-function currencySymbol(code) {
-    const map = {
-        CNY: "¥", USD: "$", EUR: "€", GBP: "£", JPY: "¥",
-        HKD: "HK$", AUD: "A$", CAD: "C$",
-    };
-    return map[code] ?? "";
-}
 
 /** 搜索过滤 */
 const filteredAccounts = computed(() => {
@@ -155,7 +129,7 @@ onUnmounted(() => {
                             </div>
 
                             <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ formatMoney(a.balance, a.currency) }}
+                                {{ formatCurrencyAmount(a.balance, a.currency, { invalidText: '' }) }}
                             </div>
                         </button>
 

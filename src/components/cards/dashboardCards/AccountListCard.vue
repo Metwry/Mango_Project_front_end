@@ -3,6 +3,7 @@ import AddAccount from '@/components/windows/AddAccount.vue'
 import ChangeAccount from '@/components/windows/ChangeAccount.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import { computed, ref } from 'vue'
+import { formatCurrencyAmount, toSafeNumber } from '@/utils/formatters'
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] }
@@ -11,11 +12,6 @@ const props = defineProps({
 const showAddAccount = ref(false)
 const showChangeAccount = ref(false)
 const selectedAccount = ref()
-
-const toSafeNumber = (value) => {
-    const n = Number(value)
-    return Number.isFinite(n) ? n : 0
-}
 
 const sortedAccounts = computed(() => {
     return [...(props.accounts || [])].sort((a, b) => {
@@ -28,17 +24,7 @@ const sortedAccounts = computed(() => {
 const formatAccountBalance = (account) => {
     const amount = toSafeNumber(account?.balance)
     const currency = String(account?.currency || 'CNY').toUpperCase()
-
-    try {
-        return new Intl.NumberFormat('zh-CN', {
-            style: 'currency',
-            currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount)
-    } catch {
-        return `${currency} ${amount.toFixed(2)}`
-    }
+    return formatCurrencyAmount(amount, currency, { fallbackWithCode: true })
 }
 
 const openEditModal = (item) => {

@@ -1,253 +1,26 @@
 <script setup>
-import { computed, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
+import { useLoginPage } from '@/composables/useLoginPage'
 
-const auth = useAuthStore()
-const router = useRouter()
-
-const modeOptions = [
-  { key: 'emailLogin', label: '邮箱登录' },
-  { key: 'smsLogin', label: '短信登录' },
-  { key: 'emailRegister', label: '邮箱注册' }
-]
-
-const activeMode = ref('emailLogin')
-const loading = ref(false)
-const errorMsg = ref('')
-
-const emailLoginForm = ref({
-  email: '',
-  password: '',
-  remember: true
-})
-
-const smsLoginForm = ref({
-  phone: '',
-  code: ''
-})
-
-const emailRegisterForm = ref({
-  email: '',
-  code: '',
-  password: '',
-  confirmPassword: '',
-  agree: false
-})
-
-const smsCodeCountdown = ref(0)
-const emailCodeCountdown = ref(0)
-const smsCodeTimerRef = ref(null)
-const emailCodeTimerRef = ref(null)
-
-const previousModeIndex = ref(0)
-const slideDirection = ref('next')
-
-const modeIndex = computed(() => modeOptions.findIndex((mode) => mode.key === activeMode.value))
-
-const transitionName = computed(() => {
-  return slideDirection.value === 'next' ? 'mode-slide-next' : 'mode-slide-prev'
-})
-
-const modeTitle = computed(() => {
-  const map = {
-    emailLogin: '欢迎回来',
-    smsLogin: '短信快速登录',
-    emailRegister: '创建新账号'
-  }
-  return map[activeMode.value]
-})
-
-const modeSubtitle = computed(() => {
-  const map = {
-    emailLogin: '使用邮箱和密码登录你的资金看板',
-    smsLogin: '输入手机号与验证码完成登录',
-    emailRegister: '邮箱注册后可统一管理你的账户数据'
-  }
-  return map[activeMode.value]
-})
-
-const submitLabel = computed(() => {
-  const map = {
-    emailLogin: '登录',
-    smsLogin: '短信登录',
-    emailRegister: '注册账号'
-  }
-  return map[activeMode.value]
-})
-
-const isValidEmail = (value) => {
-  const email = String(value ?? '').trim()
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
-const isValidPhone = (value) => {
-  const phone = String(value ?? '').trim()
-  return /^1\d{10}$/.test(phone)
-}
-
-const stopTimer = (timerRef) => {
-  if (!timerRef.value) return
-  clearInterval(timerRef.value)
-  timerRef.value = null
-}
-
-const startCountdown = (target, timerRef) => {
-  stopTimer(timerRef)
-  target.value = 60
-  timerRef.value = setInterval(() => {
-    if (target.value <= 1) {
-      target.value = 0
-      stopTimer(timerRef)
-      return
-    }
-    target.value -= 1
-  }, 1000)
-}
-
-const sendSmsCode = () => {
-  if (smsCodeCountdown.value > 0) return
-
-  if (!isValidPhone(smsLoginForm.value.phone)) {
-    ElMessage.warning('请输入正确的 11 位手机号')
-    return
-  }
-
-  startCountdown(smsCodeCountdown, smsCodeTimerRef)
-  ElMessage.success('验证码已发送（演示）')
-}
-
-const sendEmailCode = () => {
-  if (emailCodeCountdown.value > 0) return
-
-  if (!isValidEmail(emailRegisterForm.value.email)) {
-    ElMessage.warning('请输入正确的邮箱地址')
-    return
-  }
-
-  startCountdown(emailCodeCountdown, emailCodeTimerRef)
-  ElMessage.success('邮箱验证码已发送（演示）')
-}
-
-const withLoading = async (message) => {
-  loading.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    ElMessage.success(message)
-  } finally {
-    loading.value = false
-  }
-}
-
-const submitEmailLogin = async () => {
-  errorMsg.value = ''
-
-  const email = String(emailLoginForm.value.email ?? '').trim()
-  const password = String(emailLoginForm.value.password ?? '')
-  const isTestAccount = email === 'test'
-
-  if (!email || !password) {
-    errorMsg.value = '邮箱和密码不能为空'
-    return
-  }
-
-  if (!isTestAccount && !isValidEmail(email)) {
-    errorMsg.value = '请输入正确的邮箱地址'
-    return
-  }
-
-  loading.value = true
-  try {
-    await auth.login(email, password, { remember: emailLoginForm.value.remember })
-    router.replace('/dashboard')
-  } catch (err) {
-    if (err.response?.data?.detail) {
-      errorMsg.value = err.response.data.detail
-    } else {
-      errorMsg.value = '登录失败，请稍后再试'
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-const submitSmsLogin = async () => {
-  const { phone, code } = smsLoginForm.value
-
-  if (!isValidPhone(phone)) {
-    ElMessage.warning('请输入正确的 11 位手机号')
-    return
-  }
-
-  if (!/^\d{4,6}$/.test(String(code ?? '').trim())) {
-    ElMessage.warning('请输入 4-6 位短信验证码')
-    return
-  }
-
-  await withLoading('短信登录表单校验通过，待接入接口')
-}
-
-const submitEmailRegister = async () => {
-  const { email, code, password, confirmPassword, agree } = emailRegisterForm.value
-
-  if (!isValidEmail(email)) {
-    ElMessage.warning('请输入正确的邮箱地址')
-    return
-  }
-
-  if (!/^\d{4,6}$/.test(String(code ?? '').trim())) {
-    ElMessage.warning('请输入 4-6 位邮箱验证码')
-    return
-  }
-
-  if (!password || password.length < 6) {
-    ElMessage.warning('密码至少 6 位')
-    return
-  }
-
-  if (password !== confirmPassword) {
-    ElMessage.warning('两次输入的密码不一致')
-    return
-  }
-
-  if (!agree) {
-    ElMessage.warning('请先勾选协议后再注册')
-    return
-  }
-
-  await withLoading('注册表单校验通过，待接入接口')
-}
-
-const handleSubmit = async () => {
-  if (activeMode.value === 'emailLogin') {
-    await submitEmailLogin()
-    return
-  }
-
-  if (activeMode.value === 'smsLogin') {
-    await submitSmsLogin()
-    return
-  }
-
-  await submitEmailRegister()
-}
-
-const switchMode = (mode) => {
-  if (mode === activeMode.value) return
-
-  const nextIndex = modeOptions.findIndex((item) => item.key === mode)
-  slideDirection.value = nextIndex > previousModeIndex.value ? 'next' : 'prev'
-  previousModeIndex.value = nextIndex
-
-  activeMode.value = mode
-  errorMsg.value = ''
-}
-
-onUnmounted(() => {
-  stopTimer(smsCodeTimerRef)
-  stopTimer(emailCodeTimerRef)
-})
+const {
+  activeMode,
+  emailCodeCountdown,
+  emailLoginForm,
+  emailRegisterForm,
+  errorMsg,
+  handleSubmit,
+  loading,
+  modeIndex,
+  modeOptions,
+  modeSubtitle,
+  modeTitle,
+  sendEmailCode,
+  sendSmsCode,
+  smsCodeCountdown,
+  smsLoginForm,
+  submitLabel,
+  switchMode,
+  transitionName
+} = useLoginPage()
 </script>
 
 <template>
@@ -428,3 +201,4 @@ onUnmounted(() => {
   transform: translateX(-24px);
 }
 </style>
+

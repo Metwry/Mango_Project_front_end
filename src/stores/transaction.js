@@ -8,6 +8,7 @@ import {
   deleteTransaction,
   reverseTransaction,
 } from "@/utils/transaction.js";
+import { getPagedList, getPayload } from "@/utils/apiPayload";
 
 export const useTransactionsStore = defineStore("transactions", () => {
   const items = ref([]);
@@ -59,8 +60,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
       });
 
       const res = await getTransactions(params);
-      const payload = res?.data ?? res;
-      const normalized = normalizeListPayload(payload);
+      const normalized = getPagedList(res);
       items.value = normalized.list;
       total.value = normalized.total;
 
@@ -81,8 +81,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await createTransaction(payload);
-
-      return res?.data ?? res;
+      return getPayload(res);
     } catch (e) {
       error.value = e;
       throw e;
@@ -93,7 +92,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await updateTransaction(id, payload);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
       if (data) detailMap[id] = data;
       await refresh();
       return data;
@@ -107,7 +106,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await patchTransaction(id, patch);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
       if (data) detailMap[id] = data;
       await refresh();
       return data;
@@ -133,7 +132,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await reverseTransaction(id);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
 
       await fetchList({ page: filters.page, page_size: filters.page_size });
 
@@ -152,18 +151,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
 
     Object.assign(filters, defaultFilters());
     Object.keys(detailMap).forEach((k) => delete detailMap[k]);
-  }
-
-  //*标准化数据防报错
-  function normalizeListPayload(payload) {
-    if (payload && Array.isArray(payload.results)) {
-      return {
-        list: payload.results,
-        total: payload.count ?? payload.results.length,
-      };
-    }
-    if (Array.isArray(payload)) return { list: payload, total: payload.length };
-    return { list: [], total: 0 };
   }
 
   return {

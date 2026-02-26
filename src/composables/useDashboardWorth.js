@@ -1,6 +1,7 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useAccountsStore } from "@/stores/accounts";
+import { getPayload } from "@/utils/apiPayload";
 import { getUsdExchangeRates } from "@/utils/exchangeRates";
 import {
   buildAccountsValuation,
@@ -40,7 +41,7 @@ export function useDashboardWorth() {
 
     try {
       const res = await getUsdExchangeRates();
-      const payload = res?.data ?? res ?? {};
+      const payload = getPayload(res, {});
       nextRates = {
         ...nextRates,
         ...normalizeUsdPerCurrencyRates(payload),

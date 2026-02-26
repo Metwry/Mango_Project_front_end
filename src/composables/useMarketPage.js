@@ -6,6 +6,7 @@ import {
   getUserMarkets,
   searchMarketInstruments,
 } from "@/utils/markets";
+import { getPayload } from "@/utils/apiPayload";
 import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
 
 const MARKET_META = {
@@ -110,7 +111,7 @@ export function useMarketPage() {
 
     try {
       const res = await getUserMarkets();
-      const payload = res?.data ?? res ?? {};
+      const payload = getPayload(res, {});
 
       updatedAt.value = payload?.updated_at ?? "";
       markets.value = Array.isArray(payload?.markets) ? payload.markets : [];
@@ -157,6 +158,14 @@ export function useMarketPage() {
     searchDebounceTimer = null;
   }
 
+  function applyCachedSearchResult(query) {
+    if (!searchResultCache.has(query)) return false;
+    searchResults.value = searchResultCache.get(query) || [];
+    searchLoading.value = false;
+    lastSearchedQuery = query;
+    return true;
+  }
+
   function resetSearchUI({ hide = false } = {}) {
     searchLoading.value = false;
     searchResults.value = [];
@@ -179,11 +188,7 @@ export function useMarketPage() {
       return;
     }
 
-    const cached = searchResultCache.get(query);
-    if (cached) {
-      searchResults.value = cached;
-      searchLoading.value = false;
-      lastSearchedQuery = query;
+    if (applyCachedSearchResult(query)) {
       return;
     }
 
@@ -194,7 +199,7 @@ export function useMarketPage() {
       const res = await searchMarketInstruments(query);
       if (reqId !== searchRequestSeq) return;
 
-      const payload = res?.data ?? res ?? {};
+      const payload = getPayload(res, {});
       const rows = Array.isArray(payload?.results) ? payload.results : [];
 
       searchResults.value = rows;
@@ -230,10 +235,7 @@ export function useMarketPage() {
     showSearchDropdown.value = true;
 
     if (query === lastSearchedQuery) {
-      if (searchResultCache.has(query)) {
-        searchResults.value = searchResultCache.get(query) || [];
-        searchLoading.value = false;
-      }
+      applyCachedSearchResult(query);
       return;
     }
 
@@ -251,10 +253,7 @@ export function useMarketPage() {
 
     showSearchDropdown.value = true;
 
-    if (searchResultCache.has(query)) {
-      searchResults.value = searchResultCache.get(query) || [];
-      searchLoading.value = false;
-      lastSearchedQuery = query;
+    if (applyCachedSearchResult(query)) {
       return;
     }
 
@@ -285,7 +284,7 @@ export function useMarketPage() {
 
     try {
       const res = await addWatchlistInstrument(symbol);
-      const payload = res?.data ?? res ?? {};
+      const payload = getPayload(res, {});
       const created = Boolean(payload?.created);
       ElMessage.success(created ? "添加成功" : "该标的已在自选中");
       await fetchMarkets({ silent: true });

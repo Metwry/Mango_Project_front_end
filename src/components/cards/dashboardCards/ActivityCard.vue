@@ -1,11 +1,13 @@
 <script setup>
+import { formatCurrencyAmount } from '@/utils/formatters'
+
 defineProps({
     transactions: { type: Array, default: () => [] }
 })
 
 const formatCurrency = (val) => {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(val);
-};
+    return formatCurrencyAmount(val, 'CNY', { invalidText: '-' })
+}
 </script>
 
 <template>

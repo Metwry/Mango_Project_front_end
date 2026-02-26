@@ -12,10 +12,6 @@ export function createTransaction(data) {
   return api.post(`${BASE_URL}/`, data);
 }
 
-export function getTransactionDetail(id) {
-  return api.get(`${BASE_URL}/${id}/`);
-}
-
 export function updateTransaction(id, data) {
   return api.put(`${BASE_URL}/${id}/`, data);
 }
