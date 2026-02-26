@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart } from 'echarts/charts'
@@ -31,27 +31,54 @@ const chartData = computed(() => {
 
 const total = computed(() => chartData.value.reduce((sum, x) => sum + x.value, 0))
 const animatedData = ref([])
+const hasPlayedEnterAnimation = ref(false)
+const lastDataSignature = ref('')
 let rafId = null
 
-const replayEnterAnimation = () => {
+const getDataSignature = (data) => {
+    return data.map(item => `${item.name}:${Number(item.value).toFixed(4)}`).join('|')
+}
+
+const replayEnterAnimation = (nextData) => {
     if (rafId !== null) {
         cancelAnimationFrame(rafId)
     }
 
     animatedData.value = []
     rafId = requestAnimationFrame(() => {
-        animatedData.value = chartData.value
+        animatedData.value = nextData
         rafId = null
     })
 }
 
-onMounted(() => {
-    replayEnterAnimation()
-})
+watch(
+    chartData,
+    (nextData) => {
+        const signature = getDataSignature(nextData)
+        if (signature === lastDataSignature.value) return
 
-watch(chartData, () => {
-    replayEnterAnimation()
-})
+        lastDataSignature.value = signature
+
+        if (!nextData.length) {
+            animatedData.value = []
+            hasPlayedEnterAnimation.value = false
+            return
+        }
+
+        if (!hasPlayedEnterAnimation.value) {
+            replayEnterAnimation(nextData)
+            hasPlayedEnterAnimation.value = true
+            return
+        }
+
+        if (rafId !== null) {
+            cancelAnimationFrame(rafId)
+            rafId = null
+        }
+        animatedData.value = nextData
+    },
+    { immediate: true }
+)
 
 onUnmounted(() => {
     if (rafId !== null) {

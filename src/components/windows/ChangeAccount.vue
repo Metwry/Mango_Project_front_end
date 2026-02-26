@@ -69,9 +69,10 @@ const DeleteAccount = async () => {
 </script>
 
 <template>
-    <Transition name="modal">
+    <Teleport to="body">
+        <Transition name="modal">
         <div v-if="isOpen" class="fixed items-center justify-center inset-0 z-50 flex bg-black/50 backdrop-blur-sm">
-            <div class="w-full max-w-xl rounded-4xl bg-white p-6 dark:bg-gray-800">
+            <div class="modal-content w-full max-w-xl rounded-4xl bg-white p-6 dark:bg-gray-800">
                 <div class="mb-10 grid grid-cols-[1fr_auto_1fr] items-center">
                     <div></div>
 
@@ -127,7 +128,8 @@ const DeleteAccount = async () => {
                 </div>
             </div>
         </div>
-    </Transition>
+        </Transition>
+    </Teleport>
 </template>
 
 

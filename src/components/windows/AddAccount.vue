@@ -40,9 +40,10 @@ watch(() => props.isOpen, (newVal) => {
 </script>
 
 <template>
-    <Transition name="modal">
+    <Teleport to="body">
+        <Transition name="modal">
         <div v-if="isOpen" class="fixed items-center justify-center inset-0 z-50 flex bg-black/50 backdrop-blur-sm">
-            <div class="w-full max-w-xl rounded-4xl bg-white p-6  dark:bg-gray-800">
+            <div class="modal-content w-full max-w-xl rounded-4xl bg-white p-6  dark:bg-gray-800">
                 <div class="mb-10 grid grid-cols-[1fr_auto_1fr]">
                     <div></div>
                     <div class="text-center text-2xl font-bold text-gray-900 dark:text-white">添加账户</div>
@@ -88,7 +89,8 @@ watch(() => props.isOpen, (newVal) => {
                 </div>
             </div>
         </div>
-    </Transition>
+        </Transition>
+    </Teleport>
 </template>
 
 <style scoped src="@/styles/modal.css"></style>

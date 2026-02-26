@@ -25,14 +25,40 @@ const menuItems = [
     { name: '数据分析', path: '/analysis', icon: 'market' },
 ]
 
+const pageTransitionName = ref('page-slide-up')
+
+const navOrderMap = menuItems.reduce((acc, item, index) => {
+    acc[item.path] = index
+    return acc
+}, {})
+
+const normalizePath = (path = '') => {
+    return path.replace(/\/+$/, '') || '/'
+}
+
+const getNavIndex = (path) => {
+    return navOrderMap[normalizePath(path)] ?? -1
+}
+
+const handlePageAfterEnter = () => {
+    if (!pageScrollRef.value) {
+        return
+    }
+    pageScrollRef.value.scrollTop = 0
+}
+
 watch(
-    () => route.fullPath,
-    () => {
-        if (pageScrollRef.value) {
-            pageScrollRef.value.scrollTop = 0
+    () => route.path,
+    (newPath, oldPath) => {
+        const oldIndex = getNavIndex(oldPath)
+        const newIndex = getNavIndex(newPath)
+
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
+            return
         }
-    },
-    { flush: 'post' }
+
+        pageTransitionName.value = newIndex > oldIndex ? 'page-slide-up' : 'page-slide-down'
+    }
 )
 
 onMounted(() => {
@@ -54,10 +80,95 @@ onUnmounted(() => {
             <TopBar :title="currentTitle" :icon="icon"></TopBar>
 
             <div ref="pageScrollRef" class="flex-1 min-h-0 overflow-y-auto p-3">
-                <RouterView v-slot="{ Component }">
-                    <component :is="Component" class="h-full min-h-0" />
-                </RouterView>
+                <div class="page-transition-stage min-h-full xl:h-full xl:min-h-0">
+                    <RouterView v-slot="{ Component, route: currentRoute }">
+                        <Transition :name="pageTransitionName" @after-enter="handlePageAfterEnter">
+                            <div :key="currentRoute.fullPath" class="page-panel min-h-full xl:h-full xl:min-h-0">
+                                <component :is="Component" class="min-h-full xl:h-full xl:min-h-0" />
+                            </div>
+                        </Transition>
+                    </RouterView>
+                </div>
             </div>
         </main>
     </div>
 </template>
+
+<style scoped>
+.page-transition-stage {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    contain: paint;
+}
+
+.page-panel {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    background-color: rgb(249, 250, 251);
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.dark .page-panel {
+    background-color: rgb(17, 24, 39);
+}
+
+.page-slide-up-enter-active,
+.page-slide-up-leave-active,
+.page-slide-down-enter-active,
+.page-slide-down-leave-active {
+    transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+}
+
+.page-slide-up-enter-active,
+.page-slide-down-enter-active {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+}
+
+.page-slide-up-leave-active,
+.page-slide-down-leave-active {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.page-slide-up-enter-from {
+    transform: translate3d(0, 24px, 0);
+}
+
+.page-slide-up-enter-to,
+.page-slide-up-leave-from,
+.page-slide-down-enter-to,
+.page-slide-down-leave-from {
+    transform: translate3d(0, 0, 0);
+}
+
+.page-slide-up-leave-to {
+    transform: translate3d(0, -24px, 0);
+}
+
+.page-slide-down-enter-from {
+    transform: translate3d(0, -24px, 0);
+}
+
+.page-slide-down-leave-to {
+    transform: translate3d(0, 24px, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .page-slide-up-enter-active,
+    .page-slide-up-leave-active,
+    .page-slide-down-enter-active,
+    .page-slide-down-leave-active {
+        transition: none;
+    }
+}
+</style>
