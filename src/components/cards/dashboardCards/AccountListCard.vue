@@ -38,7 +38,7 @@ const openEditModal = (item) => {
 
         <div class="center">
             <div class="card-title">账户列表</div>
-            <button class="button-base ring-0">转账</button>
+            <!-- <button class="button-base ring-0">转账</button> -->
         </div>
 
 
@@ -64,8 +64,7 @@ const openEditModal = (item) => {
                 </span>
             </div>
 
-            <button @click="showAddAccount = true"
-                class="button-base ring-0 bg-transparent w-full border-0 px-0 py-0">
+            <button @click="showAddAccount = true" class="button-base ring-0 bg-transparent w-full border-0 px-0 py-0">
                 <div class="flex items-center gap-3">
                     <div
                         class="rounded-full w-10 h-10 bg-gray-100 dark:bg-gray-700 text-gray-400 flex items-center justify-center font-bold text-sm">

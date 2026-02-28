@@ -17,17 +17,53 @@ function isFinitePositive(value) {
 }
 
 function pickRatesSource(payload) {
-  return (
-    payload?.rates ??
-    payload?.usd_rates ??
-    payload?.exchange_rates ??
-    payload?.data?.rates ??
-    payload?.data?.usd_rates ??
-    payload?.data?.exchange_rates ??
-    payload?.results ??
-    payload?.data?.results ??
-    payload
-  );
+  const resolveRatesQuoteMode = (rates, base) => {
+    const baseCode = toCode(base);
+    if (baseCode === "USD") return "currency_per_usd";
+    if (baseCode) return "usd_per_currency";
+
+    const usd = Number(rates?.USD);
+    const cny = Number(rates?.CNY);
+    if (usd === 1 && Number.isFinite(cny) && cny > 1) {
+      return "currency_per_usd";
+    }
+    return "usd_per_currency";
+  };
+
+  if (payload?.usd_rates) {
+    return { source: payload.usd_rates, quoteMode: "usd_per_currency" };
+  }
+  if (payload?.exchange_rates) {
+    return { source: payload.exchange_rates, quoteMode: "usd_per_currency" };
+  }
+  if (payload?.rates) {
+    return {
+      source: payload.rates,
+      quoteMode: resolveRatesQuoteMode(payload.rates, payload?.base),
+    };
+  }
+
+  if (payload?.data?.usd_rates) {
+    return { source: payload.data.usd_rates, quoteMode: "usd_per_currency" };
+  }
+  if (payload?.data?.exchange_rates) {
+    return { source: payload.data.exchange_rates, quoteMode: "usd_per_currency" };
+  }
+  if (payload?.data?.rates) {
+    return {
+      source: payload.data.rates,
+      quoteMode: resolveRatesQuoteMode(payload.data.rates, payload?.data?.base),
+    };
+  }
+
+  if (payload?.results) {
+    return { source: payload.results, quoteMode: "usd_per_currency" };
+  }
+  if (payload?.data?.results) {
+    return { source: payload.data.results, quoteMode: "usd_per_currency" };
+  }
+
+  return { source: payload, quoteMode: "usd_per_currency" };
 }
 
 function readRateValue(raw) {
@@ -63,14 +99,19 @@ function getSafeUsdPerCnyRate(usdPerCurrencyRates) {
 }
 
 export function normalizeUsdPerCurrencyRates(payload) {
-  const source = pickRatesSource(payload);
+  const { source, quoteMode } = pickRatesSource(payload);
   const normalized = { USD: 1 };
 
   if (Array.isArray(source)) {
     source.forEach((item) => {
       const code = toCode(item?.currency ?? item?.code ?? item?.symbol);
-      const usdPerCurrency = readRateValue(item);
-      if (!code || !usdPerCurrency) return;
+      const rawRate = readRateValue(item);
+      if (!code || !rawRate) return;
+
+      const usdPerCurrency =
+        quoteMode === "currency_per_usd" && code !== "USD"
+          ? 1 / rawRate
+          : rawRate;
 
       if (isFinitePositive(usdPerCurrency)) {
         normalized[code] = usdPerCurrency;
@@ -85,8 +126,13 @@ export function normalizeUsdPerCurrencyRates(payload) {
 
   Object.entries(source).forEach(([rawCode, rawValue]) => {
     const code = toCode(rawCode);
-    const usdPerCurrency = readRateValue(rawValue);
-    if (!code || !usdPerCurrency) return;
+    const rawRate = readRateValue(rawValue);
+    if (!code || !rawRate) return;
+
+    const usdPerCurrency =
+      quoteMode === "currency_per_usd" && code !== "USD"
+        ? 1 / rawRate
+        : rawRate;
 
     if (isFinitePositive(usdPerCurrency)) {
       normalized[code] = usdPerCurrency;

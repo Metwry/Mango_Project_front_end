@@ -16,10 +16,13 @@ const MARKET_META = {
   HK: { label: "港股", pricePrefix: "HK$" },
   US: { label: "美股", pricePrefix: "$" },
 };
+const MARKET_ORDER = ["CN", "HK", "US", "FX", "CRYPTO"];
+const MARKET_ORDER_MAP = new Map(MARKET_ORDER.map((market, idx) => [market, idx]));
 
 const AUTO_REFRESH_MINUTES = 10;
 const AUTO_REFRESH_SECOND = 5;
 const SEARCH_DEBOUNCE_MS = 250;
+const SEARCH_CACHE_LIMIT = 50;
 
 function normalizeMarketCode(value) {
   return String(value ?? "").trim().toUpperCase();
@@ -48,14 +51,20 @@ export function useMarketPage() {
   let lastSearchedQuery = "";
   const searchResultCache = new Map();
 
+  function getMarketOrderIndex(market) {
+    return MARKET_ORDER_MAP.get(market) ?? Number.MAX_SAFE_INTEGER;
+  }
+
+  function buildQuoteRowKey(market, quote) {
+    const shortCode = String(quote?.short_code ?? "").trim().toUpperCase();
+    const symbol = String(quote?.symbol ?? "").trim().toUpperCase();
+    const name = String(quote?.name ?? "").trim().toUpperCase();
+    return `${market}-${shortCode || symbol || name || "UNKNOWN"}`;
+  }
+
   function getMarketLabel(marketCode) {
     const code = normalizeMarketCode(marketCode);
     return MARKET_META[code]?.label || code || "未知市场";
-  }
-
-  function getPricePrefix(marketCode) {
-    const code = normalizeMarketCode(marketCode);
-    return MARKET_META[code]?.pricePrefix ?? "";
   }
 
   const marketButtons = computed(() => {
@@ -71,23 +80,35 @@ export function useMarketPage() {
       market,
       label: getMarketLabel(market),
       count,
-    }));
+    })).sort((a, b) => {
+      const aIdx = getMarketOrderIndex(a.market);
+      const bIdx = getMarketOrderIndex(b.market);
+      if (aIdx !== bIdx) return aIdx - bIdx;
+      return String(a.label).localeCompare(String(b.label), "zh-CN");
+    });
   });
 
   const allQuotes = computed(() => {
     const rows = [];
+    const sortedMarkets = [...markets.value].sort((a, b) => {
+      const aMarket = normalizeMarketCode(a?.market);
+      const bMarket = normalizeMarketCode(b?.market);
+      const aIdx = getMarketOrderIndex(aMarket);
+      const bIdx = getMarketOrderIndex(bMarket);
+      if (aIdx !== bIdx) return aIdx - bIdx;
+      return String(aMarket).localeCompare(String(bMarket), "zh-CN");
+    });
 
-    markets.value.forEach((block, marketIndex) => {
+    sortedMarkets.forEach((block) => {
       const market = normalizeMarketCode(block?.market);
       const quotes = Array.isArray(block?.quotes) ? block.quotes : [];
 
-      for (let i = 0; i < quotes.length; i += 1) {
-        const quote = quotes[i];
+      for (const quote of quotes) {
         rows.push({
           ...quote,
           market,
           marketLabel: getMarketLabel(market),
-          _rowKey: `${market}-${quote?.short_code ?? "UNKNOWN"}-${marketIndex}-${i}`,
+          _rowKey: buildQuoteRowKey(market, quote),
         });
       }
     });
@@ -166,10 +187,23 @@ export function useMarketPage() {
     return true;
   }
 
-  function resetSearchUI({ hide = false } = {}) {
+  function setSearchCache(query, rows) {
+    if (searchResultCache.has(query)) {
+      searchResultCache.delete(query);
+    }
+    searchResultCache.set(query, rows);
+    if (searchResultCache.size > SEARCH_CACHE_LIMIT) {
+      const oldestKey = searchResultCache.keys().next().value;
+      if (oldestKey) searchResultCache.delete(oldestKey);
+    }
+  }
+
+  function resetSearchState({ hide = false, resetLastQuery = false } = {}) {
+    clearSearchDebounceTimer();
     searchLoading.value = false;
     searchResults.value = [];
     if (hide) showSearchDropdown.value = false;
+    if (resetLastQuery) lastSearchedQuery = "";
   }
 
   async function executeSearch(rawQuery) {
@@ -177,8 +211,7 @@ export function useMarketPage() {
 
     if (!query) {
       searchRequestSeq += 1;
-      lastSearchedQuery = "";
-      resetSearchUI({ hide: true });
+      resetSearchState({ hide: true, resetLastQuery: true });
       return;
     }
 
@@ -203,12 +236,11 @@ export function useMarketPage() {
       const rows = Array.isArray(payload?.results) ? payload.results : [];
 
       searchResults.value = rows;
-      searchResultCache.set(query, rows);
+      setSearchCache(query, rows);
       lastSearchedQuery = query;
     } catch {
       if (reqId !== searchRequestSeq) return;
-      lastSearchedQuery = "";
-      searchResults.value = [];
+      resetSearchState({ resetLastQuery: true });
       ElMessage.error("搜索失败，请稍后重试。");
     } finally {
       if (reqId === searchRequestSeq) searchLoading.value = false;
@@ -220,44 +252,51 @@ export function useMarketPage() {
     searchDebounceTimer = setTimeout(() => executeSearch(rawQuery), SEARCH_DEBOUNCE_MS);
   }
 
-  function onSearchInput() {
-    if (isComposing.value) return;
+  function handleEmptySearchInput() {
+    searchRequestSeq += 1;
+    resetSearchState({ hide: true, resetLastQuery: true });
+  }
 
-    const query = normalizeSearchQuery(keywordInput.value);
-    if (!query) {
-      searchRequestSeq += 1;
-      lastSearchedQuery = "";
-      clearSearchDebounceTimer();
-      resetSearchUI({ hide: true });
-      return;
-    }
-
+  function triggerSearch(query, { immediate = false, skipIfSameLast = false } = {}) {
     showSearchDropdown.value = true;
 
-    if (query === lastSearchedQuery) {
-      applyCachedSearchResult(query);
+    if (applyCachedSearchResult(query)) return;
+    if (skipIfSameLast && query === lastSearchedQuery) return;
+
+    if (immediate) {
+      clearSearchDebounceTimer();
+      executeSearch(query);
       return;
     }
 
     scheduleSearch(query);
   }
 
+  function onSearchInput() {
+    if (isComposing.value) return;
+
+    const query = normalizeSearchQuery(keywordInput.value);
+    if (!query) {
+      handleEmptySearchInput();
+      return;
+    }
+
+    triggerSearch(query, { skipIfSameLast: true });
+  }
+
   function onSearchEnter() {
-    clearSearchDebounceTimer();
-    executeSearch(keywordInput.value);
+    const query = normalizeSearchQuery(keywordInput.value);
+    if (!query) {
+      handleEmptySearchInput();
+      return;
+    }
+    triggerSearch(query, { immediate: true });
   }
 
   function onSearchFocus() {
     const query = normalizeSearchQuery(keywordInput.value);
     if (!query) return;
-
-    showSearchDropdown.value = true;
-
-    if (applyCachedSearchResult(query)) {
-      return;
-    }
-
-    if (query !== lastSearchedQuery) executeSearch(query);
+    triggerSearch(query, { immediate: true, skipIfSameLast: true });
   }
 
   function onCompositionStart() {
@@ -321,16 +360,11 @@ export function useMarketPage() {
     }
   }
 
-  function formatNumber(value, digits = 2) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n.toFixed(digits) : "--";
-  }
-
   function formatPrice(value, marketCode) {
     const n = Number(value);
     if (!Number.isFinite(n)) return "--";
 
-    const prefix = getPricePrefix(marketCode);
+    const prefix = MARKET_META[normalizeMarketCode(marketCode)]?.pricePrefix ?? "";
     const text = n.toFixed(2);
     return prefix ? `${prefix}${text}` : text;
   }
@@ -341,7 +375,8 @@ export function useMarketPage() {
       const n = Number(value);
       return Number.isFinite(n) && n !== 0 ? n.toFixed(2) : "-";
     }
-    return formatNumber(value);
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(2) : "--";
   }
 
   function formatPercent(value) {

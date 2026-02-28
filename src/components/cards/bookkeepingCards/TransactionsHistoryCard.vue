@@ -16,7 +16,14 @@ const props = defineProps({
     total: { type: Number, default: 0 },
 });
 
-const emit = defineEmits(["page-change", "page-size-change", "reverse", "search-change", "search-reset"]);
+const emit = defineEmits([
+    "page-change",
+    "page-size-change",
+    "reverse",
+    "search-change",
+    "search-reset",
+    "open-add-transaction",
+]);
 
 const reversingId = ref(null);
 
@@ -122,7 +129,12 @@ function onReverseClick(tx) {
 
 <template>
     <div class="card-base">
-        <div class="card-title">活动记录</div>
+        <div class="card-title gap-3">
+            <span>活动记录</span>
+            <button class="button-base px-3 py-1.5 text-xs sm:text-sm" @click="emit('open-add-transaction')">
+                添加交易
+            </button>
+        </div>
 
         <!-- 查询栏 -->
         <div class="px-1 py-2 ">
