@@ -32,9 +32,9 @@ const router = createRouter({
           meta: { title: "记账", icon: "bookkeeping" },
         },
         {
-          path: "holdings",
-          name: "Holdings",
-          component: () => import("../pages/Holdings.vue"),
+          path: "investment",
+          name: "Investment",
+          component: () => import("../pages/Investment.vue"),
           meta: { title: "投资", icon: "holdings" },
         },
         {
