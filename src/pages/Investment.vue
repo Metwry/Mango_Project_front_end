@@ -1,24 +1,45 @@
 <script setup>
+import { onMounted, onUnmounted } from "vue";
+import { storeToRefs } from "pinia";
 import PositionCard from "@/components/cards/investmentCards/PositionCard.vue";
 import AddPositionCard from "@/components/cards/investmentCards/AddPositionCard.vue";
+import { useInvestmentStore } from "@/stores/investment";
 
-const demoPosition = {
-  symbol: "AAPL",
-  name: "Apple Inc.",
-  costPrice: 172.36,
-  quantity: 120,
-  currentPrice: 189.42,
-  trend: [1.2, 1.1, 1.5, 1.4, 1.9, 2.2, 2.0, 2.3, 2.8, 2.6, 3.1, 3.4],
-};
+const investmentStore = useInvestmentStore();
+const { loading, error, positions } = storeToRefs(investmentStore);
+
+onMounted(() => {
+  investmentStore.startInvestmentAutoRefresh();
+  investmentStore.fetchPositions();
+});
+
+onUnmounted(() => {
+  investmentStore.stopInvestmentAutoRefresh();
+});
 </script>
 
 <template>
   <div class="h-full w-full bg-gray-50 dark:bg-gray-900">
     <section class="h-full w-full overflow-y-auto p-1">
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-[minmax(24rem,_1fr)]">
-        <PositionCard :position="demoPosition" />
-        <AddPositionCard />
+      <div v-if="loading" class="h-full grid place-items-center text-sm text-gray-500 dark:text-gray-400">
+        正在加载持仓数据...
       </div>
+
+      <div v-else-if="error" class="h-full grid place-items-center text-sm text-red-600 dark:text-red-400">
+        持仓加载失败，请稍后重试。
+      </div>
+
+      <template v-else>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-[minmax(24rem,_1fr)]">
+          <PositionCard v-for="(position, index) in positions"
+            :key="position.symbol || `${position.name}-${index}`" :position="position" />
+          <AddPositionCard />
+        </div>
+
+        <div v-if="positions.length === 0" class="pt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+          暂无持仓数据
+        </div>
+      </template>
     </section>
   </div>
 </template>

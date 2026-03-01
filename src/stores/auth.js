@@ -84,6 +84,9 @@ export const useAuthStore = defineStore("auth", () => {
     import("@/stores/transaction")
       .then(({ useTransactionsStore }) => useTransactionsStore().reset())
       .catch(() => {});
+    import("@/stores/investment")
+      .then(({ useInvestmentStore }) => useInvestmentStore().reset())
+      .catch(() => {});
   }
 
   function logout() {
@@ -100,6 +103,9 @@ export const useAuthStore = defineStore("auth", () => {
       .catch(() => {});
     import("@/stores/transaction")
       .then(({ useTransactionsStore }) => useTransactionsStore().reset())
+      .catch(() => {});
+    import("@/stores/investment")
+      .then(({ useInvestmentStore }) => useInvestmentStore().reset())
       .catch(() => {});
   }
 

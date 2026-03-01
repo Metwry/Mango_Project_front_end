@@ -39,41 +39,38 @@ export function useBookkeepingPage() {
   function onSearchReset() {
     const currentPageSize = Number(txFilters.value?.page_size) || 10;
     transactionsStore.resetFilters();
-    transactionsStore.setFilters({
+    return updateAndFetch({
       page: 1,
       page_size: currentPageSize,
     });
-    return transactionsStore.fetchList({
-      page: 1,
-      page_size: currentPageSize,
-    });
+  }
+
+  async function withSubmitting(task) {
+    submitting.value = true;
+    try {
+      return await task();
+    } finally {
+      submitting.value = false;
+    }
   }
 
   async function onReverseTransaction(id) {
-    submitting.value = true;
-    try {
+    return withSubmitting(async () => {
       await transactionsStore.reverseOne(id);
       await accountsStore.fetchAccounts({ force: true });
-    } finally {
-      submitting.value = false;
-    }
+    });
   }
 
   async function onSubmitTransaction(payload) {
-    submitting.value = true;
-    try {
+    return withSubmitting(async () => {
       await transactionsStore.createOne(payload);
       resetKey.value += 1;
 
-      transactionsStore.setFilters({ page: 1 });
-
       await Promise.all([
         accountsStore.fetchAccounts({ force: true }),
-        transactionsStore.fetchList({ page: 1 }),
+        updateAndFetch({ page: 1 }),
       ]);
-    } finally {
-      submitting.value = false;
-    }
+    });
   }
 
   onMounted(() => Promise.all([accountsStore.fetchAccounts(), onSearchReset()]));
