@@ -176,8 +176,9 @@ function formatQuantity(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "--";
   return `${new Intl.NumberFormat("zh-CN", {
-    maximumFractionDigits: 2,
-  }).format(n)} 股`;
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8,
+  }).format(n)}`;
 }
 
 function onDetailClick() {
@@ -208,7 +209,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <article class="card-base min-h-[24rem] gap-3">
+  <article
+    class="card-base min-h-[24rem] gap-3 transition-all duration-200 ease-linear hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
     <header class="flex items-center gap-3 min-h-12">
       <div
         class="h-12 w-12 rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 dark:border-gray-600 grid place-items-center text-sm font-bold text-gray-700 dark:text-gray-100">
@@ -229,7 +231,8 @@ onUnmounted(() => {
               <span class="inline-flex whitespace-nowrap min-w-full name-marquee-track"
                 :class="hasNameOverflow ? 'name-marquee-animated' : ''" :style="nameTrackStyle">
                 <span :class="companyNameClass">{{ safeName }}</span>
-                <span v-if="hasNameOverflow" :class="companyNameClass" class="ml-8" aria-hidden="true">{{ safeName }}</span>
+                <span v-if="hasNameOverflow" :class="companyNameClass" class="ml-8" aria-hidden="true">{{ safeName
+                  }}</span>
               </span>
             </h3>
           </div>
@@ -315,6 +318,7 @@ onUnmounted(() => {
 }
 
 @keyframes name-marquee {
+
   0%,
   12% {
     transform: translateX(0);

@@ -15,7 +15,7 @@ const accountId = ref('')
     <div class="card-base">
         <div class="flex justify-between items-center mb-6">
 
-            <h3 class="card-title">资产走势</h3>
+            <h3 class="card-title">账户资产走势</h3>
 
             <div class="flex gap-2">
 
