@@ -172,15 +172,18 @@
   }
 
   .market-search-head {
-    @apply grid grid-cols-[120px_1fr_88px] items-center gap-3 px-3 py-2 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 dark:text-gray-500 dark:bg-gray-700/60 dark:border-gray-700;
+    @apply grid grid-cols-[84px_minmax(0,1fr)_64px] items-center gap-2 px-2.5 py-2 text-xs text-gray-400 bg-gray-50 border-b border-gray-100 dark:text-gray-500 dark:bg-gray-700/60 dark:border-gray-700;
+    @apply sm:grid-cols-[120px_minmax(0,1fr)_88px] sm:gap-3 sm:px-3;
   }
 
   .market-search-item {
-    @apply w-full cursor-pointer text-left px-3 py-2 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition dark:border-gray-700 dark:hover:bg-gray-700/50;
+    @apply w-full cursor-pointer text-left px-2.5 py-2 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition dark:border-gray-700 dark:hover:bg-gray-700/50;
+    @apply sm:px-3;
   }
 
   .market-search-grid {
-    @apply grid grid-cols-[120px_1fr_88px] items-center gap-3;
+    @apply grid grid-cols-[84px_minmax(0,1fr)_64px] items-center gap-2;
+    @apply sm:grid-cols-[120px_minmax(0,1fr)_88px] sm:gap-3;
   }
 
   .market-market-tag {

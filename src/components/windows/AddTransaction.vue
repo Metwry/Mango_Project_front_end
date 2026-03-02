@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import dayjs from "dayjs";
+import { ElMessage } from "element-plus";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import DatePicker from "@/components/ui/DatePicker.vue";
 import AccountPicker from "@/components/ui/AccountPicker.vue";
@@ -26,6 +27,7 @@ const form = reactive({
     amount: null,
     add_date: now(),
 });
+const advancedMode = ref(false);
 const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
 const canSubmit = computed(() => !props.submitting && form.account_id && form.amount);
@@ -43,11 +45,16 @@ function resetForm() {
         amount: null,
         add_date: now(),
     });
+    advancedMode.value = false;
     isDateManuallyModified.value = false;
 }
 
 function closeModal() {
     emit("close");
+}
+
+function onAdvancedChange() {
+    ElMessage.info("该功能正在开发");
 }
 
 function submit() {
@@ -75,7 +82,16 @@ watch(
                 <div class="modal-content w-full max-w-3xl rounded-4xl bg-white p-4 dark:bg-gray-800 sm:p-6">
                     <div class="mb-6 grid grid-cols-[1fr_auto_1fr] items-center sm:mb-8">
                         <div></div>
-                        <div class="text-center text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">添加交易</div>
+                        <div class="flex items-center justify-center gap-2">
+                            <div class="text-center text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">添加交易</div>
+                            <label
+                                class="inline-flex h-6 cursor-pointer select-none items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-2 text-[11px] font-semibold text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                                <input v-model="advancedMode" type="checkbox"
+                                    class="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:outline-none focus:ring-0 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-800"
+                                    @change="onAdvancedChange" />
+                                <span>高级</span>
+                            </label>
+                        </div>
                         <div class="flex justify-end">
                             <button @click="closeModal" class="button-base p-2">
                                 <BaseIcon name="closeIcon" class="h-5 w-5" />

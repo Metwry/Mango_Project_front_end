@@ -25,6 +25,7 @@ const form = reactive({
   quantity: "",
   accountId: "",
 });
+const advancedMode = ref(false);
 const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
 const isBuy = computed(() => props.mode === "buy");
@@ -78,6 +79,7 @@ function resetForm() {
   form.price = currentPrice.value !== null ? String(currentPrice.value) : "";
   form.quantity = "";
   form.accountId = pickFirstAccountId();
+  advancedMode.value = false;
 }
 
 async function focusPriceInput() {
@@ -151,6 +153,10 @@ function submit() {
   });
 }
 
+function onAdvancedChange() {
+  ElMessage.info("该功能正在开发");
+}
+
 watch(
   () => props.visible,
   async (visible) => {
@@ -201,9 +207,18 @@ onClickOutside(panelRef, (event) => {
   <div v-if="visible" ref="panelRef"
     class="rounded-2xl border border-gray-200 bg-white/97 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.16)] backdrop-blur dark:border-gray-600 dark:bg-gray-800/95">
     <div class="mb-2 flex items-center justify-between">
-      <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">
-        {{ title }} · {{ safeSymbol || "--" }}
-      </p>
+      <div class="flex items-center gap-2">
+        <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">
+          {{ title }} · {{ safeSymbol || "--" }}
+        </p>
+        <label
+          class="inline-flex h-6 cursor-pointer select-none items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-2 text-[11px] font-semibold text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+          <input v-model="advancedMode" type="checkbox"
+            class="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:outline-none focus:ring-0 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-800"
+            @change="onAdvancedChange" />
+          <span>高级</span>
+        </label>
+      </div>
       <button type="button"
         class="button-base !h-7 !w-7 !justify-center !rounded-xl !p-0 !text-xs !text-gray-500 dark:!text-gray-300"
         @click="closePanel">

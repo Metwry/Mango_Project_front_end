@@ -104,9 +104,9 @@ onClickOutside(marketDropdownWrapRef, () => {
 
               <div v-if="showSearchDropdown" class="market-search-dropdown">
                 <div class="market-search-head">
-                  <span>代码</span>
-                  <span>名称</span>
-                  <span class="text-right">市场</span>
+                  <span class="truncate whitespace-nowrap">代码</span>
+                  <span class="truncate whitespace-nowrap">名称</span>
+                  <span class="truncate whitespace-nowrap text-right">市场</span>
                 </div>
 
                 <div class="max-h-64 overflow-y-auto">
@@ -120,10 +120,10 @@ onClickOutside(marketDropdownWrapRef, () => {
                     type="button" class="market-search-item" @mousedown.prevent="pickSearchResult(item)">
                     <div class="market-search-grid">
                       <span
-                        class="text-sm font-semibold text-gray-800 dark:text-gray-100 font-mono tabular-nums truncate">
+                        class="block min-w-0 truncate text-sm font-semibold text-gray-800 dark:text-gray-100 font-mono tabular-nums">
                         {{ item.short_code }}
                       </span>
-                      <span class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ item.name }}</span>
+                      <span class="block min-w-0 truncate text-sm text-gray-500 dark:text-gray-400">{{ item.name }}</span>
                       <span class="text-right">
                         <span class="market-market-tag">{{ getMarketLabel(item.market) }}</span>
                       </span>

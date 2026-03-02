@@ -31,6 +31,7 @@ const form = reactive({
   quantity: "",
   accountId: "",
 });
+const advancedMode = ref(false);
 const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -91,6 +92,7 @@ function resetForm() {
   form.price = "";
   form.quantity = "";
   form.accountId = pickFirstAccountId();
+  advancedMode.value = false;
   resetSearchResult(true);
 }
 
@@ -178,6 +180,10 @@ function pickSearchResult(item) {
   showSearchDropdown.value = false;
 }
 
+function onAdvancedChange() {
+  ElMessage.info("该功能正在开发");
+}
+
 const canSubmit = computed(() => {
   const instrumentId = getInstrumentId(selectedInstrument.value);
   const price = Number(form.price);
@@ -229,31 +235,42 @@ watch(
 </script>
 
 <template>
-  <article class="card-base min-h-[24rem] gap-3">
-    <header class="flex items-center justify-between">
-      <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">添加交易</h3>
+  <article class="card-base !overflow-visible !px-3 !py-2.5 min-h-[22rem] gap-2.5">
+    <header class="grid grid-cols-[1fr_auto_1fr] items-center">
+      <div></div>
+      <div class="flex items-center justify-center gap-2">
+        <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">添加交易</h3>
+        <label
+          class="inline-flex h-6 cursor-pointer select-none items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-2 text-[11px] font-semibold text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+          <input v-model="advancedMode" type="checkbox"
+            class="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:outline-none focus:ring-0 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-800"
+            @change="onAdvancedChange" />
+          <span>高级</span>
+        </label>
+      </div>
       <span
-        class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+        class="justify-self-end inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
         +
       </span>
     </header>
 
-    <div class="space-y-3.5">
-      <div class="relative mx-auto w-full max-w-[17.25rem]">
-        <label class="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">股票代码</label>
+    <div class="space-y-2.5">
+      <div class="relative mx-auto w-full max-w-[16.75rem]">
+        <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">股票代码</label>
         <input v-model="keywordInput" type="text" placeholder="输入股票代码或名称"
-          class="input-base px-3 py-2 text-sm text-gray-700 dark:text-gray-200" @input="onSearchInput"
+          class="input-base px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200" @input="onSearchInput"
           @focus="onSearchFocus" @keyup.enter="onSearchEnter" @compositionstart="onCompositionStart"
           @compositionend="onCompositionEnd" @blur="hideSearchDropdownSoon" />
 
-        <div v-if="showSearchDropdown" class="market-search-dropdown">
-          <div class="market-search-head">
-            <span>代码</span>
-            <span>名称</span>
-            <span class="text-right">市场</span>
+        <div v-if="showSearchDropdown"
+          class="market-search-dropdown !left-1/2 !right-auto !w-[min(92vw,24rem)] -translate-x-1/2 sm:!left-0 sm:!right-0 sm:!w-auto sm:translate-x-0">
+          <div class="market-search-head !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 !px-2 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5 sm:!px-2">
+            <span class="truncate whitespace-nowrap">代码</span>
+            <span class="truncate whitespace-nowrap">名称</span>
+            <span class="truncate whitespace-nowrap text-right">市场</span>
           </div>
 
-          <div class="max-h-56 overflow-y-auto">
+          <div class="max-h-[38vh] overflow-y-auto overscroll-contain sm:max-h-56">
             <div v-if="searchLoading" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">正在搜索...</div>
             <div v-else-if="searchResults.length === 0" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
               未找到匹配标的
@@ -261,14 +278,17 @@ watch(
 
             <button v-for="item in searchResults"
               :key="item.instrument_id ?? `${item.short_code}-${item.name}-${item.market}`" type="button"
-              class="market-search-item" @mousedown.prevent="pickSearchResult(item)">
-              <div class="market-search-grid">
-                <span class="truncate font-mono text-sm font-semibold text-gray-800 dark:text-gray-100">
+              class="market-search-item !px-2 sm:!px-2" @mousedown.prevent="pickSearchResult(item)">
+              <div class="market-search-grid !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5">
+                <span
+                  class="block min-w-0 truncate whitespace-nowrap font-mono text-[13px] font-semibold text-gray-800 dark:text-gray-100">
                   {{ item.short_code }}
                 </span>
-                <span class="truncate text-sm text-gray-500 dark:text-gray-400">{{ item.name }}</span>
+                <span class="block min-w-0 truncate whitespace-nowrap text-[13px] text-gray-500 dark:text-gray-400">
+                  {{ item.name }}
+                </span>
                 <span class="text-right">
-                  <span class="market-market-tag">{{ getMarketLabel(item.market) }}</span>
+                  <span class="market-market-tag !px-1 !py-0 !text-[11px]">{{ getMarketLabel(item.market) }}</span>
                 </span>
               </div>
             </button>
@@ -276,27 +296,27 @@ watch(
         </div>
       </div>
 
-      <div class="mx-auto w-full max-w-[17.25rem]">
-        <label class="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">买入价</label>
+      <div class="mx-auto w-full max-w-[16.75rem]">
+        <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">买入价</label>
         <input v-model="form.price" type="number" inputmode="decimal" min="0" step="any"
-          class="input-base px-3 py-2 text-sm" placeholder="请输入价格" @keydown.enter.prevent="onSubmit" />
+          class="input-base px-3 py-1.5 text-sm" placeholder="请输入价格" @keydown.enter.prevent="onSubmit" />
       </div>
 
-      <div class="mx-auto w-full max-w-[17.25rem]">
-        <label class="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">买入数量</label>
+      <div class="mx-auto w-full max-w-[16.75rem]">
+        <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">买入数量</label>
         <input v-model="form.quantity" type="number" inputmode="decimal" min="0" step="any"
-          class="input-base px-3 py-2 text-sm" placeholder="请输入数量" @keydown.enter.prevent="onSubmit" />
+          class="input-base px-3 py-1.5 text-sm" placeholder="请输入数量" @keydown.enter.prevent="onSubmit" />
       </div>
 
-      <div class="mx-auto w-full max-w-[17.25rem]">
-        <label class="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">扣款账户</label>
+      <div class="mx-auto w-full max-w-[16.75rem]">
+        <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">扣款账户</label>
         <SmallAccountPicker v-model="form.accountId" :accounts="selectableAccounts" placeholder="请选择账户"
           placement="up" :max-list-height="176" />
       </div>
     </div>
 
     <button type="button"
-      class="button-base mt-auto mx-auto w-full max-w-[17.25rem] !justify-center !rounded-xl !py-2.5 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
+      class="button-base mt-auto mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
       :disabled="!canSubmit" @click="onSubmit">
       {{ trading ? "提交中..." : "确定买入" }}
     </button>
