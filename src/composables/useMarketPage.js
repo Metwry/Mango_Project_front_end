@@ -1,13 +1,9 @@
-﻿import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
-import {
-  addWatchlistInstrument,
-  deleteWatchlistInstrument,
-  getUserMarkets,
-  searchMarketInstruments,
-} from "@/utils/markets";
+import { searchMarketInstruments } from "@/utils/markets";
 import { getPayload } from "@/utils/apiPayload";
-import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
+import { useMarketStore } from "@/stores/market";
 
 const MARKET_META = {
   CN: { label: "A股", pricePrefix: "¥" },
@@ -19,8 +15,6 @@ const MARKET_META = {
 const MARKET_ORDER = ["CN", "HK", "US", "FX", "CRYPTO"];
 const MARKET_ORDER_MAP = new Map(MARKET_ORDER.map((market, idx) => [market, idx]));
 
-const AUTO_REFRESH_MINUTES = 10;
-const AUTO_REFRESH_SECOND = 5;
 const SEARCH_DEBOUNCE_MS = 250;
 const SEARCH_CACHE_LIMIT = 50;
 
@@ -33,19 +27,15 @@ function normalizeSearchQuery(value) {
 }
 
 export function useMarketPage() {
-  const loading = ref(false);
-  const error = ref(null);
-  const markets = ref([]);
-  const updatedAt = ref("");
+  const marketStore = useMarketStore();
+  const { loading, error, markets, updatedAt, selectedMarket } = storeToRefs(marketStore);
 
-  const selectedMarket = ref("ALL");
   const keywordInput = ref("");
   const searchLoading = ref(false);
   const searchResults = ref([]);
   const showSearchDropdown = ref(false);
   const isComposing = ref(false);
 
-  let autoRefreshTimer = null;
   let searchDebounceTimer = null;
   let searchRequestSeq = 0;
   let lastSearchedQuery = "";
@@ -125,52 +115,22 @@ export function useMarketPage() {
     return selectedMarket.value === "ALL" ? "全部" : getMarketLabel(selectedMarket.value);
   });
 
-  async function fetchMarkets({ silent = false } = {}) {
-    const shouldShowLoading = !silent || markets.value.length === 0;
-    if (shouldShowLoading) loading.value = true;
-    if (!silent) error.value = null;
-
-    try {
-      const res = await getUserMarkets();
-      const payload = getPayload(res, {});
-
-      updatedAt.value = payload?.updated_at ?? "";
-      markets.value = Array.isArray(payload?.markets) ? payload.markets : [];
-
-      const availableMarkets = new Set(marketButtons.value.map((x) => x.market));
-      if (selectedMarket.value !== "ALL" && !availableMarkets.has(selectedMarket.value)) {
-        selectedMarket.value = "ALL";
-      }
-    } catch (e) {
-      if (!silent || markets.value.length === 0) {
-        error.value = e;
-        markets.value = [];
-      }
-    } finally {
-      if (shouldShowLoading) loading.value = false;
+  function ensureSelectedMarketAvailable() {
+    const availableMarkets = new Set(marketButtons.value.map((item) => item.market));
+    if (selectedMarket.value !== "ALL" && !availableMarkets.has(selectedMarket.value)) {
+      marketStore.setSelectedMarket("ALL");
     }
   }
 
-  function clearAutoRefreshTimer() {
-    if (!autoRefreshTimer) return;
-    clearTimeout(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
-
-  function scheduleAutoRefresh() {
-    clearAutoRefreshTimer();
-    autoRefreshTimer = setTimeout(async () => {
-      if (!document.hidden) await fetchMarkets({ silent: true });
-      scheduleAutoRefresh();
-    }, getMsToNextMinuteTick({
-      intervalMinutes: AUTO_REFRESH_MINUTES,
-      second: AUTO_REFRESH_SECOND,
-    }));
-  }
-
   function handleVisibilityChange() {
-    if (!document.hidden) fetchMarkets({ silent: true });
-    scheduleAutoRefresh();
+    if (!document.hidden) {
+      marketStore
+        .refreshMarkets({ silent: true })
+        .catch(() => {})
+        .finally(() => {
+          ensureSelectedMarketAvailable();
+        });
+    }
   }
 
   function clearSearchDebounceTimer() {
@@ -322,11 +282,10 @@ export function useMarketPage() {
     }
 
     try {
-      const res = await addWatchlistInstrument(symbol);
-      const payload = getPayload(res, {});
+      const payload = await marketStore.addWatchlistInstrument(symbol);
       const created = Boolean(payload?.created);
       ElMessage.success(created ? "添加成功" : "该标的已在自选中");
-      await fetchMarkets({ silent: true });
+      ensureSelectedMarketAvailable();
     } catch {
       ElMessage.error("添加失败，请稍后重试。");
       return;
@@ -336,7 +295,7 @@ export function useMarketPage() {
   }
 
   function chooseMarket(market) {
-    selectedMarket.value = market;
+    marketStore.setSelectedMarket(market);
   }
 
   async function onDeleteClick(row) {
@@ -349,12 +308,12 @@ export function useMarketPage() {
     }
 
     try {
-      await deleteWatchlistInstrument({
+      await marketStore.deleteWatchlistInstrument({
         market,
         short_code: shortCode,
       });
       ElMessage.success("删除成功");
-      await fetchMarkets({ silent: true });
+      ensureSelectedMarketAvailable();
     } catch {
       ElMessage.error("删除失败，请稍后重试。");
     }
@@ -402,13 +361,16 @@ export function useMarketPage() {
   }
 
   onMounted(async () => {
-    await fetchMarkets();
-    scheduleAutoRefresh();
+    try {
+      await marketStore.fetchMarkets();
+    } catch {}
+    ensureSelectedMarketAvailable();
+    marketStore.startMarketAutoRefresh();
     document.addEventListener("visibilitychange", handleVisibilityChange);
   });
 
   onUnmounted(() => {
-    clearAutoRefreshTimer();
+    marketStore.stopMarketAutoRefresh();
     clearSearchDebounceTimer();
     document.removeEventListener("visibilitychange", handleVisibilityChange);
   });

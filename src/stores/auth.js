@@ -34,6 +34,22 @@ const clearStorage = (storage) => {
   storage.removeItem(USER_KEY);
 };
 
+const loadAppStores = async () => {
+  const [accountsMod, transactionsMod, investmentMod, marketMod] = await Promise.all([
+    import("@/stores/accounts"),
+    import("@/stores/transaction"),
+    import("@/stores/investment"),
+    import("@/stores/market"),
+  ]);
+
+  return {
+    accountsStore: accountsMod.useAccountsStore(),
+    transactionsStore: transactionsMod.useTransactionsStore(),
+    investmentStore: investmentMod.useInvestmentStore(),
+    marketStore: marketMod.useMarketStore(),
+  };
+};
+
 export const useAuthStore = defineStore("auth", () => {
   const activeStorage = ref(getInitialStorage());
 
@@ -43,6 +59,27 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isLoggedIn = computed(() => !!accessToken.value);
   const rememberLogin = computed(() => activeStorage.value === localStorage);
+
+  async function resetAppStores() {
+    const { accountsStore, transactionsStore, investmentStore, marketStore } = await loadAppStores();
+
+    accountsStore.reset();
+    transactionsStore.reset();
+    investmentStore.reset();
+    marketStore.reset();
+
+    return { accountsStore, transactionsStore, investmentStore, marketStore };
+  }
+
+  async function initializeAppStores() {
+    const { accountsStore, transactionsStore, investmentStore, marketStore } = await loadAppStores();
+    await Promise.allSettled([
+      accountsStore.fetchAccounts(),
+      transactionsStore.fetchList(),
+      investmentStore.fetchPositions({ silent: true }),
+      marketStore.fetchMarkets({ silent: true }),
+    ]);
+  }
 
   const persistAuthState = ({ remember }) => {
     const targetStorage = remember ? localStorage : sessionStorage;
@@ -78,18 +115,11 @@ export const useAuthStore = defineStore("auth", () => {
 
     persistAuthState({ remember });
 
-    import("@/stores/accounts")
-      .then(({ useAccountsStore }) => useAccountsStore().reset())
-      .catch(() => {});
-    import("@/stores/transaction")
-      .then(({ useTransactionsStore }) => useTransactionsStore().reset())
-      .catch(() => {});
-    import("@/stores/investment")
-      .then(({ useInvestmentStore }) => useInvestmentStore().reset())
-      .catch(() => {});
+    await resetAppStores();
+    await initializeAppStores();
   }
 
-  function logout() {
+  async function logout() {
     accessToken.value = "";
     refreshToken.value = "";
     user.value = null;
@@ -98,15 +128,7 @@ export const useAuthStore = defineStore("auth", () => {
     clearStorage(sessionStorage);
     activeStorage.value = localStorage;
 
-    import("@/stores/accounts")
-      .then(({ useAccountsStore }) => useAccountsStore().reset())
-      .catch(() => {});
-    import("@/stores/transaction")
-      .then(({ useTransactionsStore }) => useTransactionsStore().reset())
-      .catch(() => {});
-    import("@/stores/investment")
-      .then(({ useInvestmentStore }) => useInvestmentStore().reset())
-      .catch(() => {});
+    await resetAppStores();
   }
 
   function setAccessToken(token) {

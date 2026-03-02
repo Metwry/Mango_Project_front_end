@@ -79,7 +79,7 @@ onUnmounted(() => {
         <main class="flex flex-1 flex-col overflow-hidden">
             <TopBar :title="currentTitle" :icon="icon"></TopBar>
 
-            <div ref="pageScrollRef" class="flex-1 min-h-0 overflow-y-auto p-3">
+            <div ref="pageScrollRef" class="page-scroll flex-1 min-h-0 overflow-y-auto p-3">
                 <div class="page-transition-stage min-h-full xl:h-full xl:min-h-0">
                     <RouterView v-slot="{ Component, route: currentRoute }">
                         <Transition :name="pageTransitionName" @after-enter="handlePageAfterEnter">
@@ -109,6 +109,11 @@ onUnmounted(() => {
     background-color: rgb(249, 250, 251);
     backface-visibility: hidden;
     transform: translateZ(0);
+}
+
+.page-scroll {
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
 }
 
 .dark .page-panel {
@@ -169,6 +174,24 @@ onUnmounted(() => {
     .page-slide-down-enter-active,
     .page-slide-down-leave-active {
         transition: none;
+    }
+}
+
+@media (max-width: 767px) {
+
+    .page-slide-up-enter-active,
+    .page-slide-up-leave-active,
+    .page-slide-down-enter-active,
+    .page-slide-down-leave-active {
+        transition: opacity 0.22s ease;
+    }
+
+    .page-slide-up-enter-from,
+    .page-slide-up-leave-to,
+    .page-slide-down-enter-from,
+    .page-slide-down-leave-to {
+        opacity: 0;
+        transform: translate3d(0, 0, 0);
     }
 }
 </style>

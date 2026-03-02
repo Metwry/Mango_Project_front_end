@@ -4,13 +4,19 @@ import { storeToRefs } from "pinia";
 import PositionCard from "@/components/cards/investmentCards/PositionCard.vue";
 import AddPositionCard from "@/components/cards/investmentCards/AddPositionCard.vue";
 import { useInvestmentStore } from "@/stores/investment";
+import { useAccountsStore } from "@/stores/accounts";
 
 const investmentStore = useInvestmentStore();
+const accountsStore = useAccountsStore();
 const { loading, error, positions } = storeToRefs(investmentStore);
+const { accounts } = storeToRefs(accountsStore);
 
 onMounted(() => {
   investmentStore.startInvestmentAutoRefresh();
-  investmentStore.fetchPositions();
+  Promise.allSettled([
+    investmentStore.fetchPositions(),
+    accountsStore.fetchAccounts(),
+  ]);
 });
 
 onUnmounted(() => {
@@ -32,8 +38,8 @@ onUnmounted(() => {
       <template v-else>
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-[minmax(24rem,_1fr)]">
           <PositionCard v-for="(position, index) in positions"
-            :key="position.symbol || `${position.name}-${index}`" :position="position" />
-          <AddPositionCard />
+            :key="position.symbol || `${position.name}-${index}`" :position="position" :accounts="accounts" />
+          <AddPositionCard :accounts="accounts" />
         </div>
 
         <div v-if="positions.length === 0" class="pt-4 text-center text-sm text-gray-500 dark:text-gray-400">

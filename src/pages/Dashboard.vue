@@ -12,21 +12,19 @@ const monthlyChange = ref(3.2)
 </script>
 
 <template>
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_1fr] gap-4 h-full min-h-0">
-
-        <div class="col-span-1 md:col-span-1 xl:col-span-3 min-h-[16rem]">
+    <div class="grid h-full min-h-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4 xl:grid-rows-[auto_minmax(0,1fr)]">
+        <div class="col-span-1 sm:col-span-2 xl:col-span-3 min-h-[14rem] sm:min-h-[16rem]">
             <WorthCard :amount="totalWorthCny" :change="monthlyChange" :ready="worthReady" class="h-full" />
         </div>
-        <div class="col-span-1 md:col-span-1 xl:col-span-1 min-h-[16rem]">
+        <div class="col-span-1 sm:col-span-2 xl:col-span-1 min-h-[14rem] sm:min-h-[16rem]">
             <FundProportionCard :accounts="valuedAccounts" class="h-full" />
         </div>
 
-        <div class="col-span-1 md:col-span-2 xl:col-span-3 min-h-[30rem] xl:min-h-0 xl:h-full ">
+        <div class="col-span-1 sm:col-span-2 xl:col-span-3 min-h-[22rem] sm:min-h-[26rem] xl:min-h-0 xl:h-full">
             <TrendCard :accounts="accounts" class="h-full" />
         </div>
-        <div class="col-span-1 md:col-span-2 xl:col-span-1 min-h-[30rem] xl:min-h-0 xl:h-full overflow-hidden">
+        <div class="col-span-1 sm:col-span-2 xl:col-span-1 min-h-[20rem] sm:min-h-[24rem] xl:min-h-0 xl:h-full overflow-hidden">
             <AccountListCard :accounts="valuedAccounts" class="h-full" />
         </div>
-
     </div>
 </template>

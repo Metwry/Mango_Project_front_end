@@ -1,5 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { onClickOutside } from "@vueuse/core";
 import BaseIcon from '../ui/BaseIcon.vue'
 import { useAccountsStore } from '@/stores/accounts'
 
@@ -16,6 +17,24 @@ const account = ref({
     balance: null,
     type: ''
 })
+const currencyOpen = ref(false);
+const currencyWrapRef = ref(null);
+
+const currencyOptions = [
+    { value: "CNY", label: "人民币 (CNY)" },
+    { value: "USD", label: "美元 (USD)" },
+    { value: "EUR", label: "欧元 (EUR)" },
+    { value: "JPY", label: "日元 (JPY)" },
+];
+
+const selectedCurrencyLabel = computed(() => {
+    return currencyOptions.find((item) => item.value === account.value.currency)?.label ?? "请选择币种";
+});
+
+function pickCurrency(value) {
+    account.value.currency = value;
+    currencyOpen.value = false;
+}
 
 //添加账户
 async function AddAccount() {
@@ -34,8 +53,13 @@ watch(() => props.isOpen, (newVal) => {
             balance: null,
             type: ''
         }
+        currencyOpen.value = false;
     }
 })
+
+onClickOutside(currencyWrapRef, () => {
+    currencyOpen.value = false;
+});
 
 </script>
 
@@ -73,12 +97,31 @@ watch(() => props.isOpen, (newVal) => {
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ">币种:</label>
-                        <select v-model="account.currency" class="select-base w-full">
-                            <option value="CNY">人民币 (CNY)</option>
-                            <option value="USD">美元 (USD)</option>
-                            <option value="EUR">欧元 (EUR)</option>
-                            <option value="JPY">日元 (JPY)</option>
-                        </select>
+                        <div ref="currencyWrapRef" class="relative">
+                            <button type="button"
+                                class="dropdown-trigger"
+                                @click="currencyOpen = !currencyOpen">
+                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ selectedCurrencyLabel }}</span>
+                                <BaseIcon name="arrow" :size="14"
+                                    :class="['dropdown-arrow', currencyOpen && 'rotate-180']" />
+                            </button>
+
+                            <Transition name="dropdown-drawer">
+                                <div v-if="currencyOpen"
+                                    class="dropdown-panel absolute left-0 top-[calc(100%+8px)] w-full">
+                                    <div class="dropdown-list">
+                                    <button v-for="item in currencyOptions" :key="item.value" type="button" :class="[
+                                        'dropdown-item',
+                                        account.currency === item.value
+                                            ? 'dropdown-item-active'
+                                            : 'dropdown-item-idle'
+                                    ]" @click="pickCurrency(item.value)">
+                                        {{ item.label }}
+                                    </button>
+                                    </div>
+                                </div>
+                            </Transition>
+                        </div>
                     </div>
                 </div>
 

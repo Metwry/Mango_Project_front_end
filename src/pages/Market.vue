@@ -1,6 +1,6 @@
 ﻿<script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
-import { autoUpdate, flip, offset, shift, size, useFloating } from "@floating-ui/vue";
+import { computed, ref } from "vue";
+import { onClickOutside } from "@vueuse/core";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import { useMarketPage } from "@/composables/useMarketPage";
 
@@ -35,8 +35,7 @@ const {
 } = useMarketPage();
 
 const marketDropdownOpen = ref(false);
-const marketDropdownReferenceRef = ref(null);
-const marketDropdownFloatingRef = ref(null);
+const marketDropdownWrapRef = ref(null);
 
 const marketOptions = computed(() => [
   { market: "ALL", label: "全部", count: allQuotes.value.length },
@@ -48,27 +47,6 @@ const currentMarketCount = computed(() => {
   return marketButtons.value.find((item) => item.market === selectedMarket.value)?.count ?? 0;
 });
 
-const { floatingStyles: marketFloatingStyles } = useFloating(
-  marketDropdownReferenceRef,
-  marketDropdownFloatingRef,
-  {
-    placement: "bottom-start",
-    whileElementsMounted: autoUpdate,
-    middleware: [
-      offset(8),
-      flip(),
-      shift({ padding: 8 }),
-      size({
-        apply({ rects, elements }) {
-          Object.assign(elements.floating.style, {
-            width: `${Math.max(200, rects.reference.width)}px`,
-          });
-        },
-      }),
-    ],
-  }
-);
-
 function toggleMarketDropdown() {
   marketDropdownOpen.value = !marketDropdownOpen.value;
 }
@@ -78,20 +56,8 @@ function onPickMarket(market) {
   marketDropdownOpen.value = false;
 }
 
-function onDocumentMouseDown(event) {
-  if (!marketDropdownOpen.value) return;
-  const target = event.target;
-  if (marketDropdownReferenceRef.value?.contains(target)) return;
-  if (marketDropdownFloatingRef.value?.contains(target)) return;
+onClickOutside(marketDropdownWrapRef, () => {
   marketDropdownOpen.value = false;
-}
-
-onMounted(() => {
-  document.addEventListener("mousedown", onDocumentMouseDown);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("mousedown", onDocumentMouseDown);
 });
 </script>
 
@@ -101,15 +67,33 @@ onUnmounted(() => {
       <div class="mb-4">
         <div class="w-full">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div class="w-full shrink-0 sm:w-[220px]">
-              <button ref="marketDropdownReferenceRef" type="button" class="button-base w-full h-10 !px-3"
+            <div ref="marketDropdownWrapRef" class="relative w-full shrink-0 sm:w-[220px]">
+              <button type="button" class="dropdown-trigger"
                 @click="toggleMarketDropdown">
                 <span class="truncate text-sm text-gray-700 dark:text-gray-200">
                   自选：{{ selectedMarketLabel }}（{{ currentMarketCount }}）
                 </span>
-                <BaseIcon name="arrow" class="w-4 h-4 transition-transform duration-200"
+                <BaseIcon name="arrow" class="dropdown-arrow"
                   :class="marketDropdownOpen ? 'rotate-180' : ''" />
               </button>
+
+              <Transition name="dropdown-drawer">
+                <div v-if="marketDropdownOpen"
+                  class="dropdown-panel absolute left-0 top-[calc(100%+8px)] w-full">
+                  <div class="dropdown-list">
+                    <button v-for="item in marketOptions" :key="item.market" type="button"
+                      class="dropdown-item"
+                      :class="selectedMarket === item.market
+                        ? 'dropdown-item-active'
+                        : 'dropdown-item-idle'" @click="onPickMarket(item.market)">
+                      <span class="flex items-center justify-between">
+                        <span>{{ item.label }}</span>
+                        <span class="text-xs opacity-80">{{ item.count }}</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </Transition>
             </div>
 
             <div class="relative min-w-0 flex-1">
@@ -150,31 +134,13 @@ onUnmounted(() => {
             </div>
 
             <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0 sm:ml-1">
-              <每10分钟刷新> 更新时间：{{
+              <每 10 分钟刷新> 更新时间：{{
                 formatUpdatedAt(updatedAt)
               }}
             </span>
           </div>
         </div>
       </div>
-
-      <teleport to="body">
-        <div v-if="marketDropdownOpen" ref="marketDropdownFloatingRef" :style="marketFloatingStyles"
-          class="z-50 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-800 dark:ring-white/10">
-          <div class="max-h-64 overflow-y-auto p-1.5">
-            <button v-for="item in marketOptions" :key="item.market" type="button"
-              class="w-full cursor-pointer rounded-xl px-3 py-2 text-left text-sm transition hover:bg-gray-50 dark:hover:bg-gray-700/50"
-              :class="selectedMarket === item.market
-                ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-                : 'text-gray-700 dark:text-gray-200'" @click="onPickMarket(item.market)">
-              <span class="flex items-center justify-between">
-                <span>{{ item.label }}</span>
-                <span class="text-xs opacity-80">{{ item.count }}</span>
-              </span>
-            </button>
-          </div>
-        </div>
-      </teleport>
 
       <div v-if="loading" class="flex-1 min-h-0 grid place-items-center py-10 text-sm text-gray-500 dark:text-gray-400">
         正在加载行情数据...

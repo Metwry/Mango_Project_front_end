@@ -18,3 +18,22 @@ export function getMsToNextMinuteTick({
 
   return Math.max(minDelayMs, next.getTime() - current.getTime());
 }
+
+export function getMsToNextHourlyTick({
+  minute = 0,
+  second = 0,
+  now = new Date(),
+  minDelayMs = 1000,
+} = {}) {
+  const safeMinute = Math.min(59, Math.max(0, Math.floor(Number(minute) || 0)));
+  const safeSecond = Math.min(59, Math.max(0, Math.floor(Number(second) || 0)));
+  const current = now instanceof Date ? now : new Date(now);
+  const next = new Date(current);
+
+  next.setMinutes(safeMinute, safeSecond, 0);
+  if (next.getTime() <= current.getTime()) {
+    next.setHours(next.getHours() + 1);
+  }
+
+  return Math.max(minDelayMs, next.getTime() - current.getTime());
+}

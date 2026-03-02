@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import DatePicker from "@/components/ui/DatePicker.vue";
 import AccountPicker from "@/components/ui/AccountPicker.vue";
+import { filterNonInvestmentAccounts } from "@/utils/accountFilters";
 
 const props = defineProps({
     isOpen: { type: Boolean, default: false },
@@ -25,6 +26,7 @@ const form = reactive({
     amount: null,
     add_date: now(),
 });
+const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
 const canSubmit = computed(() => !props.submitting && form.account_id && form.amount);
 
@@ -84,7 +86,7 @@ watch(
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">选择账户:</label>
-                            <AccountPicker v-model="form.account_id" :accounts="accounts" :loading="accountsLoading"
+                            <AccountPicker v-model="form.account_id" :accounts="selectableAccounts" :loading="accountsLoading"
                                 :error="accountsError" />
                         </div>
 

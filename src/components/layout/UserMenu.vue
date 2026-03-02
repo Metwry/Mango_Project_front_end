@@ -13,8 +13,8 @@ const showUserMenu = ref(false)
 const userMenuRef = ref(null)
 const isOpenSetting = ref(false)
 // 逻辑：退出登录
-const handleLogout = () => {
-    authStore.logout()
+const handleLogout = async () => {
+    await authStore.logout()
     router.replace('/login')
 }
 // 逻辑：触发设置并关闭菜单
@@ -45,28 +45,30 @@ function todo() {
 
     <div class="relative flex items-center h-full" ref="userMenuRef">
 
-        <div v-if="showUserMenu"
-            class="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 transform transition-all origin-top-right z-50">
-            <button @click="triggerSettings"
-                class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 transition-colors text-left cursor-pointer">
-                <BaseIcon name="settings" class="w-4 h-4" />
-                系统设置
-            </button>
+        <Transition name="dropdown-drawer">
+            <div v-if="showUserMenu"
+                class="dropdown-panel absolute top-full right-0 mt-2 w-56 py-2 transform transition-all origin-top-right">
+                <button @click="triggerSettings"
+                    class="dropdown-menu-item hover:text-primary-600">
+                    <BaseIcon name="settings" class="w-4 h-4" />
+                    系统设置
+                </button>
 
-            <button @click="todo()"
-                class="w-full cursor-pointer  flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-primary-600 transition-colors">
-                <BaseIcon name="export" class="w-4 h-4" />
-                导出数据
-            </button>
+                <button @click="todo()"
+                    class="dropdown-menu-item hover:text-primary-600">
+                    <BaseIcon name="export" class="w-4 h-4" />
+                    导出数据
+                </button>
 
-            <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+                <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
 
-            <button @click="handleLogout"
-                class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left cursor-pointer">
-                <BaseIcon name="logout" class="w-4 h-4" />
-                退出登录
-            </button>
-        </div>
+                <button @click="handleLogout"
+                    class="dropdown-menu-item dropdown-menu-item-danger">
+                    <BaseIcon name="logout" class="w-4 h-4" />
+                    退出登录
+                </button>
+            </div>
+        </Transition>
 
         <div @click="showUserMenu = !showUserMenu"
             class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-xl transition-colors select-none">

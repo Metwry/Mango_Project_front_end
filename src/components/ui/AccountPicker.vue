@@ -98,7 +98,7 @@ onUnmounted(() => {
         <div v-else>
             <button ref="referenceRef" type="button"
                 class="cursor-pointer w-full flex items-center justify-between button-base" @click="toggleOpen">
-                <span class="truncate">
+                <span class="min-w-0 flex-1 truncate text-left">
                     <span v-if="selectedAccount">
                         {{ selectedAccount.name }} · {{ selectedAccount.currency }}
                         <span class="text-gray-400 dark:text-gray-500">· {{ selectedAccount.type }}</span>
@@ -122,7 +122,7 @@ onUnmounted(() => {
                             class="cursor-pointer w-full text-left flex items-center justify-between border-0 button-base"
                             @click="pick(a)">
                             <div class="min-w-0">
-                                <div class="truncate text-gray-800 dark:text-gray-100">{{ a.name }}</div>
+                                <div class="truncate text-gray-800 dark:text-gray-100" :title="a.name">{{ a.name }}</div>
                                 <div class="truncate text-xs text-gray-500 dark:text-gray-400">
                                     {{ a.currency }} · {{ a.type }}
                                 </div>

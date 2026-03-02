@@ -3,6 +3,7 @@ import { reactive, watch, ref, computed } from "vue";
 import DatePicker from "@/components/ui/DatePicker.vue";
 import AccountPicker from "@/components/ui/AccountPicker.vue";
 import dayjs from "dayjs";
+import { filterNonInvestmentAccounts } from "@/utils/accountFilters";
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -25,6 +26,7 @@ const form = reactive({
     amount: null,
     add_date: now(),
 });
+const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
 const canSubmit = computed(() => !props.submitting && form.account_id && form.amount);
 
@@ -62,7 +64,7 @@ watch(() => props.resetKey, clear);
         <div class="flex-1 px-1 overflow-y-auto space-y-6">
             <h3 class="card-title">添加交易</h3>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <AccountPicker v-model="form.account_id" :accounts="accounts" :loading="accountsLoading"
+                <AccountPicker v-model="form.account_id" :accounts="selectableAccounts" :loading="accountsLoading"
                     :error="accountsError" />
                 <div class="md:col-span-1">
                     <input v-model="form.counterparty" type="text" placeholder="输入交易方" class=" input-base" />

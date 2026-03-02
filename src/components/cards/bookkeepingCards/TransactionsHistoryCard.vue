@@ -6,6 +6,7 @@ import DatePicker from "@/components/ui/DatePicker.vue";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import { formatCurrencyAmount } from "@/utils/formatters";
+import { filterNonInvestmentAccounts } from "@/utils/accountFilters";
 
 const props = defineProps({
     transactions: { type: Array, default: () => [] },
@@ -40,6 +41,7 @@ const searchState = reactive({
 });
 
 const hasSearch = computed(() => Object.values(searchState).some(Boolean));
+const searchableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
 const accountMap = computed(() => {
     const map = new Map();
@@ -200,7 +202,7 @@ onClickOutside(pageSizeWrapRef, () => {
             <div class="flex flex-wrap items-end gap-2.5 sm:gap-3">
 
                 <div class="w-full min-w-0 sm:min-w-[220px] sm:flex-[1.6]">
-                    <SmallAccountPicker v-model="searchState.accountId" :accounts="accounts" />
+                    <SmallAccountPicker v-model="searchState.accountId" :accounts="searchableAccounts" />
                 </div>
 
                 <div class="w-full sm:min-w-[150px] sm:flex-1">
@@ -322,24 +324,28 @@ onClickOutside(pageSizeWrapRef, () => {
             <div ref="pageSizeWrapRef" class="flex items-center gap-2 justify-self-start relative">
                 <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">每页</span>
                 <div class="relative min-w-[102px]">
-                    <button class="button-base h-9 !rounded-2xl !py-1.5 !px-3 min-w-[102px] !justify-between gap-2"
+                    <button class="dropdown-trigger !h-9 min-w-[102px]"
                         :disabled="loading" @click="pageSizeOpen = !pageSizeOpen">
                         <span class="text-sm">{{ pageSize }} 条</span>
                         <BaseIcon name="arrow" :size="14"
-                            :class="['transition-transform duration-200 text-gray-500 dark:text-gray-400', pageSizeOpen && 'rotate-180']" />
+                            :class="['dropdown-arrow', pageSizeOpen && 'rotate-180']" />
                     </button>
 
-                    <div v-if="pageSizeOpen"
-                        class="absolute left-0 bottom-[calc(100%+8px)] z-30 min-w-[102px] rounded-xl border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                        <button v-for="size in pageSizeOptions" :key="size" type="button" :class="[
-                            'w-full text-left rounded-lg px-3 py-1.5 text-sm transition-colors',
-                            Number(pageSize) === size
-                                ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
-                                : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/60'
-                        ]" @click="pickPageSize(size)">
-                            {{ size }} 条
-                        </button>
-                    </div>
+                    <Transition name="dropdown-drawer">
+                        <div v-if="pageSizeOpen"
+                            class="dropdown-panel dropdown-panel-up absolute left-0 bottom-[calc(100%+8px)] min-w-[102px]">
+                            <div class="dropdown-list !max-h-56">
+                            <button v-for="size in pageSizeOptions" :key="size" type="button" :class="[
+                                'dropdown-item',
+                                Number(pageSize) === size
+                                    ? 'dropdown-item-active'
+                                    : 'dropdown-item-idle'
+                            ]" @click="pickPageSize(size)">
+                                {{ size }} 条
+                            </button>
+                            </div>
+                        </div>
+                    </Transition>
                 </div>
             </div>
 

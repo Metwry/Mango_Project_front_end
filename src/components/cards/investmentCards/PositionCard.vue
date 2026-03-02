@@ -1,17 +1,44 @@
 <script setup>
 import { computed, getCurrentInstance, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useResizeObserver } from "@vueuse/core";
+import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
+import TradePositionPanel from "@/components/windows/TradePositionPanel.vue";
+import { useInvestmentStore } from "@/stores/investment";
 
 const props = defineProps({
   position: {
     type: Object,
     default: () => ({}),
   },
+  accounts: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const safeName = computed(() => props.position?.name ?? "未命名股票");
 const safeSymbol = computed(() => String(props.position?.symbol ?? "").trim().toUpperCase());
 const safeMarketType = computed(() => String(props.position?.marketType ?? "").trim().toUpperCase());
+const investmentStore = useInvestmentStore();
+const { trading } = storeToRefs(investmentStore);
+
+const TRADE_PANEL_OPEN_EVENT = "investment:trade-panel-open";
+const tradePanelKey = computed(() => {
+  const instrumentId = Number(props.position?.instrumentId ?? props.position?.instrument_id);
+  if (Number.isFinite(instrumentId) && instrumentId > 0) {
+    return `instrument:${Math.trunc(instrumentId)}`;
+  }
+
+  const symbol = String(props.position?.symbol ?? props.position?.shortCode ?? "")
+    .trim()
+    .toUpperCase();
+  return symbol ? `symbol:${symbol}` : `uid:${getCurrentInstance()?.uid ?? "0"}`;
+});
+
+const tradeMode = ref("");
+const tradePanelVisible = ref(false);
+const tradeTransitionName = ref("trade-panel-drawer");
 
 const MARKET_MONEY_META = {
   CRYPTO: { prefix: "$", locale: "en-US" },
@@ -130,8 +157,6 @@ const nameTrackStyle = computed(() => {
   };
 });
 
-let nameResizeObserver = null;
-
 function measureNameOverflow() {
   const viewport = nameViewportRef.value;
   const measure = nameMeasureRef.value;
@@ -181,30 +206,89 @@ function formatQuantity(value) {
   }).format(n)}`;
 }
 
+function notifyTradePanelOpen(mode) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(TRADE_PANEL_OPEN_EVENT, {
+    detail: {
+      panelKey: tradePanelKey.value,
+      mode,
+    },
+  }));
+}
+
+function onExternalTradePanelOpen(event) {
+  const targetKey = String(event?.detail?.panelKey ?? "");
+  if (!targetKey || targetKey === tradePanelKey.value) return;
+  if (!tradePanelVisible.value) return;
+  tradeTransitionName.value = "trade-panel-drawer";
+  tradePanelVisible.value = false;
+  tradeMode.value = "";
+}
+
+function openTradePanel(mode) {
+  if (tradePanelVisible.value && tradeMode.value === mode) {
+    closeTradePanel();
+    return;
+  }
+
+  if (tradePanelVisible.value && tradeMode.value && tradeMode.value !== mode) {
+    tradeTransitionName.value = mode === "sell" ? "trade-panel-switch-left" : "trade-panel-switch-right";
+    tradeMode.value = mode;
+    notifyTradePanelOpen(mode);
+    return;
+  }
+
+  tradeTransitionName.value = "trade-panel-drawer";
+  tradeMode.value = mode;
+  tradePanelVisible.value = true;
+  notifyTradePanelOpen(mode);
+}
+
+function closeTradePanel() {
+  tradeTransitionName.value = "trade-panel-drawer";
+  tradePanelVisible.value = false;
+  tradeMode.value = "";
+}
+
+async function onTradeSubmit(payload) {
+  const mode = String(payload?.mode ?? "");
+  if (!mode) return;
+
+  try {
+    if (mode === "buy") {
+      await investmentStore.buyPosition(payload);
+      ElMessage.success("买入成功");
+    } else {
+      await investmentStore.sellPosition(payload);
+      ElMessage.success("卖出成功");
+    }
+    closeTradePanel();
+  } catch {
+    // API interceptor already gives detailed error messages.
+  }
+}
+
 function onDetailClick() {
   ElMessage.info("功能开发中");
 }
 
-watch(safeName, async () => {
+watch([safeName, nameViewportRef, nameMeasureRef], async () => {
   await nextTick();
+  measureNameOverflow();
+}, { immediate: true });
+
+useResizeObserver(nameViewportRef, () => {
   measureNameOverflow();
 });
 
-onMounted(async () => {
-  await nextTick();
-  measureNameOverflow();
-
-  if (typeof ResizeObserver === "undefined" || !nameViewportRef.value) return;
-  nameResizeObserver = new ResizeObserver(() => {
-    measureNameOverflow();
-  });
-  nameResizeObserver.observe(nameViewportRef.value);
+onMounted(() => {
+  if (typeof window === "undefined") return;
+  window.addEventListener(TRADE_PANEL_OPEN_EVENT, onExternalTradePanelOpen);
 });
 
 onUnmounted(() => {
-  if (!nameResizeObserver) return;
-  nameResizeObserver.disconnect();
-  nameResizeObserver = null;
+  if (typeof window === "undefined") return;
+  window.removeEventListener(TRADE_PANEL_OPEN_EVENT, onExternalTradePanelOpen);
 });
 </script>
 
@@ -287,20 +371,35 @@ onUnmounted(() => {
       </svg>
     </div>
 
-    <footer class="grid grid-cols-3 gap-2">
-      <button type="button"
-        class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50">
+    <div class="relative">
+      <Transition :name="tradeTransitionName" mode="out-in">
+        <TradePositionPanel v-if="tradePanelVisible && tradeMode" :key="tradeMode"
+          class="absolute bottom-[calc(100%+10px)] left-1 right-1 z-20"
+          :visible="tradePanelVisible" :mode="tradeMode" :position="position" :accounts="accounts"
+          :submitting="trading" @close="closeTradePanel" @submit="onTradeSubmit" />
+      </Transition>
+
+      <footer class="grid grid-cols-3 gap-2">
+        <button type="button"
+          data-trade-trigger="true"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
+          :disabled="trading"
+          @click="openTradePanel('buy')">
         买入
-      </button>
-      <button type="button"
-        class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-red-900/30 dark:!text-red-200 dark:!border-red-800 dark:hover:!bg-red-900/50">
+        </button>
+        <button type="button"
+          data-trade-trigger="true"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-red-900/30 dark:!text-red-200 dark:!border-red-800 dark:hover:!bg-red-900/50"
+          :disabled="trading"
+          @click="openTradePanel('sell')">
         卖出
-      </button>
-      <button type="button" class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold"
-        @click="onDetailClick">
+        </button>
+        <button type="button" class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold"
+          @click="onDetailClick">
         详情
-      </button>
-    </footer>
+        </button>
+      </footer>
+    </div>
   </article>
 </template>
 
@@ -332,5 +431,56 @@ onUnmounted(() => {
   100% {
     transform: translateX(0);
   }
+}
+
+.trade-panel-drawer-enter-active,
+.trade-panel-drawer-leave-active {
+  transition: opacity 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: opacity, transform;
+  transform-origin: 50% 100%;
+}
+
+.trade-panel-drawer-enter-from {
+  opacity: 0;
+  transform: scaleY(0.06);
+}
+
+.trade-panel-drawer-enter-to,
+.trade-panel-drawer-leave-from {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.trade-panel-drawer-leave-to {
+  opacity: 0;
+  transform: scaleY(0.06);
+}
+
+.trade-panel-switch-left-enter-active,
+.trade-panel-switch-left-leave-active,
+.trade-panel-switch-right-enter-active,
+.trade-panel-switch-right-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  will-change: opacity, transform;
+}
+
+.trade-panel-switch-left-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.trade-panel-switch-left-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+
+.trade-panel-switch-right-enter-from {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+
+.trade-panel-switch-right-leave-to {
+  opacity: 0;
+  transform: translateX(16px);
 }
 </style>

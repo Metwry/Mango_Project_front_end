@@ -43,23 +43,26 @@ const openEditModal = (item) => {
 
 
         <div class="py-5 space-y-4">
-            <div v-for="item in sortedAccounts" :key="item.id" class="center">
-                <div class="flex items-center gap-3">
+            <div v-for="item in sortedAccounts" :key="item.id" class="center gap-3">
+                <div class="flex min-w-0 items-center gap-3">
                     <div
                         class="py-1 w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 flex items-center justify-center text-sm">
                         {{ (item.type || '').substring(0, 1).toUpperCase() }}
                     </div>
-                    <div>
-                        <p class="text-sm text-gray-800 dark:text-gray-200 flex">{{ item.name }}
-                            <button class=" border-0 ring-0 py-0.5 button-base" @click="openEditModal(item)">
-                                <BaseIcon name='bookkeeping' class="w-3 h-3" />
+                    <div class="min-w-0">
+                        <p class="flex items-center gap-1.5 text-sm text-gray-800 dark:text-gray-200">
+                            <span class="truncate">{{ item.name }}</span>
+                            <button type="button"
+                                class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300/70 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700/60 dark:hover:text-gray-200 dark:focus:ring-gray-300/70"
+                                :title="`编辑 ${item.name || '账户'}`" @click="openEditModal(item)">
+                                <BaseIcon name='bookkeeping' class="h-3.5 w-3.5" />
                             </button>
                         </p>
-                        <p class="text-xs text-gray-400">{{ item.type }}</p>
+                        <p class="truncate text-xs text-gray-400">{{ item.type }}</p>
                     </div>
                 </div>
 
-                <span class="text-sm font-bold text-gray-700 dark:text-gray-200">
+                <span class="shrink-0 text-sm font-bold text-gray-700 dark:text-gray-200">
                     {{ formatAccountBalance(item) }}
                 </span>
             </div>

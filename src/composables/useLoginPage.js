@@ -1,7 +1,8 @@
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { useAuthStore } from "@/stores/auth";
+import { registerByEmail, sendEmailRegisterCode } from "@/utils/auth";
 
 const MODE_META = {
   emailLogin: {
@@ -30,6 +31,18 @@ const modeOptions = Object.entries(MODE_META).map(([key, meta]) => ({
 }));
 
 const VERIFY_CODE_PATTERN = /^\d{4,6}$/;
+const ASCII_PRINTABLE_NO_SPACE_PATTERN = /[^\x21-\x7e]/g;
+const LOGIN_IDENTIFIER_PATTERN = /^[\x21-\x7e]+$/;
+
+function toAsciiPrintableNoSpace(value) {
+  return String(value ?? "").replace(ASCII_PRINTABLE_NO_SPACE_PATTERN, "");
+}
+
+function toDigits(value, maxLength = Infinity) {
+  return String(value ?? "")
+    .replace(/\D+/g, "")
+    .slice(0, maxLength);
+}
 
 export function useLoginPage() {
   const auth = useAuthStore();
@@ -37,7 +50,6 @@ export function useLoginPage() {
 
   const activeMode = ref("emailLogin");
   const loading = ref(false);
-  const errorMsg = ref("");
 
   const emailLoginForm = ref({
     email: "",
@@ -62,6 +74,7 @@ export function useLoginPage() {
   const emailCodeCountdown = ref(0);
   const smsCodeTimerRef = ref(null);
   const emailCodeTimerRef = ref(null);
+  const emailCodeSending = ref(false);
 
   const previousModeIndex = ref(0);
   const slideDirection = ref("next");
@@ -81,6 +94,11 @@ export function useLoginPage() {
   const isValidEmail = (value) => {
     const email = String(value ?? "").trim();
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const isValidLoginIdentifier = (value) => {
+    const normalized = String(value ?? "").trim();
+    return LOGIN_IDENTIFIER_PATTERN.test(normalized);
   };
 
   const isValidPhone = (value) => {
@@ -134,14 +152,23 @@ export function useLoginPage() {
     });
   };
 
-  const sendEmailCode = () => {
-    sendCodeWithCountdown({
-      countdown: emailCodeCountdown,
-      timerRef: emailCodeTimerRef,
-      isValid: () => isValidEmail(emailRegisterForm.value.email),
-      invalidMessage: "\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u90ae\u7bb1\u5730\u5740",
-      successMessage: "\u90ae\u7bb1\u9a8c\u8bc1\u7801\u5df2\u53d1\u9001\uff08\u6f14\u793a\uff09",
-    });
+  const sendEmailCode = async () => {
+    if (emailCodeCountdown.value > 0 || emailCodeSending.value) return;
+
+    const email = String(emailRegisterForm.value.email ?? "").trim();
+    if (!isValidEmail(email)) {
+      ElMessage.warning("\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u90ae\u7bb1\u5730\u5740");
+      return;
+    }
+
+    emailCodeSending.value = true;
+    try {
+      await sendEmailRegisterCode(email);
+      startCountdown(emailCodeCountdown, emailCodeTimerRef);
+      ElMessage.success("\u90ae\u7bb1\u9a8c\u8bc1\u7801\u5df2\u53d1\u9001");
+    } finally {
+      emailCodeSending.value = false;
+    }
   };
 
   const withLoading = async (message) => {
@@ -155,32 +182,28 @@ export function useLoginPage() {
   };
 
   const submitEmailLogin = async () => {
-    errorMsg.value = "";
-
-    const email = String(emailLoginForm.value.email ?? "").trim();
+    const identifier = String(emailLoginForm.value.email ?? "").trim();
     const password = String(emailLoginForm.value.password ?? "");
-    const isTestAccount = email === "test";
 
-    if (!email || !password) {
-      errorMsg.value = "\u90ae\u7bb1\u548c\u5bc6\u7801\u4e0d\u80fd\u4e3a\u7a7a";
+    if (!identifier || !password) {
+      ElMessage.warning("\u8d26\u53f7\u548c\u5bc6\u7801\u4e0d\u80fd\u4e3a\u7a7a");
       return;
     }
 
-    if (!isTestAccount && !isValidEmail(email)) {
-      errorMsg.value = "\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u90ae\u7bb1\u5730\u5740";
+    if (!isValidLoginIdentifier(identifier)) {
+      ElMessage.warning("\u8d26\u53f7\u4ec5\u652f\u6301\u5927\u5c0f\u5199\u5b57\u6bcd\u3001\u6570\u5b57\u548c\u82f1\u6587\u7b26\u53f7");
       return;
     }
 
     loading.value = true;
     try {
-      await auth.login(email, password, { remember: emailLoginForm.value.remember });
+      await auth.login(identifier, password, { remember: emailLoginForm.value.remember });
       router.replace("/dashboard");
     } catch (err) {
-      if (err.response?.data?.detail) {
-        errorMsg.value = err.response.data.detail;
-      } else {
-        errorMsg.value = "\u767b\u5f55\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5";
-      }
+      const message =
+        err.response?.data?.detail ??
+        "\u767b\u5f55\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5";
+      ElMessage.error(message);
     } finally {
       loading.value = false;
     }
@@ -230,7 +253,24 @@ export function useLoginPage() {
       return;
     }
 
-    await withLoading("\u6ce8\u518c\u8868\u5355\u6821\u9a8c\u901a\u8fc7\uff0c\u5f85\u63a5\u5165\u63a5\u53e3");
+    loading.value = true;
+    try {
+      await registerByEmail({ email, code, password, confirmPassword });
+      ElMessage.success("\u6ce8\u518c\u6210\u529f\uff0c\u8bf7\u4f7f\u7528\u5bc6\u7801\u767b\u5f55");
+
+      emailLoginForm.value.email = email;
+      emailLoginForm.value.password = "";
+      emailRegisterForm.value = {
+        email: "",
+        code: "",
+        password: "",
+        confirmPassword: "",
+        agree: false,
+      };
+      switchMode("emailLogin");
+    } finally {
+      loading.value = false;
+    }
   };
 
   const handleSubmit = async () => {
@@ -255,8 +295,71 @@ export function useLoginPage() {
     previousModeIndex.value = nextIndex;
 
     activeMode.value = mode;
-    errorMsg.value = "";
   };
+
+  watch(
+    () => emailLoginForm.value.email,
+    (value) => {
+      const next = toAsciiPrintableNoSpace(value);
+      if (value !== next) emailLoginForm.value.email = next;
+    },
+  );
+
+  watch(
+    () => emailLoginForm.value.password,
+    (value) => {
+      const next = toAsciiPrintableNoSpace(value);
+      if (value !== next) emailLoginForm.value.password = next;
+    },
+  );
+
+  watch(
+    () => smsLoginForm.value.phone,
+    (value) => {
+      const next = toDigits(value, 11);
+      if (value !== next) smsLoginForm.value.phone = next;
+    },
+  );
+
+  watch(
+    () => smsLoginForm.value.code,
+    (value) => {
+      const next = toDigits(value, 6);
+      if (value !== next) smsLoginForm.value.code = next;
+    },
+  );
+
+  watch(
+    () => emailRegisterForm.value.email,
+    (value) => {
+      const next = toAsciiPrintableNoSpace(value);
+      if (value !== next) emailRegisterForm.value.email = next;
+    },
+  );
+
+  watch(
+    () => emailRegisterForm.value.code,
+    (value) => {
+      const next = toDigits(value, 6);
+      if (value !== next) emailRegisterForm.value.code = next;
+    },
+  );
+
+  watch(
+    () => emailRegisterForm.value.password,
+    (value) => {
+      const next = toAsciiPrintableNoSpace(value);
+      if (value !== next) emailRegisterForm.value.password = next;
+    },
+  );
+
+  watch(
+    () => emailRegisterForm.value.confirmPassword,
+    (value) => {
+      const next = toAsciiPrintableNoSpace(value);
+      if (value !== next) emailRegisterForm.value.confirmPassword = next;
+    },
+  );
 
   onUnmounted(() => {
     stopTimer(smsCodeTimerRef);
@@ -266,9 +369,9 @@ export function useLoginPage() {
   return {
     activeMode,
     emailCodeCountdown,
+    emailCodeSending,
     emailLoginForm,
     emailRegisterForm,
-    errorMsg,
     handleSubmit,
     loading,
     modeIndex,

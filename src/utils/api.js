@@ -82,7 +82,7 @@ api.interceptors.response.use(
         originalRequest.url.includes("/api/login/") ||
         originalRequest.url.includes("/api/token/refresh/")
       ) {
-        auth.logout();
+        await auth.logout();
         router.replace("/login");
         ElMessage.error("认证失败，请重新登录");
         return Promise.reject(error);
@@ -129,7 +129,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // 5. 刷新失败 (Refresh Token 也过期了)
         processQueue(refreshError, null);
-        auth.logout();
+        await auth.logout();
         router.replace("/login");
         ElMessage.error("登录已过期，请重新登录");
         return Promise.reject(refreshError);

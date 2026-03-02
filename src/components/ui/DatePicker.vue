@@ -13,6 +13,10 @@ const props = defineProps({ modelValue: { type: String, default: "" } });
 const emit = defineEmits(["update:modelValue"]);
 
 const open = ref(false);
+const yearOpen = ref(false);
+const monthOpen = ref(false);
+const yearWrapRef = ref(null);
+const monthWrapRef = ref(null);
 
 // ===== Floating UI 配置 =====
 const referenceRef = ref(null); // 触发按钮
@@ -60,6 +64,11 @@ watch(
 
 const monthOptions = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
     .map((label, value) => ({ label, value }));
+const yearOptions = computed(() => {
+    return Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MAX - i);
+});
+const selectedYearLabel = computed(() => `${clampYear(viewYear.value)}年`);
+const selectedMonthLabel = computed(() => monthOptions[viewMonth.value]?.label ?? `${viewMonth.value + 1}月`);
 const weekLabels = ["日", "一", "二", "三", "四", "五", "六"];
 
 const cells = computed(() => {
@@ -80,11 +89,26 @@ const isSelected = (d) => {
 const isToday = (d) => !!d && dayjs(d).format(YMD) === todayStr.value;
 const isFuture = (d) => !!d && dayjs(d).isAfter(today.value, "day");
 
-const close = () => (open.value = false);
-const toggleOpen = () => (open.value = !open.value);
+const closeSubDropdowns = () => {
+    yearOpen.value = false;
+    monthOpen.value = false;
+};
+const close = () => {
+    open.value = false;
+    closeSubDropdowns();
+};
+const toggleOpen = () => {
+    if (open.value) {
+        close();
+        return;
+    }
+    open.value = true;
+};
 
 // 点击外部关闭 (目标改为 floatingRef 和 referenceRef)
 onClickOutside(floatingRef, () => close(), { ignore: [referenceRef] });
+onClickOutside(yearWrapRef, () => (yearOpen.value = false));
+onClickOutside(monthWrapRef, () => (monthOpen.value = false));
 
 const selectDay = (cellDate) => {
     if (!cellDate || isFuture(cellDate)) return;
@@ -101,9 +125,28 @@ const shiftMonth = (delta) => {
     viewMonth.value = d.month();
 };
 
+const toggleYearDropdown = () => {
+    yearOpen.value = !yearOpen.value;
+    if (yearOpen.value) monthOpen.value = false;
+};
+
+const toggleMonthDropdown = () => {
+    monthOpen.value = !monthOpen.value;
+    if (monthOpen.value) yearOpen.value = false;
+};
+
+const pickYear = (year) => {
+    viewYear.value = clampYear(year);
+    yearOpen.value = false;
+};
+
+const pickMonth = (month) => {
+    viewMonth.value = Number(month);
+    monthOpen.value = false;
+};
+
 const prevMonth = () => shiftMonth(-1);
 const nextMonth = () => shiftMonth(1);
-const onYearCommit = () => (viewYear.value = clampYear(viewYear.value));
 </script>
 
 <template>
@@ -126,14 +169,48 @@ const onYearCommit = () => (viewYear.value = clampYear(viewYear.value));
                         <BaseIcon name="leftArrow" class="w-4 h-4" />
                     </button>
 
-                    <div class="flex  gap-2  flex-1">
-                        <input v-model.number="viewYear" type="number" :min="YEAR_MIN" :max="YEAR_MAX"
-                            inputmode="numeric" class=" input-base " @blur="onYearCommit"
-                            @keydown.enter.prevent="onYearCommit" />
+                    <div class="flex gap-2 flex-1">
+                        <div ref="yearWrapRef" class="relative flex-1 min-w-[92px]">
+                            <button type="button" class="dropdown-trigger !h-9 !rounded-xl !px-2.5 !py-1.5"
+                                @click="toggleYearDropdown">
+                                <span class="truncate text-sm">{{ selectedYearLabel }}</span>
+                                <BaseIcon name="arrow" :size="14"
+                                    :class="['dropdown-arrow', yearOpen && 'rotate-180']" />
+                            </button>
 
-                        <select v-model.number="viewMonth" class="select-base">
-                            <option v-for="m in monthOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
-                        </select>
+                            <Transition name="dropdown-drawer">
+                                <div v-if="yearOpen" class="dropdown-panel absolute left-0 top-[calc(100%+6px)] w-full">
+                                    <div class="dropdown-list !max-h-44">
+                                        <button v-for="year in yearOptions" :key="year" type="button" class="dropdown-item"
+                                            :class="clampYear(viewYear) === year ? 'dropdown-item-active' : 'dropdown-item-idle'"
+                                            @click="pickYear(year)">
+                                            {{ year }}年
+                                        </button>
+                                    </div>
+                                </div>
+                            </Transition>
+                        </div>
+
+                        <div ref="monthWrapRef" class="relative flex-1 min-w-[84px]">
+                            <button type="button" class="dropdown-trigger !h-9 !rounded-xl !px-2.5 !py-1.5"
+                                @click="toggleMonthDropdown">
+                                <span class="truncate text-sm">{{ selectedMonthLabel }}</span>
+                                <BaseIcon name="arrow" :size="14"
+                                    :class="['dropdown-arrow', monthOpen && 'rotate-180']" />
+                            </button>
+
+                            <Transition name="dropdown-drawer">
+                                <div v-if="monthOpen" class="dropdown-panel absolute left-0 top-[calc(100%+6px)] w-full">
+                                    <div class="dropdown-list !max-h-44">
+                                        <button v-for="m in monthOptions" :key="m.value" type="button" class="dropdown-item"
+                                            :class="viewMonth === m.value ? 'dropdown-item-active' : 'dropdown-item-idle'"
+                                            @click="pickMonth(m.value)">
+                                            {{ m.label }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </Transition>
+                        </div>
                     </div>
 
                     <button class="button-base" @click="nextMonth">

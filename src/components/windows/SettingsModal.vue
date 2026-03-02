@@ -38,44 +38,46 @@ const toggleTheme = (newTheme) => {
 
 <template>
     <div v-if="isOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
+        class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 backdrop-blur-sm transition-opacity sm:items-center sm:p-6">
 
         <div
-            class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl p-6 transform transition-all scale-130">
+            class="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl transition-all dark:bg-gray-800 sm:rounded-3xl">
 
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white">系统设置</h2>
-                <button @click="$emit('close')"
-                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer">
-                    <BaseIcon name="closeIcon" class="w-6 h-6" />
+            <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700 sm:px-6 sm:py-4">
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white sm:text-xl">系统设置</h2>
+                <button @click="emit('close')"
+                    class="cursor-pointer text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200">
+                    <BaseIcon name="closeIcon" class="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
             </div>
 
-            <div class="space-y-6">
+            <div class="max-h-[calc(100dvh-10rem)] overflow-y-auto px-4 py-4 sm:max-h-[calc(100dvh-13rem)] sm:px-6 sm:py-6">
+                <div class="space-y-5 sm:space-y-6">
+                    <div>
+                        <h3 class="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">外观主题</h3>
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
 
-                <div>
-                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">外观主题</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                            <button @click="toggleTheme('light')"
+                                class="button-base min-h-[92px] !flex-col !justify-center gap-2 border-2 p-4 text-center sm:min-h-[110px]"
+                                :class="theme === 'light' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'">
+                                <BaseIcon name="lightIcon" class="mb-1 h-7 w-7 sm:h-8 sm:w-8" />
+                                <span class="font-medium">浅色模式</span>
+                            </button>
 
-                        <button @click="toggleTheme('light')" class="flex-col border-2 p-4 button-base"
-                            :class="theme === 'light' ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'">
-                            <BaseIcon name="lightIcon" class="w-8 h-8 mb-2" />
-                            <span class="font-medium">浅色模式</span>
-                        </button>
-                        <button @click="toggleTheme('dark')" class="flex-col border-2 p-4 button-base"
-                            :class="theme === 'dark' ? 'border-primary-600 bg-primary-50/10 text-primary-400' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'">
+                            <button @click="toggleTheme('dark')"
+                                class="button-base min-h-[92px] !flex-col !justify-center gap-2 border-2 p-4 text-center sm:min-h-[110px]"
+                                :class="theme === 'dark' ? 'border-primary-600 bg-primary-50/10 text-primary-400' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'">
+                                <BaseIcon name="darkIcon" class="mb-1 h-7 w-7 sm:h-8 sm:w-8" />
+                                <span class="font-medium">深色模式</span>
+                            </button>
 
-                            <BaseIcon name="darkIcon" class="w-8 h-8 mb-2" />
-                            <span class="font-medium">深色模式</span>
-                        </button>
-
+                        </div>
                     </div>
                 </div>
-
             </div>
 
-            <div class="mt-8 flex justify-end">
-                <button @click="$emit('close')" class="button-base px-5">
+            <div class="flex justify-end border-t border-gray-100 px-4 py-3 dark:border-gray-700 sm:px-6 sm:py-4">
+                <button @click="emit('close')" class="button-base px-5 sm:px-6">
                     完成
                 </button>
             </div>
