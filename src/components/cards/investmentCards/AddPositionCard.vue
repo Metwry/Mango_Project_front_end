@@ -157,7 +157,6 @@ async function executeSearch(query) {
   } catch {
     if (reqId !== searchRequestSeq) return;
     resetSearchResult();
-    ElMessage.error("搜索失败，请稍后重试。");
   } finally {
     if (reqId === searchRequestSeq) searchLoading.value = false;
   }
@@ -217,10 +216,7 @@ async function onSubmit() {
     });
     ElMessage.success("买入成功");
     resetForm();
-  } catch (err) {
-    const message = err?.message ? String(err.message) : "买入失败，请稍后重试";
-    ElMessage.error(message);
-  }
+  } catch {}
 }
 
 watch(
@@ -264,10 +260,11 @@ watch(
 
         <div v-if="showSearchDropdown"
           class="market-search-dropdown !left-1/2 !right-auto !w-[min(92vw,24rem)] -translate-x-1/2 sm:!left-0 sm:!right-0 sm:!w-auto sm:translate-x-0">
-          <div class="market-search-head !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 !px-2 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5 sm:!px-2">
+          <div
+            class="market-search-head !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 !px-2 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5 sm:!px-2">
             <span class="truncate whitespace-nowrap">代码</span>
             <span class="truncate whitespace-nowrap">名称</span>
-            <span class="truncate whitespace-nowrap text-right">市场</span>
+            <span class="truncate whitespace-nowrap sm :text-right">市场</span>
           </div>
 
           <div class="max-h-[38vh] overflow-y-auto overscroll-contain sm:max-h-56">
@@ -279,7 +276,8 @@ watch(
             <button v-for="item in searchResults"
               :key="item.instrument_id ?? `${item.short_code}-${item.name}-${item.market}`" type="button"
               class="market-search-item !px-2 sm:!px-2" @mousedown.prevent="pickSearchResult(item)">
-              <div class="market-search-grid !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5">
+              <div
+                class="market-search-grid !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5">
                 <span
                   class="block min-w-0 truncate whitespace-nowrap font-mono text-[13px] font-semibold text-gray-800 dark:text-gray-100">
                   {{ item.short_code }}
@@ -310,8 +308,8 @@ watch(
 
       <div class="mx-auto w-full max-w-[16.75rem]">
         <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">扣款账户</label>
-        <SmallAccountPicker v-model="form.accountId" :accounts="selectableAccounts" placeholder="请选择账户"
-          placement="up" :max-list-height="176" />
+        <SmallAccountPicker v-model="form.accountId" :accounts="selectableAccounts" placeholder="请选择账户" placement="up"
+          :max-list-height="176" />
       </div>
     </div>
 

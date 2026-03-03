@@ -12,8 +12,12 @@ const AUTO_REFRESH_INTERVAL_MINUTES = 10;
 const AUTO_REFRESH_SECOND = 10;
 const SELECTED_MARKET_KEY = "market_selected_market";
 
+function normalizeDataMarketCode(value) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
 function normalizeMarketCode(value) {
-  const normalized = String(value ?? "").trim().toUpperCase();
+  const normalized = normalizeDataMarketCode(value);
   return normalized || "ALL";
 }
 
@@ -29,6 +33,32 @@ function persistSelectedMarket(market) {
   try {
     localStorage.setItem(SELECTED_MARKET_KEY, normalizeMarketCode(market));
   } catch {}
+}
+
+function normalizeMarkets(payload) {
+  const blocks = Array.isArray(payload?.markets) ? payload.markets : [];
+  return blocks
+    .map((block) => {
+      const market = normalizeDataMarketCode(block?.market);
+      if (!market) return null;
+
+      const quotes = Array.isArray(block?.quotes) ? block.quotes : [];
+      return {
+        market,
+        stale: Boolean(block?.stale),
+        quotes: quotes
+          .filter((item) => item && typeof item === "object")
+          .map((item) => ({
+            ...item,
+            short_code: String(item?.short_code ?? "").trim().toUpperCase(),
+          })),
+      };
+    })
+    .filter(Boolean);
+}
+
+function pickUpdatedAt(payload) {
+  return String(payload?.updated_at ?? "").trim();
 }
 
 export const useMarketStore = defineStore("market", () => {
@@ -63,8 +93,8 @@ export const useMarketStore = defineStore("market", () => {
         const res = await getUserMarkets();
         const payload = getPayload(res, {});
 
-        updatedAt.value = payload?.updated_at ?? "";
-        markets.value = Array.isArray(payload?.markets) ? payload.markets : [];
+        updatedAt.value = pickUpdatedAt(payload);
+        markets.value = normalizeMarkets(payload);
 
         fetched.value = true;
         lastFetchedAt.value = Date.now();

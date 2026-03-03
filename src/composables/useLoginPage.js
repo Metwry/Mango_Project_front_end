@@ -199,12 +199,7 @@ export function useLoginPage() {
     try {
       await auth.login(identifier, password, { remember: emailLoginForm.value.remember });
       router.replace("/dashboard");
-    } catch (err) {
-      const message =
-        err.response?.data?.detail ??
-        "\u767b\u5f55\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5";
-      ElMessage.error(message);
-    } finally {
+    } catch {} finally {
       loading.value = false;
     }
   };

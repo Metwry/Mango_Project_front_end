@@ -24,6 +24,7 @@ const currencyOptions = [
     { value: "CNY", label: "人民币 (CNY)" },
     { value: "USD", label: "美元 (USD)" },
     { value: "EUR", label: "欧元 (EUR)" },
+    { value: "HKD", label: "港币 (HKD)" },
     { value: "JPY", label: "日元 (JPY)" },
 ];
 

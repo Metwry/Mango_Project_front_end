@@ -39,6 +39,7 @@ const tradePanelKey = computed(() => {
 const tradeMode = ref("");
 const tradePanelVisible = ref(false);
 const tradeTransitionName = ref("trade-panel-drawer");
+const logoLoadFailed = ref(false);
 
 const MARKET_MONEY_META = {
   CRYPTO: { prefix: "$", locale: "en-US" },
@@ -79,8 +80,44 @@ const profitPercent = computed(() => {
 
 const logoText = computed(() => {
   if (props.position?.logoText) return props.position.logoText.slice(0, 2).toUpperCase();
+  const companyText = String(safeName.value || "").trim();
+  if (companyText) return companyText.slice(0, 2).toUpperCase();
   if (safeSymbol.value) return safeSymbol.value.slice(0, 2);
-  return safeName.value.slice(0, 2).toUpperCase();
+  return "--";
+});
+const logoUrl = computed(() => String(props.position?.logoUrl ?? "").trim());
+const showLogoImage = computed(() => !!logoUrl.value && !logoLoadFailed.value);
+
+function hexToRgb(hex) {
+  const normalized = String(hex ?? "").trim().toUpperCase();
+  const m = /^#([0-9A-F]{6})$/.exec(normalized);
+  if (!m) return null;
+  const raw = m[1];
+  return {
+    r: parseInt(raw.slice(0, 2), 16),
+    g: parseInt(raw.slice(2, 4), 16),
+    b: parseInt(raw.slice(4, 6), 16),
+  };
+}
+
+const cardThemeStyle = computed(() => {
+  const rgb = hexToRgb(props.position?.logoColor);
+  if (!rgb) return null;
+  const { r, g, b } = rgb;
+  return {
+    backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
+    borderColor: `rgba(${r}, ${g}, ${b}, 0.35)`,
+  };
+});
+
+const statThemeStyle = computed(() => {
+  const rgb = hexToRgb(props.position?.logoColor);
+  if (!rgb) return null;
+  const { r, g, b } = rgb;
+  return {
+    backgroundColor: `rgba(${r}, ${g}, ${b}, 0.05)`,
+    borderColor: `rgba(${r}, ${g}, ${b}, 0.36)`,
+  };
 });
 
 const trendPoints = computed(() => {
@@ -277,6 +314,10 @@ watch([safeName, nameViewportRef, nameMeasureRef], async () => {
   measureNameOverflow();
 }, { immediate: true });
 
+watch(logoUrl, () => {
+  logoLoadFailed.value = false;
+}, { immediate: true });
+
 useResizeObserver(nameViewportRef, () => {
   measureNameOverflow();
 });
@@ -294,12 +335,12 @@ onUnmounted(() => {
 
 <template>
   <article
-    class="card-base min-h-[24rem] gap-3 transition-all duration-200 ease-linear hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+    class="card-base min-h-[24rem] gap-3 transition-all duration-200 ease-linear hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_24px_rgba(0,0,0,0.3)]"
+    :style="cardThemeStyle">
     <header class="flex items-center gap-3 min-h-12">
-      <div
-        class="h-12 w-12 rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 dark:border-gray-600 grid place-items-center text-sm font-bold text-gray-700 dark:text-gray-100">
-        <img v-if="position?.logoUrl" :src="position.logoUrl" :alt="safeName"
-          class="h-full w-full rounded-xl object-cover" />
+      <div class="h-12 w-12 rounded-xl grid place-items-center text-sm font-bold text-gray-700 dark:text-gray-100">
+        <img v-if="showLogoImage" :src="logoUrl" :alt="safeName" loading="lazy" decoding="async"
+          @error="logoLoadFailed = true" class="h-full w-full rounded-xl object-cover" />
         <span v-else>{{ logoText }}</span>
       </div>
 
@@ -316,7 +357,7 @@ onUnmounted(() => {
                 :class="hasNameOverflow ? 'name-marquee-animated' : ''" :style="nameTrackStyle">
                 <span :class="companyNameClass">{{ safeName }}</span>
                 <span v-if="hasNameOverflow" :class="companyNameClass" class="ml-8" aria-hidden="true">{{ safeName
-                  }}</span>
+                }}</span>
               </span>
             </h3>
           </div>
@@ -331,18 +372,21 @@ onUnmounted(() => {
 
     <div class="grid grid-cols-3 gap-2">
       <div
-        class="min-h-[4.6rem] rounded-xl border border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center">
+        class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
+        :style="statThemeStyle">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">市价</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ currentPriceText }}</p>
         <p v-if="!hasCurrentPrice" class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">待接入</p>
       </div>
       <div
-        class="min-h-[4.6rem] rounded-xl border border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center">
+        class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
+        :style="statThemeStyle">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">成本</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ costPriceText }}</p>
       </div>
       <div
-        class="min-h-[4.6rem] rounded-xl border border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center">
+        class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
+        :style="statThemeStyle">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">持仓</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ quantityText }}</p>
       </div>
@@ -374,29 +418,25 @@ onUnmounted(() => {
     <div class="relative">
       <Transition :name="tradeTransitionName" mode="out-in">
         <TradePositionPanel v-if="tradePanelVisible && tradeMode" :key="tradeMode"
-          class="absolute bottom-[calc(100%+10px)] left-1 right-1 z-20"
-          :visible="tradePanelVisible" :mode="tradeMode" :position="position" :accounts="accounts"
-          :submitting="trading" @close="closeTradePanel" @submit="onTradeSubmit" />
+          class="absolute bottom-[calc(100%+10px)] left-1 right-1 z-20" :visible="tradePanelVisible" :mode="tradeMode"
+          :position="position" :accounts="accounts" :submitting="trading" @close="closeTradePanel"
+          @submit="onTradeSubmit" />
       </Transition>
 
       <footer class="grid grid-cols-3 gap-2">
-        <button type="button"
-          data-trade-trigger="true"
+        <button type="button" data-trade-trigger="true"
           class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
-          :disabled="trading"
-          @click="openTradePanel('buy')">
-        买入
+          :disabled="trading" @click="openTradePanel('buy')">
+          买入
         </button>
-        <button type="button"
-          data-trade-trigger="true"
+        <button type="button" data-trade-trigger="true"
           class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-red-900/30 dark:!text-red-200 dark:!border-red-800 dark:hover:!bg-red-900/50"
-          :disabled="trading"
-          @click="openTradePanel('sell')">
-        卖出
+          :disabled="trading" @click="openTradePanel('sell')">
+          卖出
         </button>
         <button type="button" class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold"
           @click="onDetailClick">
-        详情
+          详情
         </button>
       </footer>
     </div>

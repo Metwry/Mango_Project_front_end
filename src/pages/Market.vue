@@ -68,24 +68,19 @@ onClickOutside(marketDropdownWrapRef, () => {
         <div class="w-full">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div ref="marketDropdownWrapRef" class="relative w-full shrink-0 sm:w-[220px]">
-              <button type="button" class="dropdown-trigger"
-                @click="toggleMarketDropdown">
+              <button type="button" class="dropdown-trigger" @click="toggleMarketDropdown">
                 <span class="truncate text-sm text-gray-700 dark:text-gray-200">
                   自选：{{ selectedMarketLabel }}（{{ currentMarketCount }}）
                 </span>
-                <BaseIcon name="arrow" class="dropdown-arrow"
-                  :class="marketDropdownOpen ? 'rotate-180' : ''" />
+                <BaseIcon name="arrow" class="dropdown-arrow" :class="marketDropdownOpen ? 'rotate-180' : ''" />
               </button>
 
               <Transition name="dropdown-drawer">
-                <div v-if="marketDropdownOpen"
-                  class="dropdown-panel absolute left-0 top-[calc(100%+8px)] w-full">
+                <div v-if="marketDropdownOpen" class="dropdown-panel absolute left-0 top-[calc(100%+8px)] w-full">
                   <div class="dropdown-list">
-                    <button v-for="item in marketOptions" :key="item.market" type="button"
-                      class="dropdown-item"
-                      :class="selectedMarket === item.market
-                        ? 'dropdown-item-active'
-                        : 'dropdown-item-idle'" @click="onPickMarket(item.market)">
+                    <button v-for="item in marketOptions" :key="item.market" type="button" class="dropdown-item" :class="selectedMarket === item.market
+                      ? 'dropdown-item-active'
+                      : 'dropdown-item-idle'" @click="onPickMarket(item.market)">
                       <span class="flex items-center justify-between">
                         <span>{{ item.label }}</span>
                         <span class="text-xs opacity-80">{{ item.count }}</span>
@@ -123,7 +118,8 @@ onClickOutside(marketDropdownWrapRef, () => {
                         class="block min-w-0 truncate text-sm font-semibold text-gray-800 dark:text-gray-100 font-mono tabular-nums">
                         {{ item.short_code }}
                       </span>
-                      <span class="block min-w-0 truncate text-sm text-gray-500 dark:text-gray-400">{{ item.name }}</span>
+                      <span class="block min-w-0 truncate text-sm text-gray-500 dark:text-gray-400">{{ item.name
+                      }}</span>
                       <span class="text-right">
                         <span class="market-market-tag">{{ getMarketLabel(item.market) }}</span>
                       </span>
@@ -176,7 +172,7 @@ onClickOutside(marketDropdownWrapRef, () => {
               <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">今日最高</th>
               <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">今日最低</th>
               <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">昨收</th>
-              <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">成交量(万股)</th>
+              <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">成交量(亿)</th>
               <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap"></th>
             </tr>
           </thead>

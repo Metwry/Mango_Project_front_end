@@ -23,6 +23,28 @@ function toPositiveDecimalString(value) {
   return n.toFixed(6);
 }
 
+function normalizeLogoUrl(raw) {
+  const url = String(raw?.logo_url ?? raw?.logoUrl ?? "").trim();
+  return url || "";
+}
+
+function normalizeLogoColor(raw) {
+  const color = String(raw?.logo_color ?? raw?.logoColor ?? "").trim().toUpperCase();
+
+  if (/^#[0-9A-F]{6}$/.test(color)) return color;
+  if (/^#[0-9A-F]{3}$/.test(color)) {
+    const r = color[1];
+    const g = color[2];
+    const b = color[3];
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return "";
+}
+
+function normalizeQuoteRows(payload) {
+  return Array.isArray(payload?.quotes) ? payload.quotes : [];
+}
+
 function normalizePosition(raw) {
   const instrumentId = toFiniteNumber(raw?.instrument_id ?? raw?.id);
   const shortCode = String(raw?.short_code ?? raw?.stock_code ?? "").trim().toUpperCase();
@@ -41,6 +63,9 @@ function normalizePosition(raw) {
     shortCode,
     symbol: shortCode,
     name: stockName || shortCode || "未命名股票",
+    logoUrl: normalizeLogoUrl(raw),
+    logoColor: normalizeLogoColor(raw),
+    logoText: (stockName || shortCode || "").slice(0, 2).toUpperCase(),
     marketType,
     costPrice: Number.isFinite(costPrice) ? costPrice : 0,
     quantity: Number.isFinite(quantity) ? quantity : 0,
@@ -72,20 +97,25 @@ function applyLatestQuotes(rows, quotes) {
   const latestMap = new Map();
 
   quotes.forEach((quote) => {
-    const market = String(quote?.market ?? quote?.market_type ?? "").trim().toUpperCase();
-    const shortCode = String(quote?.short_code ?? quote?.symbol ?? "").trim().toUpperCase();
+    const market = String(quote?.market ?? "").trim().toUpperCase();
+    const shortCode = String(quote?.short_code ?? "").trim().toUpperCase();
     const latestPrice = Number(quote?.latest_price);
+    const logoUrl = normalizeLogoUrl(quote);
+    const logoColor = normalizeLogoColor(quote);
 
     if (!market || !shortCode || !Number.isFinite(latestPrice)) return;
-    latestMap.set(`${market}__${shortCode}`, latestPrice);
+    latestMap.set(`${market}__${shortCode}`, { latestPrice, logoUrl, logoColor });
   });
 
   return rows.map((row) => {
     const quantity = Number(row?.quantity);
     const key = `${String(row?.marketType ?? "").toUpperCase()}__${String(row?.shortCode ?? row?.symbol ?? "").toUpperCase()}`;
-    const price = latestMap.get(key);
+    const quote = latestMap.get(key) ?? null;
+    const price = quote?.latestPrice;
     return {
       ...row,
+      logoUrl: quote?.logoUrl || row?.logoUrl || "",
+      logoColor: quote?.logoColor || row?.logoColor || "",
       currentPrice: Number.isFinite(price) ? price : null,
       currentValue:
         Number.isFinite(price) && Number.isFinite(quantity)
@@ -180,7 +210,7 @@ export const useInvestmentStore = defineStore("investment", () => {
       try {
         const quoteRes = await getLatestMarketQuotes({ items: quoteItems });
         const quotePayload = getPayload(quoteRes, {});
-        const quoteRows = Array.isArray(quotePayload?.quotes) ? quotePayload.quotes : [];
+        const quoteRows = normalizeQuoteRows(quotePayload);
         positions.value = applyLatestQuotes(positions.value, quoteRows);
         lastQuotesFetchedAt.value = Date.now();
         return positions.value;

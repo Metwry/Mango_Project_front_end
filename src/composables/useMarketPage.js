@@ -201,7 +201,6 @@ export function useMarketPage() {
     } catch {
       if (reqId !== searchRequestSeq) return;
       resetSearchState({ resetLastQuery: true });
-      ElMessage.error("搜索失败，请稍后重试。");
     } finally {
       if (reqId === searchRequestSeq) searchLoading.value = false;
     }
@@ -281,13 +280,12 @@ export function useMarketPage() {
       return;
     }
 
-    try {
+  try {
       const payload = await marketStore.addWatchlistInstrument(symbol);
       const created = Boolean(payload?.created);
       ElMessage.success(created ? "添加成功" : "该标的已在自选中");
       ensureSelectedMarketAvailable();
     } catch {
-      ElMessage.error("添加失败，请稍后重试。");
       return;
     }
 
@@ -314,9 +312,7 @@ export function useMarketPage() {
       });
       ElMessage.success("删除成功");
       ensureSelectedMarketAvailable();
-    } catch {
-      ElMessage.error("删除失败，请稍后重试。");
-    }
+    } catch {}
   }
 
   function formatPrice(value, marketCode) {

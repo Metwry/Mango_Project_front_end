@@ -3,7 +3,7 @@ const CURRENCY_SYMBOL_MAP = {
   USD: "$",
   EUR: "\u20ac",
   GBP: "\u00a3",
-  JPY: "\u00a5",
+  JPY: "JP\u00a5",
   HKD: "HK$",
   AUD: "A$",
   CAD: "C$",
@@ -27,12 +27,25 @@ export function formatCurrencyAmount(
     minimumFractionDigits = 2,
     maximumFractionDigits = 2,
     fallbackWithCode = false,
+    symbolOnly = false,
   } = {},
 ) {
   const n = Number(amount);
   if (!Number.isFinite(n)) return invalidText;
 
   const c = String(currency || "CNY").toUpperCase();
+  if (symbolOnly) {
+    const symbol = currencySymbol(c);
+    const absText = new Intl.NumberFormat(locale, {
+      minimumFractionDigits,
+      maximumFractionDigits,
+    }).format(Math.abs(n));
+
+    if (symbol) return n < 0 ? `-${symbol}${absText}` : `${symbol}${absText}`;
+    if (fallbackWithCode) return `${c} ${n.toFixed(maximumFractionDigits)}`;
+    return `${n.toFixed(maximumFractionDigits)}`;
+  }
+
   try {
     return new Intl.NumberFormat(locale, {
       style: "currency",

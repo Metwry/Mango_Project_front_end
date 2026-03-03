@@ -56,7 +56,7 @@ function getAccount(tx) {
 }
 
 const formatMoney = (amount, currency) => {
-    return formatCurrencyAmount(amount, currency, { invalidText: "-" });
+    return formatCurrencyAmount(amount, currency, { invalidText: "-", symbolOnly: true });
 };
 
 function formatDateTime(v) {

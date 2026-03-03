@@ -24,7 +24,7 @@ const sortedAccounts = computed(() => {
 const formatAccountBalance = (account) => {
     const amount = toSafeNumber(account?.balance)
     const currency = String(account?.currency || 'CNY').toUpperCase()
-    return formatCurrencyAmount(amount, currency, { fallbackWithCode: true })
+    return formatCurrencyAmount(amount, currency, { fallbackWithCode: true, symbolOnly: true })
 }
 
 const openEditModal = (item) => {
