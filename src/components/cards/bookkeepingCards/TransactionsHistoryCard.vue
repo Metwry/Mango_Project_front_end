@@ -6,7 +6,8 @@ import DatePicker from "@/components/ui/DatePicker.vue";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import { formatCurrencyAmount } from "@/utils/formatters";
-import { filterNonInvestmentAccounts } from "@/utils/accountFilters";
+import { filterNonInvestmentAccounts } from "@/utils/accounts";
+import { TRANSACTION_HISTORY_MODE } from "@/utils/transaction.js";
 
 const props = defineProps({
     transactions: { type: Array, default: () => [] },
@@ -16,6 +17,9 @@ const props = defineProps({
     page: { type: Number, default: 1 },
     pageSize: { type: Number, default: 20 },
     total: { type: Number, default: 0 },
+    historyMode: { type: String, default: TRANSACTION_HISTORY_MODE.ACTIVITY },
+    deletingId: { type: [Number, String], default: null },
+    clearingAll: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -24,13 +28,23 @@ const emit = defineEmits([
     "reverse",
     "search-change",
     "search-reset",
+    "mode-change",
+    "delete-one",
+    "delete-all",
     "open-add-transaction",
 ]);
 
 const reversingId = ref(null);
 const pageSizeOpen = ref(false);
 const pageSizeWrapRef = ref(null);
+const historyModeOpen = ref(false);
+const historyModeWrapRef = ref(null);
 const pageSizeOptions = [10, 20, 50, 100];
+const historyModeOptions = [
+    { value: TRANSACTION_HISTORY_MODE.ACTIVITY, label: "活动记录" },
+    { value: TRANSACTION_HISTORY_MODE.ALL, label: "交易记录" },
+    { value: TRANSACTION_HISTORY_MODE.REVERSED, label: "已撤销记录" },
+];
 
 const searchState = reactive({
     accountId: "",
@@ -42,6 +56,12 @@ const searchState = reactive({
 
 const hasSearch = computed(() => Object.values(searchState).some(Boolean));
 const searchableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
+const isReversedMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.REVERSED);
+const isInvestmentHistoryMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.ALL);
+const isManualMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.ACTIVITY);
+const currentHistoryModeLabel = computed(() => {
+    return historyModeOptions.find((item) => item.value === props.historyMode)?.label ?? "活动记录";
+});
 
 const accountMap = computed(() => {
     const map = new Map();
@@ -52,7 +72,15 @@ const accountMap = computed(() => {
 function getAccount(tx) {
     const v = tx?.account;
     if (v && typeof v === "object") return v;
-    return accountMap.value.get(v) ?? null;
+    const account = accountMap.value.get(v);
+    if (account) return account;
+    if (tx?.account_name || tx?.currency) {
+        return {
+            name: tx?.account_name ?? "",
+            currency: tx?.currency ?? "",
+        };
+    }
+    return null;
 }
 
 const formatMoney = (amount, currency) => {
@@ -79,6 +107,12 @@ function emitSearch() {
         start: searchState.start || "",
         end: searchState.end || "",
     });
+}
+
+function pickHistoryMode(mode) {
+    historyModeOpen.value = false;
+    if (!mode || mode === props.historyMode) return;
+    emit("mode-change", mode);
 }
 
 function getDisplayBalance(tx) {
@@ -161,6 +195,7 @@ function pickPageSize(ps) {
 }
 
 function canReverse(tx) {
+    if (!isManualMode.value) return false;
     return !tx?.reversal_of && !tx?.reversed_at;
 }
 
@@ -178,22 +213,62 @@ function onReverseClick(tx) {
     setTimeout(() => (reversingId.value = null), 300);
 }
 
+function onDeleteOneClick(tx) {
+    if (!tx?.id) return;
+    emit("delete-one", tx.id);
+}
+
+function onDeleteAllClick() {
+    emit("delete-all");
+}
+
 onClickOutside(pageSizeWrapRef, () => {
     pageSizeOpen.value = false;
+});
+
+onClickOutside(historyModeWrapRef, () => {
+    historyModeOpen.value = false;
 });
 </script>
 
 <template>
     <div class="card-base">
         <div class="card-title !justify-start gap-3 border-b border-gray-100 dark:border-gray-700/80 pb-3 mb-2">
-            <span class="truncate">活动记录</span>
+            <div ref="historyModeWrapRef" class="relative min-w-[122px]">
+                <button class="dropdown-trigger !h-9 min-w-[122px]" @click="historyModeOpen = !historyModeOpen">
+                    <span class="truncate text-sm font-medium text-gray-700 dark:text-gray-200">{{
+                        currentHistoryModeLabel }}</span>
+                    <BaseIcon name="arrow" :size="14" :class="['dropdown-arrow', historyModeOpen && 'rotate-180']" />
+                </button>
+
+                <Transition name="dropdown-drawer">
+                    <div v-if="historyModeOpen"
+                        class="dropdown-panel absolute left-0 top-[calc(100%+8px)] min-w-[122px] z-20">
+                        <div class="dropdown-list !max-h-56">
+                            <button v-for="mode in historyModeOptions" :key="mode.value" type="button" :class="[
+                                'dropdown-item font-medium',
+                                props.historyMode === mode.value
+                                    ? 'dropdown-item-active'
+                                    : 'dropdown-item-idle'
+                            ]" @click="pickHistoryMode(mode.value)">
+                                {{ mode.label }}
+                            </button>
+                        </div>
+                    </div>
+                </Transition>
+            </div>
 
             <span
                 class="hidden sm:inline-flex text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                 {{ total }} 条
             </span>
             <button class="button-base px-3 py-1.5 text-xs sm:text-sm" @click="emit('open-add-transaction')">
-                添加交易
+                记账
+            </button>
+            <button
+                class="button-base px-3 py-1.5 text-xs sm:text-sm !text-red-600 !border-red-200 !bg-red-50 hover:!bg-red-100 dark:!text-red-300 dark:!border-red-800 dark:!bg-red-900/20 dark:hover:!bg-red-900/35"
+                :disabled="loading || clearingAll || transactions.length === 0" @click="onDeleteAllClick">
+                {{ clearingAll ? "删除中..." : "全部删除" }}
             </button>
         </div>
 
@@ -297,21 +372,32 @@ onClickOutside(pageSizeWrapRef, () => {
                             <div class="font-medium">{{ formatDateTime(tx?.add_date ?? tx?.date) }}</div>
                         </td>
                         <td class="td-cell text-center" @click.stop>
-                            <button :class="[
-                                'button-base ring-0 inline-flex text-xs !px-2.5 !py-1.5',
-                                canReverse(tx)
-                                    ? 'hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20'
-                                    : '!cursor-default !bg-gray-100 dark:!bg-gray-700/60 !text-gray-400 dark:!text-gray-500 !border-transparent'
-                            ]" @click="onReverseClick(tx)">
-                                {{ reversingId === tx?.id ? "处理中..." : reverseLabel(tx) }}
-                            </button>
+                            <div class="inline-flex items-center justify-center gap-2">
+                                <button v-if="isManualMode" :class="[
+                                    'button-base ring-0 inline-flex text-xs !px-2.5 !py-1.5',
+                                    canReverse(tx)
+                                        ? 'hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20'
+                                        : '!cursor-default !bg-gray-100 dark:!bg-gray-700/60 !text-gray-400 dark:!text-gray-500 !border-transparent'
+                                ]" @click="onReverseClick(tx)">
+                                    {{ reversingId === tx?.id ? "处理中..." : reverseLabel(tx) }}
+                                </button>
+
+                                <button :class="[
+                                    'button-base ring-0 inline-flex text-xs !px-2.5 !py-1.5 !text-red-600 !border-red-200 !bg-red-50 hover:!bg-red-100 dark:!text-red-300 dark:!border-red-800 dark:!bg-red-900/20 dark:hover:!bg-red-900/35',
+                                    (!tx?.id || clearingAll) && '!cursor-not-allowed !opacity-60'
+                                ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
+                                    {{ deletingId === tx?.id ? "删除中..." : "删除" }}
+                                </button>
+                            </div>
                         </td>
                     </tr>
 
                     <!-- 无交易记录 -->
                     <tr v-if="transactions.length === 0">
                         <td colspan="7" class="px-6 py-16 text-center">
-                            <span class=" text-gray-400 dark:text-gray-500">暂无交易记录</span>
+                            <span class=" text-gray-400 dark:text-gray-500">
+                                {{ isReversedMode ? "暂无已撤销记录" : isInvestmentHistoryMode ? "暂无投资交易记录" : "暂无交易记录" }}
+                            </span>
                         </td>
                     </tr>
                 </tbody>
@@ -324,25 +410,24 @@ onClickOutside(pageSizeWrapRef, () => {
             <div ref="pageSizeWrapRef" class="flex items-center gap-2 justify-self-start relative">
                 <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">每页</span>
                 <div class="relative min-w-[102px]">
-                    <button class="dropdown-trigger !h-9 min-w-[102px]"
-                        :disabled="loading" @click="pageSizeOpen = !pageSizeOpen">
+                    <button class="dropdown-trigger !h-9 min-w-[102px]" :disabled="loading"
+                        @click="pageSizeOpen = !pageSizeOpen">
                         <span class="text-sm">{{ pageSize }} 条</span>
-                        <BaseIcon name="arrow" :size="14"
-                            :class="['dropdown-arrow', pageSizeOpen && 'rotate-180']" />
+                        <BaseIcon name="arrow" :size="14" :class="['dropdown-arrow', pageSizeOpen && 'rotate-180']" />
                     </button>
 
                     <Transition name="dropdown-drawer">
                         <div v-if="pageSizeOpen"
                             class="dropdown-panel dropdown-panel-up absolute left-0 bottom-[calc(100%+8px)] min-w-[102px]">
                             <div class="dropdown-list !max-h-56">
-                            <button v-for="size in pageSizeOptions" :key="size" type="button" :class="[
-                                'dropdown-item',
-                                Number(pageSize) === size
-                                    ? 'dropdown-item-active'
-                                    : 'dropdown-item-idle'
-                            ]" @click="pickPageSize(size)">
-                                {{ size }} 条
-                            </button>
+                                <button v-for="size in pageSizeOptions" :key="size" type="button" :class="[
+                                    'dropdown-item',
+                                    Number(pageSize) === size
+                                        ? 'dropdown-item-active'
+                                        : 'dropdown-item-idle'
+                                ]" @click="pickPageSize(size)">
+                                    {{ size }} 条
+                                </button>
                             </div>
                         </div>
                     </Transition>

@@ -9,7 +9,7 @@ import { useResizeObserver } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import TradePositionPanel from "@/components/windows/TradePositionPanel.vue";
-import { getPayload } from "@/utils/apiPayload";
+import { getPayload } from "@/utils/api";
 import { buildSnapshotTimeline, getPositionSnapshots } from "@/utils/snapshot";
 import { useInvestmentStore } from "@/stores/investment";
 
@@ -191,7 +191,7 @@ const trendColor = computed(() => {
   return "#9ca3af";
 });
 
-const hasTrendData = computed(() => trendSeries.value.length >= 2);
+const hasTrendData = computed(() => trendSeries.value.length > 0);
 
 const trendTimeBounds = computed(() => {
   if (
@@ -200,9 +200,18 @@ const trendTimeBounds = computed(() => {
     trendStartIndex.value >= 0 &&
     trendEndIndex.value >= 0
   ) {
+    const min = trendAxisStartMs.value + trendStartIndex.value * trendAxisIntervalMs.value;
+    const max = trendAxisStartMs.value + trendEndIndex.value * trendAxisIntervalMs.value;
+    if (min === max) {
+      const pad = Math.max(trendAxisIntervalMs.value / 2, 60 * 1000);
+      return {
+        min: min - pad,
+        max: max + pad,
+      };
+    }
     return {
-      min: trendAxisStartMs.value + trendStartIndex.value * trendAxisIntervalMs.value,
-      max: trendAxisStartMs.value + trendEndIndex.value * trendAxisIntervalMs.value,
+      min,
+      max,
     };
   }
 
@@ -212,6 +221,13 @@ const trendTimeBounds = computed(() => {
     .sort((a, b) => a - b);
 
   if (values.length === 0) return null;
+  if (values[0] === values[values.length - 1]) {
+    const pad = Math.max(trendAxisIntervalMs.value / 2, 60 * 1000);
+    return {
+      min: values[0] - pad,
+      max: values[0] + pad,
+    };
+  }
   return {
     min: values[0],
     max: values[values.length - 1],
@@ -239,6 +255,16 @@ function formatHourTick(value) {
   return `${hh}:${mm}`;
 }
 
+function formatTimeTickWithSeconds(value) {
+  const rawMs = new Date(value).getTime();
+  if (!Number.isFinite(rawMs)) return "--:--:--";
+  const date = new Date(rawMs + 8 * 60 * 60 * 1000);
+  const hh = String(date.getUTCHours()).padStart(2, "0");
+  const mm = String(date.getUTCMinutes()).padStart(2, "0");
+  const ss = String(date.getUTCSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
 function formatTrendValue(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "--";
@@ -260,8 +286,28 @@ const trendOption = computed(() => ({
   tooltip: {
     trigger: "axis",
     axisPointer: { type: "line" },
-    valueFormatter: (value) => {
-      return formatTrendValue(value);
+    textStyle: {
+      color: "#374151",
+      fontFamily: "Times New Roman, Times, serif",
+    },
+    formatter: (params) => {
+      const first = Array.isArray(params) ? params[0] : params;
+      const timeText = formatTimeTickWithSeconds(
+        first?.axisValue ?? first?.value?.[0] ?? first?.data?.[0],
+      );
+      const rawValue = Array.isArray(first?.value) ? first.value[1] : first?.value;
+      const valueText = formatMoney(rawValue);
+      const markerColor = trendColor.value;
+
+      return `
+        <div style="font-family:'Times New Roman',Times,serif;">
+          <div style="margin-bottom:6px;">${timeText}</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:12px;height:12px;border-radius:999px;background:${markerColor};display:inline-block;"></span>
+            <span style="font-size:15px;font-weight:600;line-height:1.1;">${valueText}</span>
+          </div>
+        </div>
+      `;
     },
   },
   xAxis: {
@@ -274,6 +320,7 @@ const trendOption = computed(() => ({
     axisLabel: {
       color: "#94a3b8",
       fontSize: 10,
+      fontFamily: "Times New Roman, Times, serif",
       hideOverlap: true,
       showMinLabel: true,
       showMaxLabel: true,
@@ -291,12 +338,19 @@ const trendOption = computed(() => ({
     {
       type: "line",
       smooth: true,
-      showSymbol: false,
-      symbol: "none",
+      showSymbol: trendSeries.value.length === 1,
+      symbol: trendSeries.value.length === 1 ? "circle" : "none",
+      symbolSize: trendSeries.value.length === 1 ? 7 : 4,
       sampling: "lttb",
+      itemStyle: {
+        color: trendColor.value,
+        borderColor: trendColor.value,
+        opacity: 1,
+      },
       lineStyle: {
         color: trendColor.value,
         width: 2.1,
+        opacity: 1,
       },
       areaStyle: {
         color: {
@@ -310,6 +364,9 @@ const trendOption = computed(() => ({
             { offset: 1, color: `${trendColor.value}08` },
           ],
         },
+      },
+      emphasis: {
+        disabled: true,
       },
       data: trendSeries.value,
     },
@@ -572,7 +629,7 @@ onUnmounted(() => {
                 :class="hasNameOverflow ? 'name-marquee-animated' : ''" :style="nameTrackStyle">
                 <span :class="companyNameClass">{{ safeName }}</span>
                 <span v-if="hasNameOverflow" :class="companyNameClass" class="ml-8" aria-hidden="true">{{ safeName
-                  }}</span>
+                }}</span>
               </span>
             </h3>
           </div>
@@ -610,7 +667,7 @@ onUnmounted(() => {
     <div
       class="relative flex-1 min-h-[11rem] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700">
       <div class="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-3 pt-3">
-        <span class="text-xs text-gray-500 dark:text-gray-400">盈亏(今日）</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">今日走势</span>
         <span class="text-sm font-semibold" :class="toneTextClass">
           {{ profitValueText }}
         </span>

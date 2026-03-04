@@ -52,7 +52,7 @@ const router = createRouter({
         {
           path: "tools",
           name: "Tools",
-          component: () => import("../pages/tools.vue"),
+          component: () => import("../pages/Tools.vue"),
           meta: { title: "工具箱", icon: "market" },
         },
       ],

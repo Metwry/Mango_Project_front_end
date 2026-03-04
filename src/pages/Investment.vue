@@ -3,7 +3,7 @@ import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import PositionCard from "@/components/cards/investmentCards/PositionCard.vue";
 import AddPositionCard from "@/components/cards/investmentCards/AddPositionCard.vue";
-import { isInvestmentAccount } from "@/utils/accountFilters";
+import { isInvestmentAccount } from "@/utils/accounts";
 import { useInvestmentStore } from "@/stores/investment";
 import { useAccountsStore } from "@/stores/accounts";
 

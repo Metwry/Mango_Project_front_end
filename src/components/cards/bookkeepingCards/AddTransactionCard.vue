@@ -4,7 +4,7 @@ import DatePicker from "@/components/ui/DatePicker.vue";
 import AccountPicker from "@/components/ui/AccountPicker.vue";
 import dayjs from "dayjs";
 import { ElMessage } from "element-plus";
-import { filterNonInvestmentAccounts } from "@/utils/accountFilters";
+import { filterNonInvestmentAccounts } from "@/utils/accounts";
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },

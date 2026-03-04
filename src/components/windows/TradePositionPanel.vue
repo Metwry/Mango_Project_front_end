@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { ElMessage } from "element-plus";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
-import { filterNonInvestmentAccounts } from "@/utils/accountFilters";
+import { filterNonInvestmentAccounts } from "@/utils/accounts";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

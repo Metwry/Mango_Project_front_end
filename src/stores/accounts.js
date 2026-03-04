@@ -7,7 +7,7 @@ import {
   deleteAccount as apiDeleteAccount,
   getAccountDetail,
 } from "@/utils/accounts";
-import { getPayload, getResultsList } from "@/utils/apiPayload";
+import { getPayload, getResultsList } from "@/utils/api";
 import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;

@@ -1,3 +1,5 @@
+import api, { getPayload } from "@/utils/api";
+
 const DEFAULT_USD_PER_CURRENCY_RATES = Object.freeze({
   USD: 1,
   CNY: 0.14,
@@ -6,6 +8,20 @@ const DEFAULT_USD_PER_CURRENCY_RATES = Object.freeze({
   GBP: 1.27,
   HKD: 0.128,
 });
+const FX_RATES_STALE_MS = 10 * 60 * 1000;
+const DEFAULT_USD_RATES_ENDPOINT = "/user/markets/fx-rates/";
+const USD_RATES_ENDPOINT =
+  import.meta.env.VITE_USD_RATES_ENDPOINT ?? DEFAULT_USD_RATES_ENDPOINT;
+
+let cachedUsdPerCurrencyRates = { ...DEFAULT_USD_PER_CURRENCY_RATES };
+let cachedFetchedAt = 0;
+let fetchPromise = null;
+
+function getUsdExchangeRates() {
+  return api.get(USD_RATES_ENDPOINT, {
+    params: { base: "USD" },
+  });
+}
 
 function toCode(value) {
   return String(value ?? "").trim().toUpperCase();
@@ -89,7 +105,7 @@ function readRateValue(raw) {
   return null;
 }
 
-function getSafeUsdPerCnyRate(usdPerCurrencyRates) {
+export function getUsdPerCnyRate(usdPerCurrencyRates) {
   const candidate = Number(
     usdPerCurrencyRates?.CNY ?? DEFAULT_USD_PER_CURRENCY_RATES.CNY,
   );
@@ -142,16 +158,63 @@ export function normalizeUsdPerCurrencyRates(payload) {
   return normalized;
 }
 
-function getUsdPerCurrencyRate(account, usdPerCurrencyRates) {
-  const customRate = Number(account?.usd_rate ?? account?.usdRate);
+export function resolveUsdPerCurrencyRate(target, usdPerCurrencyRates) {
+  const customRate = Number(target?.usd_rate ?? target?.usdRate);
   if (isFinitePositive(customRate)) return customRate;
 
-  const currency = toCode(account?.currency || "USD");
+  const currency = toCode(
+    typeof target === "string" ? target : (target?.currency || "USD"),
+  );
   return (
     usdPerCurrencyRates?.[currency] ??
     DEFAULT_USD_PER_CURRENCY_RATES[currency] ??
     1
   );
+}
+
+export function buildUsdPerCurrencyRates(payload) {
+  return {
+    ...DEFAULT_USD_PER_CURRENCY_RATES,
+    ...normalizeUsdPerCurrencyRates(payload),
+    USD: 1,
+  };
+}
+
+function hasFreshRates() {
+  return cachedFetchedAt > 0 && Date.now() - cachedFetchedAt < FX_RATES_STALE_MS;
+}
+
+export function getCachedUsdPerCurrencyRates() {
+  return cachedUsdPerCurrencyRates;
+}
+
+export async function ensureUsdPerCurrencyRates({ force = false } = {}) {
+  if (!force && hasFreshRates()) {
+    return cachedUsdPerCurrencyRates;
+  }
+
+  if (fetchPromise) {
+    return fetchPromise;
+  }
+
+  fetchPromise = (async () => {
+    try {
+      const res = await getUsdExchangeRates();
+      const payload = getPayload(res, {});
+      cachedUsdPerCurrencyRates = buildUsdPerCurrencyRates(payload);
+      cachedFetchedAt = Date.now();
+      return cachedUsdPerCurrencyRates;
+    } catch (e) {
+      if (cachedFetchedAt > 0) {
+        return cachedUsdPerCurrencyRates;
+      }
+      throw e;
+    } finally {
+      fetchPromise = null;
+    }
+  })();
+
+  return fetchPromise;
 }
 
 function calculateAccountValue(account, usdPerCurrencyRates) {
@@ -169,7 +232,7 @@ function calculateAccountValue(account, usdPerCurrencyRates) {
   }
 
   const currency = toCode(account?.currency || "USD");
-  const usdPerCny = getSafeUsdPerCnyRate(usdPerCurrencyRates);
+  const usdPerCny = getUsdPerCnyRate(usdPerCurrencyRates);
 
   if (currency === "CNY") {
     const valueCny = balance;
@@ -185,7 +248,7 @@ function calculateAccountValue(account, usdPerCurrencyRates) {
     };
   }
 
-  const usdRate = getUsdPerCurrencyRate(account, usdPerCurrencyRates);
+  const usdRate = resolveUsdPerCurrencyRate(account, usdPerCurrencyRates);
   const valueUsd = balance * usdRate;
   const valueCny = valueUsd / usdPerCny;
 

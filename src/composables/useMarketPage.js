@@ -1,8 +1,9 @@
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useDebounceFn, useEventListener } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import { searchMarketInstruments } from "@/utils/markets";
-import { getPayload } from "@/utils/apiPayload";
+import { getResultsList } from "@/utils/api";
 import { useMarketStore } from "@/stores/market";
 
 const MARKET_META = {
@@ -14,7 +15,6 @@ const MARKET_META = {
 };
 const MARKET_ORDER = ["CN", "HK", "US", "FX", "CRYPTO"];
 const MARKET_ORDER_MAP = new Map(MARKET_ORDER.map((market, idx) => [market, idx]));
-
 const SEARCH_DEBOUNCE_MS = 250;
 const SEARCH_CACHE_LIMIT = 50;
 
@@ -24,6 +24,17 @@ function normalizeMarketCode(value) {
 
 function normalizeSearchQuery(value) {
   return String(value ?? "").trim().replace(/\s+/g, " ");
+}
+
+function getMarketOrderIndex(market) {
+  return MARKET_ORDER_MAP.get(market) ?? Number.MAX_SAFE_INTEGER;
+}
+
+function buildQuoteRowKey(market, quote) {
+  const shortCode = String(quote?.short_code ?? "").trim().toUpperCase();
+  const symbol = String(quote?.symbol ?? "").trim().toUpperCase();
+  const name = String(quote?.name ?? "").trim().toUpperCase();
+  return `${market}-${shortCode || symbol || name || "UNKNOWN"}`;
 }
 
 export function useMarketPage() {
@@ -36,21 +47,9 @@ export function useMarketPage() {
   const showSearchDropdown = ref(false);
   const isComposing = ref(false);
 
-  let searchDebounceTimer = null;
   let searchRequestSeq = 0;
   let lastSearchedQuery = "";
   const searchResultCache = new Map();
-
-  function getMarketOrderIndex(market) {
-    return MARKET_ORDER_MAP.get(market) ?? Number.MAX_SAFE_INTEGER;
-  }
-
-  function buildQuoteRowKey(market, quote) {
-    const shortCode = String(quote?.short_code ?? "").trim().toUpperCase();
-    const symbol = String(quote?.symbol ?? "").trim().toUpperCase();
-    const name = String(quote?.name ?? "").trim().toUpperCase();
-    return `${market}-${shortCode || symbol || name || "UNKNOWN"}`;
-  }
 
   function getMarketLabel(marketCode) {
     const code = normalizeMarketCode(marketCode);
@@ -92,15 +91,14 @@ export function useMarketPage() {
     sortedMarkets.forEach((block) => {
       const market = normalizeMarketCode(block?.market);
       const quotes = Array.isArray(block?.quotes) ? block.quotes : [];
-
-      for (const quote of quotes) {
+      quotes.forEach((quote) => {
         rows.push({
           ...quote,
           market,
           marketLabel: getMarketLabel(market),
           _rowKey: buildQuoteRowKey(market, quote),
         });
-      }
+      });
     });
 
     return rows;
@@ -120,23 +118,6 @@ export function useMarketPage() {
     if (selectedMarket.value !== "ALL" && !availableMarkets.has(selectedMarket.value)) {
       marketStore.setSelectedMarket("ALL");
     }
-  }
-
-  function handleVisibilityChange() {
-    if (!document.hidden) {
-      marketStore
-        .refreshMarkets({ silent: true })
-        .catch(() => {})
-        .finally(() => {
-          ensureSelectedMarketAvailable();
-        });
-    }
-  }
-
-  function clearSearchDebounceTimer() {
-    if (!searchDebounceTimer) return;
-    clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = null;
   }
 
   function applyCachedSearchResult(query) {
@@ -159,31 +140,35 @@ export function useMarketPage() {
   }
 
   function resetSearchState({ hide = false, resetLastQuery = false } = {}) {
-    clearSearchDebounceTimer();
     searchLoading.value = false;
     searchResults.value = [];
     if (hide) showSearchDropdown.value = false;
     if (resetLastQuery) lastSearchedQuery = "";
   }
 
-  async function executeSearch(rawQuery) {
-    const query = normalizeSearchQuery(rawQuery);
+  function handleEmptySearchInput() {
+    searchRequestSeq += 1;
+    resetSearchState({ hide: true, resetLastQuery: true });
+  }
 
+  async function executeSearch(rawQuery, { skipIfSameLast = false } = {}) {
+    const query = normalizeSearchQuery(rawQuery);
+    if (query !== normalizeSearchQuery(keywordInput.value)) return;
     if (!query) {
-      searchRequestSeq += 1;
-      resetSearchState({ hide: true, resetLastQuery: true });
+      handleEmptySearchInput();
       return;
     }
 
     showSearchDropdown.value = true;
 
-    if (query === lastSearchedQuery && (searchResults.value.length > 0 || searchLoading.value)) {
+    if (
+      query === lastSearchedQuery &&
+      (skipIfSameLast || searchResults.value.length > 0 || searchLoading.value)
+    ) {
       return;
     }
 
-    if (applyCachedSearchResult(query)) {
-      return;
-    }
+    if (applyCachedSearchResult(query)) return;
 
     searchLoading.value = true;
     const reqId = ++searchRequestSeq;
@@ -192,9 +177,7 @@ export function useMarketPage() {
       const res = await searchMarketInstruments(query);
       if (reqId !== searchRequestSeq) return;
 
-      const payload = getPayload(res, {});
-      const rows = Array.isArray(payload?.results) ? payload.results : [];
-
+      const rows = getResultsList(res, []);
       searchResults.value = rows;
       setSearchCache(query, rows);
       lastSearchedQuery = query;
@@ -206,29 +189,24 @@ export function useMarketPage() {
     }
   }
 
-  function scheduleSearch(rawQuery) {
-    clearSearchDebounceTimer();
-    searchDebounceTimer = setTimeout(() => executeSearch(rawQuery), SEARCH_DEBOUNCE_MS);
-  }
+  const searchWithDebounce = useDebounceFn((query) => {
+    void executeSearch(query, { skipIfSameLast: true });
+  }, SEARCH_DEBOUNCE_MS);
 
-  function handleEmptySearchInput() {
-    searchRequestSeq += 1;
-    resetSearchState({ hide: true, resetLastQuery: true });
-  }
+  const hideSearchDropdownSoon = useDebounceFn(() => {
+    showSearchDropdown.value = false;
+  }, 120);
 
-  function triggerSearch(query, { immediate = false, skipIfSameLast = false } = {}) {
+  function triggerSearch(query, { immediate = false } = {}) {
     showSearchDropdown.value = true;
-
     if (applyCachedSearchResult(query)) return;
-    if (skipIfSameLast && query === lastSearchedQuery) return;
 
     if (immediate) {
-      clearSearchDebounceTimer();
-      executeSearch(query);
+      void executeSearch(query, { skipIfSameLast: true });
       return;
     }
 
-    scheduleSearch(query);
+    searchWithDebounce(query);
   }
 
   function onSearchInput() {
@@ -240,7 +218,7 @@ export function useMarketPage() {
       return;
     }
 
-    triggerSearch(query, { skipIfSameLast: true });
+    triggerSearch(query);
   }
 
   function onSearchEnter() {
@@ -255,7 +233,7 @@ export function useMarketPage() {
   function onSearchFocus() {
     const query = normalizeSearchQuery(keywordInput.value);
     if (!query) return;
-    triggerSearch(query, { immediate: true, skipIfSameLast: true });
+    triggerSearch(query, { immediate: true });
   }
 
   function onCompositionStart() {
@@ -267,20 +245,14 @@ export function useMarketPage() {
     onSearchInput();
   }
 
-  function hideSearchDropdownSoon() {
-    setTimeout(() => {
-      showSearchDropdown.value = false;
-    }, 120);
-  }
-
   async function pickSearchResult(item) {
-    const symbol = String(item?.symbol || "").trim();
+    const symbol = String(item?.symbol ?? item?.short_code ?? "").trim().toUpperCase();
     if (!symbol) {
       ElMessage.error("标的代码无效，无法添加");
       return;
     }
 
-  try {
+    try {
       const payload = await marketStore.addWatchlistInstrument(symbol);
       const created = Boolean(payload?.created);
       ElMessage.success(created ? "添加成功" : "该标的已在自选中");
@@ -356,23 +328,32 @@ export function useMarketPage() {
       : dt.toLocaleString("zh-CN", { hour12: false });
   }
 
+  function handleVisibilityChange() {
+    if (document.hidden) return;
+    marketStore
+      .refreshMarkets({ silent: true })
+      .catch(() => {})
+      .finally(() => {
+        ensureSelectedMarketAvailable();
+      });
+  }
+
   onMounted(async () => {
     try {
       await marketStore.fetchMarkets();
     } catch {}
     ensureSelectedMarketAvailable();
-    document.addEventListener("visibilitychange", handleVisibilityChange);
   });
 
-  onUnmounted(() => {
-    clearSearchDebounceTimer();
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
-  });
+  if (typeof document !== "undefined") {
+    useEventListener(document, "visibilitychange", handleVisibilityChange);
+  }
 
   return {
     allQuotes,
     changeBadgeClass,
     chooseMarket,
+    error,
     formatPercent,
     formatPrice,
     formatUpdatedAt,
@@ -396,6 +377,5 @@ export function useMarketPage() {
     showSearchDropdown,
     updatedAt,
     visibleQuotes,
-    error,
   };
 }

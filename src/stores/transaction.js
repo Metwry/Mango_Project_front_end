@@ -1,14 +1,17 @@
 import { defineStore } from "pinia";
 import { ref, reactive, computed } from "vue";
 import {
-  getTransactions,
+  getTransactionsByMode,
+  TRANSACTION_HISTORY_MODE,
+  getActivityTypeByMode,
   createTransaction,
   updateTransaction,
   patchTransaction,
-  deleteTransaction,
+  deleteTransactionByMode,
+  deleteAllTransactionsByActivity,
   reverseTransaction,
 } from "@/utils/transaction.js";
-import { getPagedList, getPayload } from "@/utils/apiPayload";
+import { getPagedList, getPayload } from "@/utils/api";
 
 export const useTransactionsStore = defineStore("transactions", () => {
   const items = ref([]);
@@ -23,6 +26,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     start: null,
     end: null,
     ordering: "-add_date",
+    history_mode: TRANSACTION_HISTORY_MODE.ACTIVITY,
     page: 1,
     page_size: 10,
   });
@@ -54,12 +58,15 @@ export const useTransactionsStore = defineStore("transactions", () => {
 
     try {
       const params = { ...filters, ...extraParams };
+      const historyMode = params.history_mode || TRANSACTION_HISTORY_MODE.ACTIVITY;
+      delete params.history_mode;
+
       Object.keys(params).forEach((k) => {
         const v = params[k];
         if (v === null || v === undefined || v === "") delete params[k];
       });
 
-      const res = await getTransactions(params);
+      const res = await getTransactionsByMode(historyMode, params);
       const normalized = getPagedList(res);
       items.value = normalized.list;
       total.value = normalized.total;
@@ -119,9 +126,40 @@ export const useTransactionsStore = defineStore("transactions", () => {
   async function removeOne(id) {
     error.value = null;
     try {
-      await deleteTransaction(id);
+      await deleteTransactionByMode(id);
       delete detailMap[id];
-      await refresh();
+
+      const currentPage = Number(filters.page) || 1;
+      await fetchList({
+        page: currentPage,
+        page_size: filters.page_size,
+        history_mode: filters.history_mode,
+      });
+
+      if (currentPage > 1 && items.value.length === 0) {
+        await fetchList({
+          page: currentPage - 1,
+          page_size: filters.page_size,
+          history_mode: filters.history_mode,
+        });
+      }
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
+
+  async function removeAllByCurrentMode() {
+    error.value = null;
+    try {
+      const activityType = getActivityTypeByMode(filters.history_mode);
+      await deleteAllTransactionsByActivity(activityType);
+
+      await fetchList({
+        page: 1,
+        page_size: filters.page_size,
+        history_mode: filters.history_mode,
+      });
     } catch (e) {
       error.value = e;
       throw e;
@@ -134,7 +172,11 @@ export const useTransactionsStore = defineStore("transactions", () => {
       const res = await reverseTransaction(id);
       const data = getPayload(res);
 
-      await fetchList({ page: filters.page, page_size: filters.page_size });
+      await fetchList({
+        page: filters.page,
+        page_size: filters.page_size,
+        history_mode: filters.history_mode,
+      });
 
       return data;
     } catch (e) {
@@ -171,6 +213,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     patchOne,
     removeOne,
     reverseOne,
+    removeAllByCurrentMode,
     reset,
   };
 });

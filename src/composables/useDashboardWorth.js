@@ -1,21 +1,16 @@
 import { onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useAccountsStore } from "@/stores/accounts";
-import { getPayload } from "@/utils/apiPayload";
-import { getUsdExchangeRates } from "@/utils/exchangeRates";
 import {
   buildAccountsValuation,
-  DEFAULT_USD_PER_CURRENCY_RATES,
-  normalizeUsdPerCurrencyRates,
+  ensureUsdPerCurrencyRates,
+  getCachedUsdPerCurrencyRates,
 } from "@/utils/fxRates";
 
-let sharedUsdPerCurrencyRates = { ...DEFAULT_USD_PER_CURRENCY_RATES };
-let sharedRatesFetchedAt = 0;
 const sharedValuedAccounts = ref([]);
 const sharedTotalWorthCny = ref(0);
 const sharedTotalWorthUsd = ref(0);
 const sharedWorthReady = ref(false);
-const FX_RATES_STALE_MS = 10 * 60 * 1000;
 
 export function useDashboardWorth() {
   const accountsStore = useAccountsStore();
@@ -28,7 +23,7 @@ export function useDashboardWorth() {
 
   let syncToken = 0;
 
-  const applyValuation = (rates = sharedUsdPerCurrencyRates) => {
+  const applyValuation = (rates = getCachedUsdPerCurrencyRates()) => {
     const result = buildAccountsValuation(accounts.value, rates);
     valuedAccounts.value = result.valuedAccounts;
     totalWorthCny.value = result.totalValueCny;
@@ -36,41 +31,19 @@ export function useDashboardWorth() {
     worthReady.value = true;
   };
 
-  const hasFreshRates = () =>
-    sharedRatesFetchedAt > 0 &&
-    Date.now() - sharedRatesFetchedAt < FX_RATES_STALE_MS;
-
   const refreshWorth = async ({ forceRates = false } = {}) => {
     const token = ++syncToken;
-    let nextRates = sharedUsdPerCurrencyRates;
-    const shouldFetchRates = forceRates || !hasFreshRates();
-    let fetchedRates = false;
+    let nextRates = getCachedUsdPerCurrencyRates();
 
-    if (shouldFetchRates) {
-      try {
-        const res = await getUsdExchangeRates();
-        const payload = getPayload(res, {});
-        nextRates = {
-          ...nextRates,
-          ...normalizeUsdPerCurrencyRates(payload),
-          USD: 1,
-        };
-        fetchedRates = true;
-      } catch {
-        // Keep previous rates when FX API is temporarily unavailable.
-      }
+    try {
+      nextRates = await ensureUsdPerCurrencyRates({ force: forceRates });
+    } catch {
+      // Keep previous rates when FX API is temporarily unavailable.
     }
 
     if (token !== syncToken) return;
 
-    if (shouldFetchRates) {
-      sharedUsdPerCurrencyRates = nextRates;
-      if (fetchedRates) {
-        sharedRatesFetchedAt = Date.now();
-      }
-    }
-
-    applyValuation(sharedUsdPerCurrencyRates);
+    applyValuation(nextRates);
   };
 
   watch(

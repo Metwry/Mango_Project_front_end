@@ -6,6 +6,7 @@ import { PieChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import { toSafeNumber } from '@/utils/formatters'
+import { getAccountColorById } from '@/utils/accountColors'
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -16,8 +17,12 @@ use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent, GridComponent]
 const chartData = computed(() => {
     const data = (props.accounts || [])
         .map(acc => ({
+            id: acc?.id ?? null,
             name: String(acc?.name ?? ''),
-            value: Math.max(0, toSafeNumber(acc?.valueCny))
+            value: Math.max(0, toSafeNumber(acc?.valueCny)),
+            itemStyle: {
+                color: getAccountColorById(acc?.id),
+            },
         }))
         .filter(x => x.name && x.value > 0)
         .sort((a, b) => b.value - a.value)
@@ -26,7 +31,14 @@ const chartData = computed(() => {
 
     const top5 = data.slice(0, 5)
     const others = data.slice(5).reduce((sum, item) => sum + item.value, 0)
-    return [...top5, { name: '其他', value: others }]
+    return [...top5, {
+        id: "others",
+        name: '其他',
+        value: others,
+        itemStyle: {
+            color: "#94A3B8",
+        },
+    }]
 })
 
 const total = computed(() => chartData.value.reduce((sum, x) => sum + x.value, 0))
@@ -91,7 +103,6 @@ const option = computed(() => ({
     textStyle: {
         fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif"
     },
-    color: ['#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#9ca3af'],
     tooltip: {
         trigger: 'item',
         formatter: '{b}: <b>{d}%</b>'

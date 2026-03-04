@@ -6,10 +6,16 @@ import { LineChart } from "echarts/charts";
 import { GridComponent, LegendComponent, TooltipComponent } from "echarts/components";
 import VChart from "vue-echarts";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
-import { getPayload } from "@/utils/apiPayload";
+import { getPayload } from "@/utils/api";
+import { getAccountColorById, getAccountColorWithAlpha } from "@/utils/accountColors";
 import { formatCurrencyAmount } from "@/utils/formatters";
-import { getUsdExchangeRates } from "@/utils/exchangeRates";
-import { DEFAULT_USD_PER_CURRENCY_RATES, normalizeUsdPerCurrencyRates } from "@/utils/fxRates";
+import {
+  DEFAULT_USD_PER_CURRENCY_RATES,
+  ensureUsdPerCurrencyRates,
+  getCachedUsdPerCurrencyRates,
+  getUsdPerCnyRate,
+  resolveUsdPerCurrencyRate,
+} from "@/utils/fxRates";
 import { buildSnapshotTimeline, getAccountSnapshots } from "@/utils/snapshot";
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent]);
@@ -22,11 +28,11 @@ const props = defineProps({
 });
 
 const RANGE_OPTIONS = [
-  { key: "all", label: "至今为止", level: "MON1", days: 3650 },
   { key: "today", label: "今天", level: "M15", days: 0 },
   { key: "7d", label: "近7天", level: "H4", days: 7 },
-  { key: "30d", label: "近30天", level: "H4", days: 30 },
-  { key: "1y", label: "近1年", level: "D1", days: 365 },
+  { key: "30d", label: "近30天", level: "D1", days: 30 },
+  { key: "1y", label: "近1年", level: "MON1", days: 365 },
+  { key: "all", label: "至今为止", level: "MON1", days: 3650 },
 ];
 
 const accountId = ref("");
@@ -40,11 +46,27 @@ const axisIntervalMs = ref(0);
 let requestSeq = 0;
 
 const rangeMeta = computed(() => {
-  return RANGE_OPTIONS.find((item) => item.key === activeRangeKey.value) ?? RANGE_OPTIONS[2];
+  return RANGE_OPTIONS.find((item) => item.key === activeRangeKey.value)
+    ?? RANGE_OPTIONS.find((item) => item.key === "today")
+    ?? RANGE_OPTIONS[0];
 });
 
 const hasData = computed(() => chartSeries.value.length > 0);
 const selectedAccountId = computed(() => toPositiveInt(accountId.value));
+const chartThemeKey = computed(() => selectedAccountId.value || "all_accounts");
+const chartPanelStyle = computed(() => ({
+  borderColor: getAccountColorWithAlpha(chartThemeKey.value, 0.4),
+  background: `linear-gradient(180deg, ${getAccountColorWithAlpha(chartThemeKey.value, 0.18)} 0%, ${getAccountColorWithAlpha(chartThemeKey.value, 0.08)} 100%)`,
+}));
+const accountById = computed(() => {
+  const map = new Map();
+  (props.accounts || []).forEach((item) => {
+    const id = toPositiveInt(item?.id);
+    if (!id) return;
+    map.set(id, item);
+  });
+  return map;
+});
 
 function toPositiveInt(value) {
   const n = Number(value);
@@ -92,17 +114,6 @@ function toSnapshotNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function getUsdPerCurrencyRate(currencyCode, usdPerCurrencyRates) {
-  const code = normalizeCurrency(currencyCode);
-  const candidate = Number(usdPerCurrencyRates?.[code]);
-  if (Number.isFinite(candidate) && candidate > 0) return candidate;
-
-  const fallback = Number(DEFAULT_USD_PER_CURRENCY_RATES?.[code]);
-  if (Number.isFinite(fallback) && fallback > 0) return fallback;
-
-  return 1;
-}
-
 async function fetchTrendData() {
   const currentRange = rangeMeta.value;
   const { start, end } = currentRange.key === "today"
@@ -122,21 +133,15 @@ async function fetchTrendData() {
   const reqId = ++requestSeq;
 
   try {
-    const [res, fxRes] = await Promise.all([
+    const [res, usdPerCurrencyRates] = await Promise.all([
       getAccountSnapshots(params),
-      getUsdExchangeRates().catch(() => null),
+      ensureUsdPerCurrencyRates().catch(() => getCachedUsdPerCurrencyRates()),
     ]);
 
     if (reqId !== requestSeq) return;
 
     const payload = getPayload(res, {});
-    const fxPayload = getPayload(fxRes, {});
-    const usdPerCurrencyRates = {
-      ...DEFAULT_USD_PER_CURRENCY_RATES,
-      ...normalizeUsdPerCurrencyRates(fxPayload),
-      USD: 1,
-    };
-    usdPerCnyRate.value = getUsdPerCurrencyRate("CNY", usdPerCurrencyRates);
+    usdPerCnyRate.value = getUsdPerCnyRate(usdPerCurrencyRates);
 
     const timeline = buildSnapshotTimeline(payload?.meta);
     const axisStart = new Date(String(payload?.meta?.axis_start_time ?? "")).getTime();
@@ -152,7 +157,8 @@ async function fetchTrendData() {
         if (!id) return null;
 
         const accountCurrency = normalizeCurrency(seriesItem?.account_currency);
-        const usdPerCurrencyRate = getUsdPerCurrencyRate(accountCurrency, usdPerCurrencyRates);
+        const account = accountById.value.get(id) ?? { currency: accountCurrency };
+        const usdPerCurrencyRate = resolveUsdPerCurrencyRate(account, usdPerCurrencyRates);
         const balancesUsd = Array.isArray(seriesItem?.balance_usd) ? seriesItem.balance_usd : [];
         let firstValidIndex = -1;
         let lastValidIndex = -1;
@@ -228,34 +234,54 @@ const chartSeries = computed(() => {
 
     if (data.length === 0) return [];
 
+    const singlePoint = data.length === 1;
+    const summaryColor = getAccountColorById("all_accounts");
     return [{
       id: "account-all-cny",
       name: "全部账户",
+      accountId: "all_accounts",
       accountCurrency: "CNY",
       type: "line",
       smooth: true,
-      showSymbol: false,
-      symbol: "none",
+      showSymbol: singlePoint,
+      symbol: singlePoint ? "circle" : "none",
+      symbolSize: singlePoint ? 7 : 4,
       sampling: "lttb",
-      lineStyle: { width: 2.2 },
-      areaStyle: { opacity: 0.08 },
+      itemStyle: { color: summaryColor },
+      lineStyle: {
+        color: summaryColor,
+        width: 3.4,
+      },
+      areaStyle: {
+        color: getAccountColorWithAlpha("all_accounts", 0.16),
+      },
       emphasis: { focus: "series" },
       data,
     }];
   }
 
   return snapshotSeries.value.map((entry) => {
+    const singlePoint = entry.data.length === 1;
+    const seriesColor = getAccountColorById(entry.accountId);
     return {
       id: `account-${entry.accountId}`,
       name: entry.accountName,
+      accountId: entry.accountId,
       accountCurrency: entry.accountCurrency,
       type: "line",
       smooth: true,
-      showSymbol: false,
-      symbol: "none",
+      showSymbol: singlePoint,
+      symbol: singlePoint ? "circle" : "none",
+      symbolSize: singlePoint ? 7 : 4,
       sampling: "lttb",
-      lineStyle: { width: 2 },
-      areaStyle: { opacity: 0.06 },
+      itemStyle: { color: seriesColor },
+      lineStyle: {
+        color: seriesColor,
+        width: 3,
+      },
+      areaStyle: {
+        color: getAccountColorWithAlpha(entry.accountId, 0.13),
+      },
       emphasis: { focus: "series" },
       data: entry.data,
     };
@@ -288,9 +314,15 @@ const xAxisBounds = computed(() => {
     if (ranges.length > 0) {
       const minIndex = Math.min(...ranges.map((item) => item[0]));
       const maxIndex = Math.max(...ranges.map((item) => item[1]));
+      const min = axisStartMs.value + minIndex * axisIntervalMs.value;
+      const max = axisStartMs.value + maxIndex * axisIntervalMs.value;
+      if (min === max) {
+        const pad = Math.max(axisIntervalMs.value / 2, 60 * 1000);
+        return { min: min - pad, max: max + pad };
+      }
       return {
-        min: axisStartMs.value + minIndex * axisIntervalMs.value,
-        max: axisStartMs.value + maxIndex * axisIntervalMs.value,
+        min,
+        max,
       };
     }
   }
@@ -301,6 +333,13 @@ const xAxisBounds = computed(() => {
     .sort((a, b) => a - b);
 
   if (allTimes.length === 0) return null;
+  if (allTimes[0] === allTimes[allTimes.length - 1]) {
+    const pad = Math.max(axisIntervalMs.value / 2, 60 * 1000);
+    return {
+      min: allTimes[0] - pad,
+      max: allTimes[0] + pad,
+    };
+  }
   return {
     min: allTimes[0],
     max: allTimes[allTimes.length - 1],
@@ -324,6 +363,10 @@ function formatTimelineLabel(ts) {
 
   if (activeRangeKey.value === "all" || activeRangeKey.value === "1y") {
     return `${y}-${m}-${d}`;
+  }
+
+  if (activeRangeKey.value === "30d") {
+    return `${m}-${d}`;
   }
 
   return `${m}-${d} ${hh}:${mm}`;
@@ -372,7 +415,6 @@ function formatTooltipAmount(value, currencyCode = "") {
 }
 
 const chartOption = computed(() => ({
-  color: ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#0ea5e9"],
   grid: {
     left: 10,
     right: 12,
@@ -438,7 +480,7 @@ const chartOption = computed(() => ({
       fontSize: 11,
       formatter: (value) => formatAxisAmount(value, yAxisCurrency.value),
     },
-    splitLine: { lineStyle: { color: "rgba(148,163,184,0.22)", type: "dashed" } },
+    splitLine: { show: false },
   },
   series: chartSeries.value,
 }));
@@ -472,8 +514,7 @@ const chartOption = computed(() => ({
       </div>
     </div>
 
-    <div
-      class="flex-1 rounded-xl border border-gray-200/80 bg-gray-50/70 p-2 dark:border-gray-700 dark:bg-gray-900/40">
+    <div class="flex-1 rounded-xl border p-2" :style="chartPanelStyle">
       <div v-if="loading" class="h-full min-h-[16rem] grid place-items-center text-sm text-gray-500 dark:text-gray-400">
         正在加载走势数据...
       </div>

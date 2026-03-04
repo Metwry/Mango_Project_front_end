@@ -130,7 +130,7 @@ onClickOutside(marketDropdownWrapRef, () => {
             </div>
 
             <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0 sm:ml-1">
-              <每 10 分钟刷新> 更新时间：{{
+              <每 10 分钟更新> 更新时间：{{
                 formatUpdatedAt(updatedAt)
               }}
             </span>
@@ -194,14 +194,14 @@ onClickOutside(marketDropdownWrapRef, () => {
               <td
                 class="py-3 px-2.5 text-center tabular-nums bg-white dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700 whitespace-nowrap">
                 <span
-                  class="inline-flex items-center justify-center px-2 py-1 rounded-md border border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200 ">
+                  class="inline-flex items-center justify-center px-2 py-1 rounded-xl border border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200 ">
                   {{ formatPrice(quote.price, quote.market) }}
                 </span>
               </td>
               <td
                 class="py-3 px-2.5 text-center bg-white dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700 whitespace-nowrap">
                 <span
-                  class="inline-flex items-center justify-center min-w-[78px] px-2 py-1 rounded-md border text-xs font-semibold"
+                  class="inline-flex items-center justify-center min-w-[78px] px-2 py-1 rounded-2xl border text-xs font-semibold"
                   :class="changeBadgeClass(quote.pct)">
                   {{ formatPercent(quote.pct) }}
                 </span>
@@ -225,7 +225,7 @@ onClickOutside(marketDropdownWrapRef, () => {
               <td
                 class="py-3 px-2.5 text-center bg-white dark:bg-gray-800 border-y border-r border-gray-100 dark:border-gray-700 rounded-r-xl whitespace-nowrap">
                 <button type="button"
-                  class="button-base !justify-center !px-3 !py-1.5 !rounded-lg !text-xs !text-red-600 !bg-red-50 !border-red-100 hover:!bg-red-100 dark:!text-red-300 dark:!bg-red-900/20 dark:!border-red-800 dark:hover:!bg-red-900/40"
+                  class="button-base !justify-center !px-3 !py-1.5 !rounded-xl !text-xs !text-red-600 !bg-red-50  hover:!bg-red-100 dark:!text-red-300 dark:!bg-red-900/20 dark:!border-red-800 dark:hover:!bg-red-900/40"
                   @click="onDeleteClick(quote)">
                   删除
                 </button>

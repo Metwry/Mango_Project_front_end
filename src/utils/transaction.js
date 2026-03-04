@@ -1,11 +1,31 @@
 import api from "@/utils/api.js";
 
 const BASE_URL = "/user/transactions";
+const DELETE_URL = `${BASE_URL}/delete/`;
 
-export function getTransactions(params) {
-  // params 可选：用于分页/筛选/排序等，例如 { account_id, category, start, end, page }
-  // 搜索交易记录功能添加：account_name、counterparty、category、start、end 等筛选字段（后端接口待支持）
-  return api.get(`${BASE_URL}/`, { params });
+export const TRANSACTION_HISTORY_MODE = Object.freeze({
+  ACTIVITY: "activity",
+  ALL: "all",
+  REVERSED: "reversed",
+});
+
+const ACTIVITY_TYPE_BY_MODE = Object.freeze({
+  [TRANSACTION_HISTORY_MODE.ACTIVITY]: "manual",
+  [TRANSACTION_HISTORY_MODE.ALL]: "investment",
+  [TRANSACTION_HISTORY_MODE.REVERSED]: "reversed",
+});
+
+export function getActivityTypeByMode(mode) {
+  return ACTIVITY_TYPE_BY_MODE[mode] ?? ACTIVITY_TYPE_BY_MODE[TRANSACTION_HISTORY_MODE.ACTIVITY];
+}
+
+export function getTransactionsByMode(mode, params) {
+  return api.get(`${BASE_URL}/`, {
+    params: {
+      ...params,
+      activity_type: getActivityTypeByMode(mode),
+    },
+  });
 }
 
 export function createTransaction(data) {
@@ -16,14 +36,24 @@ export function updateTransaction(id, data) {
   return api.put(`${BASE_URL}/${id}/`, data);
 }
 
-export function deleteTransaction(id) {
-  return api.delete(`${BASE_URL}/${id}/`);
-}
-
 export function patchTransaction(id, data) {
   return api.patch(`${BASE_URL}/${id}/`, data);
 }
 
 export function reverseTransaction(id) {
   return api.post(`${BASE_URL}/${id}/reverse/`);
+}
+
+export function deleteTransactionByMode(id) {
+  return api.post(DELETE_URL, {
+    mode: "single",
+    transaction_id: id,
+  });
+}
+
+export function deleteAllTransactionsByActivity(activityType) {
+  return api.post(DELETE_URL, {
+    mode: "activity",
+    activity_type: activityType,
+  });
 }

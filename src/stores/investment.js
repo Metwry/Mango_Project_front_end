@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { getPayload, getResultsList } from "@/utils/apiPayload";
+import { getPayload, getResultsList } from "@/utils/api";
 import {
   buyInvestmentPosition as apiBuyInvestmentPosition,
   getInvestmentPositions,

@@ -5,7 +5,7 @@ import {
   deleteWatchlistInstrument as apiDeleteWatchlistInstrument,
   getUserMarkets,
 } from "@/utils/markets";
-import { getPayload } from "@/utils/apiPayload";
+import { getPayload } from "@/utils/api";
 import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;

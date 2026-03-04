@@ -5,8 +5,8 @@ import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { searchMarketInstruments } from "@/utils/markets";
-import { getPayload } from "@/utils/apiPayload";
-import { filterNonInvestmentAccounts } from "@/utils/accountFilters";
+import { getPayload } from "@/utils/api";
+import { filterNonInvestmentAccounts } from "@/utils/accounts";
 import { useInvestmentStore } from "@/stores/investment";
 
 const props = defineProps({

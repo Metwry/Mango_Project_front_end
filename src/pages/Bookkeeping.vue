@@ -14,10 +14,15 @@ const {
     transactionsLoading,
     transactionsError,
     submitting,
+    deletingId,
+    clearingAll,
     onPageChange,
     onPageSizeChange,
     onSearchChange,
     onSearchReset,
+    onModeChange,
+    onDeleteOne,
+    onDeleteAll,
     onReverseTransaction,
     onSubmitTransaction,
 } = useBookkeepingPage();
@@ -35,8 +40,12 @@ async function handleSubmitTransaction(payload) {
         <section class="h-full w-full overflow-hidden">
             <TransactionsHistoryCard :transactions="transactions" :accounts="accounts" :loading="transactionsLoading"
                 :error="transactionsError" :page="txFilters.page" :page-size="txFilters.page_size" :total="transactionsTotal"
+                :history-mode="txFilters.history_mode" :deleting-id="deletingId"
+                :clearing-all="clearingAll"
                 @page-change="onPageChange" @page-size-change="onPageSizeChange" @reverse="onReverseTransaction"
-                @search-change="onSearchChange" @search-reset="onSearchReset" @open-add-transaction="showAddTransaction = true" />
+                @search-change="onSearchChange" @search-reset="onSearchReset" @mode-change="onModeChange"
+                @delete-one="onDeleteOne" @delete-all="onDeleteAll"
+                @open-add-transaction="showAddTransaction = true" />
         </section>
     </div>
 
