@@ -49,6 +49,12 @@ const router = createRouter({
           component: () => import("../pages/Analysis.vue"),
           meta: { title: "数据分析", icon: "market" },
         },
+        {
+          path: "tools",
+          name: "Tools",
+          component: () => import("../pages/tools.vue"),
+          meta: { title: "工具箱", icon: "market" },
+        },
       ],
     },
   ],

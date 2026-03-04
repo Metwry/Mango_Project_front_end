@@ -4,10 +4,14 @@ import { useRoute } from 'vue-router'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import TopBar from '@/components/layout/Topbar.vue'
 import { useAccountsStore } from '@/stores/accounts'
+import { useInvestmentStore } from '@/stores/investment'
+import { useMarketStore } from '@/stores/market'
 
 const route = useRoute()
 const pageScrollRef = ref(null)
 const accountsStore = useAccountsStore()
+const investmentStore = useInvestmentStore()
+const marketStore = useMarketStore()
 
 const currentTitle = computed(() => {
     return route.meta.title || ''
@@ -23,6 +27,7 @@ const menuItems = [
     { name: '投资', path: '/investment', icon: 'holdings' },
     { name: '行情', path: '/market', icon: 'market' },
     { name: '数据分析', path: '/analysis', icon: 'market' },
+    { name: '工具箱', path: '/tools', icon: 'market' },
 ]
 
 const pageTransitionName = ref('page-slide-up')
@@ -63,11 +68,17 @@ watch(
 
 onMounted(() => {
     accountsStore.startAccountsAutoRefresh()
+    investmentStore.startInvestmentAutoRefresh()
+    marketStore.startMarketAutoRefresh()
     void accountsStore.fetchAccounts()
+    void investmentStore.fetchPositions({ silent: true })
+    void marketStore.fetchMarkets({ silent: true })
 })
 
 onUnmounted(() => {
     accountsStore.stopAccountsAutoRefresh()
+    investmentStore.stopInvestmentAutoRefresh()
+    marketStore.stopMarketAutoRefresh()
 })
 
 </script>

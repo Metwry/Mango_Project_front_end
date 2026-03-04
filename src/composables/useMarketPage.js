@@ -361,12 +361,10 @@ export function useMarketPage() {
       await marketStore.fetchMarkets();
     } catch {}
     ensureSelectedMarketAvailable();
-    marketStore.startMarketAutoRefresh();
     document.addEventListener("visibilitychange", handleVisibilityChange);
   });
 
   onUnmounted(() => {
-    marketStore.stopMarketAutoRefresh();
     clearSearchDebounceTimer();
     document.removeEventListener("visibilitychange", handleVisibilityChange);
   });

@@ -1,9 +1,9 @@
 <script setup>
-import { onMounted, onUnmounted } from "vue";
+import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import PositionCard from "@/components/cards/investmentCards/PositionCard.vue";
 import AddPositionCard from "@/components/cards/investmentCards/AddPositionCard.vue";
-import { useInvestmentCardOrder } from "@/composables/useInvestmentCardOrder";
+import { isInvestmentAccount } from "@/utils/accountFilters";
 import { useInvestmentStore } from "@/stores/investment";
 import { useAccountsStore } from "@/stores/accounts";
 
@@ -11,26 +11,17 @@ const investmentStore = useInvestmentStore();
 const accountsStore = useAccountsStore();
 const { loading, error, positions } = storeToRefs(investmentStore);
 const { accounts } = storeToRefs(accountsStore);
-const {
-  getPositionKey,
-  isDragging,
-  onCardDragEnd,
-  onCardDragOver,
-  onCardDrop,
-  onCardDragStart,
-  orderedPositions,
-} = useInvestmentCardOrder(positions);
+const investmentAccountId = computed(() => {
+  const investmentAccount = (accounts.value || []).find((item) => isInvestmentAccount(item));
+  const n = Number(investmentAccount?.id);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : "";
+});
 
 onMounted(() => {
-  investmentStore.startInvestmentAutoRefresh();
   Promise.allSettled([
     investmentStore.fetchPositions(),
     accountsStore.fetchAccounts(),
   ]);
-});
-
-onUnmounted(() => {
-  investmentStore.stopInvestmentAutoRefresh();
 });
 </script>
 
@@ -47,12 +38,9 @@ onUnmounted(() => {
 
       <template v-else>
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-[minmax(24rem,_1fr)]">
-          <div v-for="position in orderedPositions" :key="getPositionKey(position)" class="h-full"
-            :class="isDragging(position) ? 'opacity-80' : ''" draggable="true"
-            @dragstart="onCardDragStart(position, $event)" @dragover="onCardDragOver(position, $event)"
-            @drop="onCardDrop(position, $event)" @dragend="onCardDragEnd">
-            <PositionCard :position="position" :accounts="accounts" />
-          </div>
+          <PositionCard v-for="(position, index) in positions"
+            :key="position.instrumentId || position.instrument_id || position.symbol || `${position.name}-${index}`"
+            :position="position" :accounts="accounts" :investment-account-id="investmentAccountId" />
           <AddPositionCard :accounts="accounts" />
         </div>
 

@@ -10,7 +10,7 @@ import {
 import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;
-const AUTO_REFRESH_SECOND = 20;
+const AUTO_REFRESH_SECOND = 30;
 
 function toFiniteNumber(value) {
   const n = Number(value);
@@ -47,6 +47,7 @@ function normalizeQuoteRows(payload) {
 
 function normalizePosition(raw) {
   const instrumentId = toFiniteNumber(raw?.instrument_id ?? raw?.id);
+  const accountId = toFiniteNumber(raw?.account_id ?? raw?.investment_account_id ?? raw?.accountId);
   const shortCode = String(raw?.short_code ?? raw?.stock_code ?? "").trim().toUpperCase();
   const stockName = String(raw?.name ?? raw?.stock_name ?? "").trim();
   const marketType = String(raw?.market_type ?? "").trim().toUpperCase();
@@ -60,6 +61,7 @@ function normalizePosition(raw) {
 
   return {
     instrumentId: Number.isFinite(instrumentId) ? instrumentId : null,
+    accountId: Number.isFinite(accountId) ? Math.trunc(accountId) : null,
     shortCode,
     symbol: shortCode,
     name: stockName || shortCode || "未命名股票",
@@ -71,7 +73,6 @@ function normalizePosition(raw) {
     quantity: Number.isFinite(quantity) ? quantity : 0,
     currentValue: Number.isFinite(currentValue) ? currentValue : null,
     currentPrice: Number.isFinite(impliedCurrentPrice) ? impliedCurrentPrice : null,
-    trend: [],
   };
 }
 

@@ -1,10 +1,19 @@
 <script setup>
 import { computed, getCurrentInstance, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { use } from "echarts/core";
+import { CanvasRenderer } from "echarts/renderers";
+import { LineChart } from "echarts/charts";
+import { GridComponent, TooltipComponent } from "echarts/components";
+import VChart from "vue-echarts";
 import { useResizeObserver } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import TradePositionPanel from "@/components/windows/TradePositionPanel.vue";
+import { getPayload } from "@/utils/apiPayload";
+import { buildSnapshotTimeline, getPositionSnapshots } from "@/utils/snapshot";
 import { useInvestmentStore } from "@/stores/investment";
+
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent]);
 
 const props = defineProps({
   position: {
@@ -14,6 +23,10 @@ const props = defineProps({
   accounts: {
     type: Array,
     default: () => [],
+  },
+  investmentAccountId: {
+    type: [Number, String],
+    default: "",
   },
 });
 
@@ -40,6 +53,14 @@ const tradeMode = ref("");
 const tradePanelVisible = ref(false);
 const tradeTransitionName = ref("trade-panel-drawer");
 const logoLoadFailed = ref(false);
+const trendLoading = ref(false);
+const trendFetchError = ref(null);
+const trendSeries = ref([]);
+const trendAxisStartMs = ref(0);
+const trendAxisIntervalMs = ref(0);
+const trendStartIndex = ref(-1);
+const trendEndIndex = ref(-1);
+let trendRequestSeq = 0;
 
 const MARKET_MONEY_META = {
   CRYPTO: { prefix: "$", locale: "en-US" },
@@ -120,36 +141,25 @@ const statThemeStyle = computed(() => {
   };
 });
 
-const trendPoints = computed(() => {
-  const source = Array.isArray(props.position?.trend) && props.position.trend.length >= 2
-    ? props.position.trend
-    : [4, 5, 3, 6, 8, 7, 9, 11, 10, 12];
+function toPositiveInt(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+}
 
-  const min = Math.min(...source);
-  const max = Math.max(...source);
-  const width = 100;
-  const height = 40;
-  const pad = 3;
-  const range = max - min || 1;
+function toSnapshotNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
 
-  return source.map((value, index) => {
-    const x = (index / (source.length - 1)) * width;
-    const y = pad + ((max - value) / range) * (height - pad * 2);
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  });
-});
-
-const trendPath = computed(() => {
-  if (!trendPoints.value.length) return "";
-  return `M ${trendPoints.value.join(" L ")}`;
-});
-
-const trendAreaPath = computed(() => {
-  if (!trendPoints.value.length) return "";
-  const first = trendPoints.value[0].split(",")[0];
-  const last = trendPoints.value[trendPoints.value.length - 1].split(",")[0];
-  return `M ${first},40 L ${trendPoints.value.join(" L ")} L ${last},40 Z`;
-});
+const instrumentId = computed(() => toPositiveInt(
+  props.position?.instrumentId ?? props.position?.instrument_id,
+));
+const snapshotAccountId = computed(() => toPositiveInt(
+  props.position?.accountId ??
+  props.position?.account_id ??
+  props.investmentAccountId,
+));
 
 const tone = computed(() => {
   if (profitValue.value === null) return "neutral";
@@ -173,12 +183,139 @@ const toneTextClass = computed(() => {
 });
 
 const trendColor = computed(() => {
+  const themeColor = String(props.position?.logoColor ?? "").trim().toUpperCase();
+  if (/^#[0-9A-F]{6}$/.test(themeColor)) return themeColor;
+
   if (tone.value === "up") return "#10b981";
   if (tone.value === "down") return "#ef4444";
   return "#9ca3af";
 });
 
-const trendFillId = `trend-fill-${getCurrentInstance()?.uid ?? 0}`;
+const hasTrendData = computed(() => trendSeries.value.length >= 2);
+
+const trendTimeBounds = computed(() => {
+  if (
+    trendAxisStartMs.value > 0 &&
+    trendAxisIntervalMs.value > 0 &&
+    trendStartIndex.value >= 0 &&
+    trendEndIndex.value >= 0
+  ) {
+    return {
+      min: trendAxisStartMs.value + trendStartIndex.value * trendAxisIntervalMs.value,
+      max: trendAxisStartMs.value + trendEndIndex.value * trendAxisIntervalMs.value,
+    };
+  }
+
+  const values = trendSeries.value
+    .map((item) => new Date(item?.[0]).getTime())
+    .filter((item) => Number.isFinite(item))
+    .sort((a, b) => a - b);
+
+  if (values.length === 0) return null;
+  return {
+    min: values[0],
+    max: values[values.length - 1],
+  };
+});
+
+const trendBounds = computed(() => {
+  const values = trendSeries.value
+    .map((item) => Number(item?.[1]))
+    .filter((item) => Number.isFinite(item));
+
+  if (values.length === 0) return null;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return { min, max };
+});
+
+function formatHourTick(value) {
+  const rawMs = new Date(value).getTime();
+  if (!Number.isFinite(rawMs)) return "--";
+  const date = new Date(rawMs + 8 * 60 * 60 * 1000);
+  const hh = String(date.getUTCHours()).padStart(2, "0");
+  const mm = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function formatTrendValue(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "--";
+  return new Intl.NumberFormat("zh-CN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+const trendOption = computed(() => ({
+  animationDuration: 420,
+  grid: {
+    left: 8,
+    right: 8,
+    top: 14,
+    bottom: 8,
+    containLabel: true,
+  },
+  tooltip: {
+    trigger: "axis",
+    axisPointer: { type: "line" },
+    valueFormatter: (value) => {
+      return formatTrendValue(value);
+    },
+  },
+  xAxis: {
+    type: "time",
+    min: trendTimeBounds.value?.min,
+    max: trendTimeBounds.value?.max,
+    boundaryGap: false,
+    axisLine: { lineStyle: { color: "rgba(148,163,184,0.35)" } },
+    axisTick: { show: false },
+    axisLabel: {
+      color: "#94a3b8",
+      fontSize: 10,
+      hideOverlap: true,
+      showMinLabel: true,
+      showMaxLabel: true,
+      formatter: (value) => formatHourTick(value),
+    },
+  },
+  yAxis: {
+    type: "value",
+    min: trendBounds.value?.min,
+    max: trendBounds.value?.max,
+    scale: true,
+    show: false,
+  },
+  series: [
+    {
+      type: "line",
+      smooth: true,
+      showSymbol: false,
+      symbol: "none",
+      sampling: "lttb",
+      lineStyle: {
+        color: trendColor.value,
+        width: 2.1,
+      },
+      areaStyle: {
+        color: {
+          type: "linear",
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: `${trendColor.value}55` },
+            { offset: 1, color: `${trendColor.value}08` },
+          ],
+        },
+      },
+      data: trendSeries.value,
+    },
+  ],
+}));
+
 const companyNameClass = "text-base font-semibold text-black dark:text-white company-name-font";
 
 const nameViewportRef = ref(null);
@@ -241,6 +378,79 @@ function formatQuantity(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 8,
   }).format(n)}`;
+}
+
+async function fetchPositionTrend() {
+  const accountId = snapshotAccountId.value;
+  const targetInstrumentId = instrumentId.value;
+
+  if (!accountId || !targetInstrumentId) {
+    trendSeries.value = [];
+    trendFetchError.value = null;
+    trendLoading.value = false;
+    trendAxisStartMs.value = 0;
+    trendAxisIntervalMs.value = 0;
+    trendStartIndex.value = -1;
+    trendEndIndex.value = -1;
+    return;
+  }
+
+  const end = new Date();
+  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  const params = {
+    level: "M15",
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    account_id: accountId,
+    instrument_id: targetInstrumentId,
+    limit: 10000,
+  };
+
+  trendLoading.value = true;
+  trendFetchError.value = null;
+  const reqId = ++trendRequestSeq;
+
+  try {
+    const res = await getPositionSnapshots(params);
+    if (reqId !== trendRequestSeq) return;
+
+    const payload = getPayload(res, {});
+    const timeline = buildSnapshotTimeline(payload?.meta);
+    const axisStart = new Date(String(payload?.meta?.axis_start_time ?? "")).getTime();
+    trendAxisStartMs.value = Number.isFinite(axisStart) ? axisStart : 0;
+    const intervalSec = Number(payload?.meta?.interval_seconds);
+    trendAxisIntervalMs.value = Number.isFinite(intervalSec) && intervalSec > 0 ? intervalSec * 1000 : 0;
+
+    const series = Array.isArray(payload?.series) ? payload.series : [];
+    const targetSeries = series.find((item) => toPositiveInt(item?.instrument_id) === targetInstrumentId) ?? null;
+    const valueList = Array.isArray(targetSeries?.market_value) ? targetSeries.market_value : [];
+
+    let firstValidIndex = -1;
+    let lastValidIndex = -1;
+
+    trendSeries.value = timeline.reduce((acc, ts, index) => {
+      const trendValue = toSnapshotNumber(valueList[index]);
+      if (trendValue === null) return acc;
+
+      if (firstValidIndex < 0) firstValidIndex = index;
+      lastValidIndex = index;
+      acc.push([ts, trendValue]);
+      return acc;
+    }, []);
+
+    trendStartIndex.value = firstValidIndex;
+    trendEndIndex.value = lastValidIndex;
+  } catch (e) {
+    if (reqId !== trendRequestSeq) return;
+    trendFetchError.value = e;
+    trendSeries.value = [];
+    trendAxisStartMs.value = 0;
+    trendAxisIntervalMs.value = 0;
+    trendStartIndex.value = -1;
+    trendEndIndex.value = -1;
+  } finally {
+    if (reqId === trendRequestSeq) trendLoading.value = false;
+  }
 }
 
 function notifyTradePanelOpen(mode) {
@@ -318,6 +528,10 @@ watch(logoUrl, () => {
   logoLoadFailed.value = false;
 }, { immediate: true });
 
+watch([snapshotAccountId, instrumentId], () => {
+  void fetchPositionTrend();
+}, { immediate: true });
+
 useResizeObserver(nameViewportRef, () => {
   measureNameOverflow();
 });
@@ -328,6 +542,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  trendRequestSeq += 1;
   if (typeof window === "undefined") return;
   window.removeEventListener(TRADE_PANEL_OPEN_EVENT, onExternalTradePanelOpen);
 });
@@ -357,7 +572,7 @@ onUnmounted(() => {
                 :class="hasNameOverflow ? 'name-marquee-animated' : ''" :style="nameTrackStyle">
                 <span :class="companyNameClass">{{ safeName }}</span>
                 <span v-if="hasNameOverflow" :class="companyNameClass" class="ml-8" aria-hidden="true">{{ safeName
-                }}</span>
+                  }}</span>
               </span>
             </h3>
           </div>
@@ -374,20 +589,20 @@ onUnmounted(() => {
       <div
         class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
         :style="statThemeStyle">
-        <p class="text-[11px] text-gray-500 dark:text-gray-400">市价</p>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400">市场价</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ currentPriceText }}</p>
         <p v-if="!hasCurrentPrice" class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">待接入</p>
       </div>
       <div
         class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
         :style="statThemeStyle">
-        <p class="text-[11px] text-gray-500 dark:text-gray-400">成本</p>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400">成本价</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ costPriceText }}</p>
       </div>
       <div
         class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
         :style="statThemeStyle">
-        <p class="text-[11px] text-gray-500 dark:text-gray-400">持仓</p>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400">持仓数量</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ quantityText }}</p>
       </div>
     </div>
@@ -401,18 +616,19 @@ onUnmounted(() => {
         </span>
       </div>
 
-      <svg viewBox="0 0 100 40" preserveAspectRatio="none" class="absolute inset-0 h-full w-full px-3 pb-3 pt-10">
-        <defs>
-          <linearGradient :id="trendFillId" x1="0" x2="0" y1="0" y2="1">
-            <stop :stop-color="trendColor" stop-opacity="0.32" offset="0%" />
-            <stop :stop-color="trendColor" stop-opacity="0.02" offset="100%" />
-          </linearGradient>
-        </defs>
-
-        <path :d="trendAreaPath" :fill="`url(#${trendFillId})`" />
-        <path :d="trendPath" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"
-          :stroke="trendColor" />
-      </svg>
+      <div class="absolute inset-0 px-2 pb-2 pt-10">
+        <div v-if="trendLoading" class="h-full w-full grid place-items-center text-xs text-gray-400 dark:text-gray-500">
+          加载走势中...
+        </div>
+        <div v-else-if="!hasTrendData && trendFetchError"
+          class="h-full w-full grid place-items-center text-xs text-red-500 dark:text-red-400">
+          走势加载失败
+        </div>
+        <v-chart v-else-if="hasTrendData" class="h-full w-full" :option="trendOption" autoresize />
+        <div v-else class="h-full w-full grid place-items-center text-xs text-gray-400 dark:text-gray-500">
+          暂无走势数据
+        </div>
+      </div>
     </div>
 
     <div class="relative">

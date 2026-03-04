@@ -9,7 +9,7 @@ import { getPayload } from "@/utils/apiPayload";
 import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;
-const AUTO_REFRESH_SECOND = 10;
+const AUTO_REFRESH_SECOND = 30;
 const SELECTED_MARKET_KEY = "market_selected_market";
 
 function normalizeDataMarketCode(value) {
