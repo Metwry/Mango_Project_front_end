@@ -3,10 +3,18 @@ import { useAuthStore } from "@/stores/auth";
 import { ElMessage } from "element-plus";
 import router from "@/router";
 
+const NGROK_SKIP_HEADER = "ngrok-skip-browser-warning";
+const NGROK_SKIP_VALUE = "true";
+
 const api = axios.create({
   baseURL: "/api",
   timeout: 10000,
+  headers: {
+    [NGROK_SKIP_HEADER]: NGROK_SKIP_VALUE,
+  },
 });
+
+axios.defaults.headers.common[NGROK_SKIP_HEADER] = NGROK_SKIP_VALUE;
 
 const AUTH_FREE_PATHS = ["/login/", "/token/refresh/"];
 
@@ -34,6 +42,7 @@ api.interceptors.request.use(
     const auth = useAuthStore();
 
     config.headers = config.headers || {};
+    config.headers[NGROK_SKIP_HEADER] = NGROK_SKIP_VALUE;
     if (isAuthFreeRequest(config.url)) {
       if (config.headers.Authorization) delete config.headers.Authorization;
       return config;
