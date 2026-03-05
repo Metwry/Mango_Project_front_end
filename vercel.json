@@ -3,6 +3,10 @@
     {
       "source": "/api/(.*)",
       "destination": "https://preimaginary-upliftingly-sawyer.ngrok-free.dev/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
