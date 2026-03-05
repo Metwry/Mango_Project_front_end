@@ -1,13 +1,17 @@
 import { defineStore } from "pinia";
 import { ref, reactive, computed } from "vue";
 import {
-  getTransactions,
+  getTransactionsByMode,
+  TRANSACTION_HISTORY_MODE,
+  getActivityTypeByMode,
   createTransaction,
   updateTransaction,
   patchTransaction,
-  deleteTransaction,
+  deleteTransactionByMode,
+  deleteAllTransactionsByActivity,
   reverseTransaction,
 } from "@/utils/transaction.js";
+import { getPagedList, getPayload } from "@/utils/api";
 
 export const useTransactionsStore = defineStore("transactions", () => {
   const items = ref([]);
@@ -15,7 +19,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
   const loading = ref(false);
   const error = ref(null);
 
-  //默认查询条件
   const defaultFilters = () => ({
     account_id: null,
     counterparty: null,
@@ -23,6 +26,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     start: null,
     end: null,
     ordering: "-add_date",
+    history_mode: TRANSACTION_HISTORY_MODE.ACTIVITY,
     page: 1,
     page_size: 10,
   });
@@ -30,15 +34,15 @@ export const useTransactionsStore = defineStore("transactions", () => {
   const filters = reactive(defaultFilters());
   const detailMap = reactive({});
 
-  const hasFilters = computed(() => {
-    return !!(
-      filters.account_id ||
-      filters.counterparty ||
-      filters.category ||
-      filters.start ||
-      filters.end
-    );
-  });
+  const hasFilters = computed(() =>
+    [
+      filters.account_id,
+      filters.counterparty,
+      filters.category,
+      filters.start,
+      filters.end,
+    ].some(Boolean),
+  );
 
   function setFilters(patch) {
     Object.assign(filters, patch);
@@ -54,14 +58,16 @@ export const useTransactionsStore = defineStore("transactions", () => {
 
     try {
       const params = { ...filters, ...extraParams };
+      const historyMode = params.history_mode || TRANSACTION_HISTORY_MODE.ACTIVITY;
+      delete params.history_mode;
+
       Object.keys(params).forEach((k) => {
         const v = params[k];
         if (v === null || v === undefined || v === "") delete params[k];
       });
 
-      const res = await getTransactions(params);
-      const payload = res?.data ?? res;
-      const normalized = normalizeListPayload(payload);
+      const res = await getTransactionsByMode(historyMode, params);
+      const normalized = getPagedList(res);
       items.value = normalized.list;
       total.value = normalized.total;
 
@@ -82,8 +88,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await createTransaction(payload);
-
-      return res?.data ?? res;
+      return getPayload(res);
     } catch (e) {
       error.value = e;
       throw e;
@@ -94,7 +99,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await updateTransaction(id, payload);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
       if (data) detailMap[id] = data;
       await refresh();
       return data;
@@ -108,7 +113,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await patchTransaction(id, patch);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
       if (data) detailMap[id] = data;
       await refresh();
       return data;
@@ -121,9 +126,40 @@ export const useTransactionsStore = defineStore("transactions", () => {
   async function removeOne(id) {
     error.value = null;
     try {
-      await deleteTransaction(id);
+      await deleteTransactionByMode(id);
       delete detailMap[id];
-      await refresh();
+
+      const currentPage = Number(filters.page) || 1;
+      await fetchList({
+        page: currentPage,
+        page_size: filters.page_size,
+        history_mode: filters.history_mode,
+      });
+
+      if (currentPage > 1 && items.value.length === 0) {
+        await fetchList({
+          page: currentPage - 1,
+          page_size: filters.page_size,
+          history_mode: filters.history_mode,
+        });
+      }
+    } catch (e) {
+      error.value = e;
+      throw e;
+    }
+  }
+
+  async function removeAllByCurrentMode() {
+    error.value = null;
+    try {
+      const activityType = getActivityTypeByMode(filters.history_mode);
+      await deleteAllTransactionsByActivity(activityType);
+
+      await fetchList({
+        page: 1,
+        page_size: filters.page_size,
+        history_mode: filters.history_mode,
+      });
     } catch (e) {
       error.value = e;
       throw e;
@@ -134,9 +170,13 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await reverseTransaction(id);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
 
-      await fetchList({ page: filters.page, page_size: filters.page_size });
+      await fetchList({
+        page: filters.page,
+        page_size: filters.page_size,
+        history_mode: filters.history_mode,
+      });
 
       return data;
     } catch (e) {
@@ -153,18 +193,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
 
     Object.assign(filters, defaultFilters());
     Object.keys(detailMap).forEach((k) => delete detailMap[k]);
-  }
-
-  //*标准化数据防报错
-  function normalizeListPayload(payload) {
-    if (payload && Array.isArray(payload.results)) {
-      return {
-        list: payload.results,
-        total: payload.count ?? payload.results.length,
-      };
-    }
-    if (Array.isArray(payload)) return { list: payload, total: payload.length };
-    return { list: [], total: 0 };
   }
 
   return {
@@ -185,6 +213,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     patchOne,
     removeOne,
     reverseOne,
+    removeAllByCurrentMode,
     reset,
   };
 });

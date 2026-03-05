@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, reactive, computed } from "vue";
+import { ref, reactive } from "vue";
 import {
   getAccounts,
   createAccount as apiCreateAccount,
@@ -7,6 +7,12 @@ import {
   deleteAccount as apiDeleteAccount,
   getAccountDetail,
 } from "@/utils/accounts";
+import { getPayload, getResultsList } from "@/utils/api";
+import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
+import { STORE_REFRESH_CONFIG } from "@/config/featureConfig";
+
+const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.accounts.intervalMinutes;
+const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.accounts.second;
 
 export const useAccountsStore = defineStore("accounts", () => {
   // ===== state =====
@@ -14,15 +20,31 @@ export const useAccountsStore = defineStore("accounts", () => {
   const loading = ref(false);
   const saving = ref(false);
   const error = ref(null);
+  const actionError = ref(null);
 
   const fetched = ref(false);
   const lastFetchedAt = ref(null);
 
   const fetchPromise = ref(null);
   const detailMap = reactive({});
+  const autoRefreshScheduler = createMinuteAlignedScheduler({
+    intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
+    second: AUTO_REFRESH_SECOND,
+    task: async () => {
+      await fetchAccounts({ force: true });
+    },
+    onError: () => {
+      // Keep scheduler alive even when one refresh fails.
+    },
+  });
 
-  // ===== getters =====
-  const byId = computed(() => (id) => accounts.value.find((a) => a.id === id));
+  function startAccountsAutoRefresh() {
+    autoRefreshScheduler.start();
+  }
+
+  function stopAccountsAutoRefresh() {
+    autoRefreshScheduler.stop();
+  }
 
   // ===== actions =====
   async function fetchAccounts({ force = false } = {}) {
@@ -41,10 +63,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     const p = (async () => {
       try {
         const res = await getAccounts();
-        const payload = res?.data ?? res;
-        const list = Array.isArray(payload)
-          ? payload
-          : (payload?.results ?? []);
+        const list = getResultsList(res);
         accounts.value = list;
 
         fetched.value = true;
@@ -70,13 +89,13 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   async function createAccount(payload) {
     saving.value = true;
-    error.value = null;
+    actionError.value = null;
     try {
       const res = await apiCreateAccount(payload);
       await refreshAccounts();
-      return res?.data ?? res;
+      return getPayload(res);
     } catch (e) {
-      error.value = e;
+      actionError.value = e;
       throw e;
     } finally {
       saving.value = false;
@@ -85,16 +104,16 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   async function updateAccount(id, payload) {
     saving.value = true;
-    error.value = null;
+    actionError.value = null;
     try {
       const res = await apiUpdateAccount(id, payload);
-      const data = res?.data ?? res;
+      const data = getPayload(res);
       if (data) detailMap[id] = data;
 
       await refreshAccounts();
       return data;
     } catch (e) {
-      error.value = e;
+      actionError.value = e;
       throw e;
     } finally {
       saving.value = false;
@@ -103,11 +122,14 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   async function deleteAccount(id) {
     saving.value = true;
+    actionError.value = null;
     try {
       await apiDeleteAccount(id);
       delete detailMap[id];
       await refreshAccounts();
     } catch (e) {
+      actionError.value = e;
+      console.log(e);
       throw e;
     } finally {
       saving.value = false;
@@ -117,23 +139,26 @@ export const useAccountsStore = defineStore("accounts", () => {
   async function fetchAccountDetail(id, { useCache = true } = {}) {
     if (useCache && detailMap[id]) return detailMap[id];
 
-    error.value = null;
+    actionError.value = null;
     try {
       const res = await getAccountDetail(id);
-      const detail = res?.data ?? res;
+      const detail = getPayload(res);
       if (detail) detailMap[id] = detail;
       return detail;
     } catch (e) {
-      error.value = e;
+      actionError.value = e;
       throw e;
     }
   }
 
   function reset() {
+    stopAccountsAutoRefresh();
+
     accounts.value = [];
     loading.value = false;
     saving.value = false;
     error.value = null;
+    actionError.value = null;
 
     fetched.value = false;
     lastFetchedAt.value = null;
@@ -148,11 +173,10 @@ export const useAccountsStore = defineStore("accounts", () => {
     loading,
     saving,
     error,
+    actionError,
     fetched,
     lastFetchedAt,
     detailMap,
-
-    byId,
 
     fetchAccounts,
     refreshAccounts,
@@ -160,6 +184,8 @@ export const useAccountsStore = defineStore("accounts", () => {
     updateAccount,
     deleteAccount,
     fetchAccountDetail,
+    startAccountsAutoRefresh,
+    stopAccountsAutoRefresh,
 
     reset,
   };

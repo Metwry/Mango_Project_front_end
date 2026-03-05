@@ -10,8 +10,6 @@ defineProps({
 </script>
 
 <template>
-
-
     <header
         class="relative z-30 h-15 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 transition-colors duration-300">
 
@@ -23,7 +21,6 @@ defineProps({
         </div>
 
         <div class="flex items-center gap-4">
-            <slot name="actions"></slot>
             <UserMenu />
         </div>
     </header>

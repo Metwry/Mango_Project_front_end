@@ -1,12 +1,69 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import RollingDigit from '@/components/ui/RollingDigit.vue'
+import { DASHBOARD_WORTH_CONFIG } from '@/config/featureConfig'
+
+const props = defineProps({
     amount: { type: Number, required: true },
-    change: { type: Number, default: 0 }
+    change: { type: Number, default: 0 },
+    ready: { type: Boolean, default: true }
 })
 
-const formatCurrency = (val) => {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(val);
-};
+const safeAmount = computed(() => {
+    const n = Number(props.amount)
+    return Number.isFinite(n) ? n : 0
+})
+
+const absoluteAmount = computed(() => Math.abs(safeAmount.value))
+const isNegative = computed(() => safeAmount.value < 0)
+
+const amountLabel = computed(() => {
+    if (!props.ready) return '--'
+    return new Intl.NumberFormat(DASHBOARD_WORTH_CONFIG.displayLocale, {
+        style: 'currency',
+        currency: DASHBOARD_WORTH_CONFIG.displayCurrency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(safeAmount.value)
+})
+
+const amountParts = computed(() => {
+    const [integerPart, fractionPart = '00'] = absoluteAmount.value.toFixed(2).split('.')
+    const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    const integerDigits = groupedInteger.replace(/,/g, '')
+
+    const integerTokens = []
+    let consumed = 0
+
+    groupedInteger.split('').forEach((char, index) => {
+        if (/\d/.test(char)) {
+            const placeFromRight = integerDigits.length - consumed - 1
+            const placeFromLeft = consumed
+            integerTokens.push({
+                type: 'digit',
+                key: `int-${placeFromRight}`,
+                digit: Number(char),
+                delay: 0
+            })
+            consumed += 1
+            return
+        }
+
+        integerTokens.push({
+            type: 'separator',
+            key: `sep-${index}-${char}`,
+            char
+        })
+    })
+
+    const fractionTokens = fractionPart.split('').map((char, index) => ({
+        key: `frac-${index}`,
+        digit: Number(char),
+        delay: 0
+    }))
+
+    return { integerTokens, fractionTokens }
+})
 </script>
 
 <template>
@@ -15,25 +72,53 @@ const formatCurrency = (val) => {
         </div>
 
         <div class="relative z-10">
-            <div class="card-title">总资产</div>
-            <h2 class="text-5xl font-bold mb-4 tracking-tight">{{ formatCurrency(amount) }}</h2>
-            <div class="flex items-center gap-2">
-                <span
-                    class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                    ▲
-                    {{ change }}%
-                </span>
-                <span class="text-gray-400 text-sm">较上月增长</span>
-            </div>
-        </div>
+            <div class="card-title">&#24635;&#36164;&#20135;</div>
 
-        <div class="mt-8 h-12 flex items-end gap-2 opacity-50">
-            <div class="w-12 bg-white h-1/2 rounded-t"></div>
-            <div class="w-12 bg-white h-2/3 rounded-t"></div>
-            <div class="w-12 bg-white h-1/3 rounded-t"></div>
-            <div class="w-12 bg-white h-3/4 rounded-t"></div>
-            <div class="w-12 bg-white h-full rounded-t"></div>
-            <div class="w-12 bg-primary-400 h-2/3 rounded-t"></div>
+            <h2 v-if="!ready"
+                class="mb-4 h-[3.8rem] text-5xl font-bold tracking-tight leading-none amount-line text-gray-500"
+                aria-label="loading">
+                &#165;--.--</h2>
+
+            <h2 v-else class="mb-4 h-[3.8rem] text-5xl font-bold tracking-tight leading-none amount-line"
+                :aria-label="amountLabel">
+                <span v-if="isNegative" class="amount-separator">-</span>
+                <span class="amount-separator currency-symbol">&#165;</span>
+
+                <template v-for="token in amountParts.integerTokens" :key="token.key">
+                    <RollingDigit v-if="token.type === 'digit'" :digit="token.digit" :delay="token.delay" />
+                    <span v-else class="amount-separator">{{ token.char }}</span>
+                </template>
+
+                <span class="amount-separator decimal-dot">.</span>
+
+                <RollingDigit v-for="token in amountParts.fractionTokens" :key="token.key" :digit="token.digit"
+                    :delay="token.delay" />
+            </h2>
+
+
         </div>
     </div>
 </template>
+
+<style scoped>
+.amount-line {
+    display: inline-flex;
+    align-items: flex-start;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.amount-separator {
+    display: inline-flex;
+    align-items: flex-start;
+    line-height: 1;
+}
+
+.currency-symbol {
+    margin-right: 0.06em;
+}
+
+.decimal-dot {
+    padding: 0 0.03em;
+}
+</style>

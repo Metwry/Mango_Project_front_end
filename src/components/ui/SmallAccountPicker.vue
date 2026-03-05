@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, nextTick } from "vue";
-import { onClickOutside, useEventListener } from "@vueuse/core";
+import { ref, computed } from "vue";
+import { onClickOutside } from "@vueuse/core";
 import BaseIcon from "./BaseIcon.vue";
 
 // 1. 核心简化：直接双向绑定 (Vue 3.4+)
@@ -11,114 +11,93 @@ const props = defineProps({
     loading: Boolean,
     error: [Boolean, Object, String],
     placeholder: { type: String, default: "全部账户" },
-    searchPlaceholder: { type: String, default: "搜索账户名称..." },
+    placement: {
+        type: String,
+        default: "down",
+        validator: (v) => ["up", "down"].includes(v),
+    },
+    maxListHeight: { type: [Number, String], default: 224 },
 });
 
 const open = ref(false);
-const query = ref("");
-const triggerRef = ref(null);
-const panelRef = ref(null);
-const panelStyle = ref({});
+const wrapRef = ref(null);
 
-
-// 2. 数据逻辑：保持清晰
-const selectedAccount = computed(() => props.accounts.find((a) => a.id === modelValue.value));
-const filteredAccounts = computed(() => {
-    const q = query.value.trim().toLowerCase();
-    return !q ? props.accounts : props.accounts.filter((a) => (a.name || "").toLowerCase().includes(q));
+// 2. 数据逻辑：保持清晰 (完全未动)
+const selectedAccount = computed(() => {
+    const current = modelValue.value;
+    if (current === null || current === undefined || current === "") return null;
+    return props.accounts.find((a) => String(a?.id) === String(current)) ?? null;
+});
+const selectedAccountId = computed(() => String(modelValue.value ?? ""));
+const panelPositionClass = computed(() => {
+    if (props.placement === "up") {
+        return "dropdown-panel-up absolute left-0 bottom-[calc(100%+8px)] w-full flex flex-col";
+    }
+    return "absolute left-0 top-[calc(100%+8px)] w-full flex flex-col";
+});
+const listMaxHeightStyle = computed(() => {
+    const n = Number(props.maxListHeight);
+    if (!Number.isFinite(n) || n <= 0) return {};
+    return { maxHeight: `${n}px` };
 });
 
-// 3. 交互逻辑：使用 VueUse 移除大量样板代码
-// 点击面板外部自动关闭，忽略触发按钮
-onClickOutside(panelRef, () => (open.value = false), { ignore: [triggerRef] });
+function isSelected(id) {
+    return selectedAccountId.value === String(id ?? "");
+}
 
-// 计算定位 (保留核心逻辑，但更紧凑)
-const updatePosition = () => {
-    if (!open.value || !triggerRef.value) return;
-    const rect = triggerRef.value.getBoundingClientRect();
-    const gap = 8;
-    const heightGuess = 260;
+// 3. 交互逻辑：点击外部关闭
+onClickOutside(wrapRef, () => (open.value = false));
 
-    // 简单判断：如果下方空间不够且上方空间够，就向上翻
-    const showTop = (window.innerHeight - rect.bottom < heightGuess) && (rect.top > heightGuess);
-
-    panelStyle.value = {
-        position: "fixed",
-        left: `${rect.left}px`,
-        width: `${rect.width}px`,
-        zIndex: 80,
-        top: showTop ? `${rect.top - gap - heightGuess}px` : `${rect.bottom + gap}px`,
-    };
-};
-
-// 自动绑定与销毁事件监听
-useEventListener(window, "resize", updatePosition);
-useEventListener(window, "scroll", updatePosition, true);
-
-const toggleOpen = async () => {
+const toggleOpen = () => {
     open.value = !open.value;
-    if (open.value) {
-        await nextTick();
-        updatePosition();
-    }
+    // 不需要 nextTick 和手动计算了
 };
 
 const pick = (id) => {
     modelValue.value = id;
-    query.value = "";
     open.value = false;
 };
 </script>
 
 <template>
-    <div class="relative">
+    <div ref="wrapRef" class="relative">
         <div v-if="loading">正在加载账户...</div>
         <div v-else-if="error" class=" text-red-600">账户加载失败</div>
 
         <div v-else>
-            <button ref="triggerRef" type="button" @click="toggleOpen"
-                class="flex w-full cursor-pointer items-center justify-between button-base ">
-                <span class="truncate">
+            <button type="button" @click="toggleOpen" class="dropdown-trigger">
+                <span class="min-w-0 flex-1 truncate">
                     {{ selectedAccount?.name ?? placeholder }}
                 </span>
-                <BaseIcon name="arrow" class="h-5 w-4" />
+                <BaseIcon name="arrow" :class="['dropdown-arrow', open && 'rotate-180']" />
             </button>
 
-            <teleport to="body">
-                <div v-if="open" ref="panelRef" :style="panelStyle"
-                    class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-
-                    <div class="shrink-0 border-b border-gray-100 p-2 dark:border-gray-700">
-                        <input v-model="query" type="text" :placeholder="searchPlaceholder" class="input-base" />
-                    </div>
-
-                    <div class="max-h-56 overflow-y-auto p-1 space-y-1">
-                        <template v-for="item in [null, ...filteredAccounts]" :key="item?.id ?? 'all'">
+            <Transition name="dropdown-drawer">
+                <div v-if="open" data-small-account-picker-panel="true"
+                    class="dropdown-panel" :class="panelPositionClass">
+                    <div class="dropdown-list" :style="listMaxHeightStyle">
+                        <template v-for="item in [null, ...accounts]" :key="item?.id ?? 'all'">
                             <button type="button" @click="pick(item?.id ?? '')"
-                                class="button-base border-0 w-full text-left truncate group">
+                                class="dropdown-item" :class="isSelected(item?.id) ? 'dropdown-item-active' : 'dropdown-item-idle'"
+                                :title="item?.name ?? placeholder">
 
                                 <template v-if="item">
-                                    <span class="text-gray-900 dark:text-gray-100">
+                                    <span class="block min-w-0 truncate text-gray-900 dark:text-gray-100">
                                         {{ item.name }}
                                     </span>
                                 </template>
 
                                 <template v-else>
-                                    <span class="text-gray-500 dark:text-gray-400">
+                                    <span class="block min-w-0 truncate text-gray-500 dark:text-gray-400">
                                         {{ placeholder }}
                                     </span>
                                 </template>
 
                             </button>
                         </template>
-
-                        <div v-if="filteredAccounts.length === 0 && query"
-                            class="px-3 py-3 text-center text-xs text-gray-500 dark:text-gray-400">
-                            没有匹配的账户
-                        </div>
                     </div>
                 </div>
-            </teleport>
+            </Transition>
         </div>
     </div>
 </template>

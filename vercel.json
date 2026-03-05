@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://preimaginary-upliftingly-sawyer.ngrok-free.dev/"
+    }
+  ]
+}

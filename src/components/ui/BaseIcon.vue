@@ -10,11 +10,8 @@ const props = defineProps({
     spin: { type: Boolean, default: false },
 
     // 可选：统一控制尺寸（默认继承父级 class 也行）
-    size: { type: [Number, String], default: 20 }, // px
+    size: { type: [Number, String], default: 20 },
 
-    // 可选：给 spinner 的圆环透明度做参数（不想也可以删）
-    dimOpacity: { type: [Number, String], default: 0.25 },
-    brightOpacity: { type: [Number, String], default: 0.75 },
 });
 
 const isSpinner = computed(() => props.name === "spinner");

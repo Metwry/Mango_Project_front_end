@@ -1,19 +1,18 @@
 <script setup>
+import { formatCurrencyAmount } from '@/utils/formatters'
+
 defineProps({
     transactions: { type: Array, default: () => [] }
 })
 
 const formatCurrency = (val) => {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(val);
-};
+    return formatCurrencyAmount(val, 'CNY', { invalidText: '-' })
+}
 </script>
 
 <template>
     <div class="card-base">
-        <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-            <h3 class="font-bold text-gray-700 dark:text-gray-200">最近活动</h3>
-            <button class="text-sm text-primary-600 dark:text-primary-300 hover:underline cursor-pointer">查看全部</button>
-        </div>
+        <div class="card-title">最近活动</div>
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                 <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
@@ -30,7 +29,7 @@ const formatCurrency = (val) => {
                         <td class="px-6 py-4 font-medium text-gray-800 dark:text-gray-200">{{ item.title }}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">{{ item.category
-                                }}</span>
+                            }}</span>
                         </td>
                         <td class="px-6 py-4">{{ item.date }}</td>
                         <td class="px-6 py-4 text-right font-bold"
