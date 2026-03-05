@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/register/email/code/",
-      "destination": "https://preimaginary-upliftingly-sawyer.ngrok-free.dev/api/register/email/code/"
-    },
-    {
       "source": "/api/:path*",
       "destination": "https://preimaginary-upliftingly-sawyer.ngrok-free.dev/api/:path*"
     }
