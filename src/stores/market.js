@@ -6,7 +6,7 @@ import {
   getUserMarkets,
 } from "@/utils/markets";
 import { getPayload } from "@/utils/api";
-import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
+import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;
 const AUTO_REFRESH_SECOND = 30;
@@ -72,7 +72,16 @@ export const useMarketStore = defineStore("market", () => {
   const lastFetchedAt = ref(null);
   const fetchPromise = ref(null);
 
-  let autoRefreshTimer = null;
+  const autoRefreshScheduler = createMinuteAlignedScheduler({
+    intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
+    second: AUTO_REFRESH_SECOND,
+    task: async () => {
+      await refreshMarkets({ silent: true });
+    },
+    onError: () => {
+      // Keep scheduler alive even when one refresh fails.
+    },
+  });
 
   async function fetchMarkets({ force = false, silent = false } = {}) {
     if (fetched.value && !force) return markets.value;
@@ -136,34 +145,12 @@ export const useMarketStore = defineStore("market", () => {
     persistSelectedMarket(next);
   }
 
-  function clearAutoRefreshTimer() {
-    if (!autoRefreshTimer) return;
-    clearTimeout(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
-
-  function scheduleNextAutoRefresh() {
-    clearAutoRefreshTimer();
-    autoRefreshTimer = setTimeout(async () => {
-      try {
-        await refreshMarkets({ silent: true });
-      } catch {
-        // Keep scheduler alive even when one refresh fails.
-      }
-
-      scheduleNextAutoRefresh();
-    }, getMsToNextMinuteTick({
-      intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
-      second: AUTO_REFRESH_SECOND,
-    }));
-  }
-
   function startMarketAutoRefresh() {
-    scheduleNextAutoRefresh();
+    autoRefreshScheduler.start();
   }
 
   function stopMarketAutoRefresh() {
-    clearAutoRefreshTimer();
+    autoRefreshScheduler.stop();
   }
 
   function reset() {

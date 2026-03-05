@@ -8,7 +8,7 @@ import {
   getAccountDetail,
 } from "@/utils/accounts";
 import { getPayload, getResultsList } from "@/utils/api";
-import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
+import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;
 const AUTO_REFRESH_SECOND = 5;
@@ -26,36 +26,23 @@ export const useAccountsStore = defineStore("accounts", () => {
 
   const fetchPromise = ref(null);
   const detailMap = reactive({});
-  let autoRefreshTimer = null;
-
-  function clearAutoRefreshTimer() {
-    if (!autoRefreshTimer) return;
-    clearTimeout(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
-
-  function scheduleNextAutoRefresh() {
-    clearAutoRefreshTimer();
-    autoRefreshTimer = setTimeout(async () => {
-      try {
-        await fetchAccounts({ force: true });
-      } catch {
-        // Keep scheduler alive even when one refresh fails.
-      }
-
-      scheduleNextAutoRefresh();
-    }, getMsToNextMinuteTick({
-      intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
-      second: AUTO_REFRESH_SECOND,
-    }));
-  }
+  const autoRefreshScheduler = createMinuteAlignedScheduler({
+    intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
+    second: AUTO_REFRESH_SECOND,
+    task: async () => {
+      await fetchAccounts({ force: true });
+    },
+    onError: () => {
+      // Keep scheduler alive even when one refresh fails.
+    },
+  });
 
   function startAccountsAutoRefresh() {
-    scheduleNextAutoRefresh();
+    autoRefreshScheduler.start();
   }
 
   function stopAccountsAutoRefresh() {
-    clearAutoRefreshTimer();
+    autoRefreshScheduler.stop();
   }
 
   // ===== actions =====

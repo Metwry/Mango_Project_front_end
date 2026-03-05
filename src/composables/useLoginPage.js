@@ -1,9 +1,14 @@
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { useIntervalFn } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { useAuthStore } from "@/stores/auth";
-import { registerByEmail, sendEmailRegisterCode } from "@/utils/auth";
+import {
+  registerByEmail,
+  resetPasswordByEmail,
+  sendEmailRegisterCode,
+  sendPasswordResetEmailCode,
+} from "@/utils/auth";
 
 const MODE_META = {
   emailLogin: {
@@ -12,17 +17,17 @@ const MODE_META = {
     subtitle: "使用邮箱和密码登录你的资金看板",
     submitLabel: "登录",
   },
-  smsLogin: {
-    label: "短信登录",
-    title: "短信快速登录",
-    subtitle: "输入手机号与验证码完成登录",
-    submitLabel: "短信登录",
-  },
   emailRegister: {
     label: "邮箱注册",
     title: "创建新账号",
     subtitle: "邮箱注册后可统一管理你的账户数据",
     submitLabel: "注册账号",
+  },
+  emailReset: {
+    label: "忘记密码",
+    title: "重置密码",
+    subtitle: "通过邮箱验证码设置新密码",
+    submitLabel: "重置密码",
   },
 };
 
@@ -30,14 +35,6 @@ const modeOptions = Object.entries(MODE_META).map(([key, meta]) => ({
   key,
   label: meta.label,
 }));
-
-const VERIFY_CODE_PATTERN = /^\d{4,6}$/;
-const ASCII_PRINTABLE_NO_SPACE_PATTERN = /[^\x21-\x7e]/g;
-const LOGIN_IDENTIFIER_PATTERN = /^[\x21-\x7e]+$/;
-
-function toAsciiPrintableNoSpace(value) {
-  return String(value ?? "").replace(ASCII_PRINTABLE_NO_SPACE_PATTERN, "");
-}
 
 function toDigits(value, maxLength = Infinity) {
   return String(value ?? "")
@@ -73,14 +70,9 @@ function useCountdown() {
   };
 }
 
-function bindSanitizer(formRef, field, sanitizer) {
-  watch(
-    () => formRef.value[field],
-    (value) => {
-      const next = sanitizer(value);
-      if (value !== next) formRef.value[field] = next;
-    },
-  );
+function isValidEmail(value) {
+  const email = String(value ?? "").trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export function useLoginPage() {
@@ -96,22 +88,22 @@ export function useLoginPage() {
     remember: true,
   });
 
-  const smsLoginForm = ref({
-    phone: "",
-    code: "",
-  });
-
   const emailRegisterForm = ref({
     email: "",
     code: "",
     password: "",
-    confirmPassword: "",
-    agree: false,
   });
 
-  const smsCountdown = useCountdown();
-  const emailCountdown = useCountdown();
-  const emailCodeSending = ref(false);
+  const emailResetForm = ref({
+    email: "",
+    code: "",
+    password: "",
+  });
+
+  const registerCountdown = useCountdown();
+  const resetCountdown = useCountdown();
+  const registerCodeSending = ref(false);
+  const resetCodeSending = ref(false);
 
   const previousModeIndex = ref(0);
   const slideDirection = ref("next");
@@ -128,132 +120,111 @@ export function useLoginPage() {
   const modeSubtitle = computed(() => MODE_META[activeMode.value]?.subtitle ?? "");
   const submitLabel = computed(() => MODE_META[activeMode.value]?.submitLabel ?? "");
 
-  const isValidEmail = (value) => {
-    const email = String(value ?? "").trim();
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const switchMode = (mode) => {
+    if (mode === activeMode.value) return;
+    const nextIndex = modeOptions.findIndex((item) => item.key === mode);
+    slideDirection.value = nextIndex > previousModeIndex.value ? "next" : "prev";
+    previousModeIndex.value = nextIndex;
+    activeMode.value = mode;
   };
 
-  const isValidLoginIdentifier = (value) => {
-    const normalized = String(value ?? "").trim();
-    return LOGIN_IDENTIFIER_PATTERN.test(normalized);
-  };
+  const sendRegisterEmailCodeAction = async () => {
+    if (registerCountdown.seconds.value > 0 || registerCodeSending.value) return;
 
-  const isValidPhone = (value) => {
-    const phone = String(value ?? "").trim();
-    return /^1\d{10}$/.test(phone);
-  };
-
-  const sendSmsCode = () => {
-    if (smsCountdown.seconds.value > 0) return;
-
-    if (!isValidPhone(smsLoginForm.value.phone)) {
-      ElMessage.warning("请输入正确的 11 位手机号");
-      return;
-    }
-
-    smsCountdown.start(60);
-    ElMessage.success("验证码已发送（演示）");
-  };
-
-  const sendEmailCode = async () => {
-    if (emailCountdown.seconds.value > 0 || emailCodeSending.value) return;
-
-    const email = String(emailRegisterForm.value.email ?? "").trim();
+    const email = String(emailRegisterForm.value.email ?? "").trim().toLowerCase();
     if (!isValidEmail(email)) {
       ElMessage.warning("请输入正确的邮箱地址");
       return;
     }
 
-    emailCodeSending.value = true;
+    registerCodeSending.value = true;
     try {
       await sendEmailRegisterCode(email);
-      emailCountdown.start(60);
+      registerCountdown.start(60);
       ElMessage.success("邮箱验证码已发送");
     } finally {
-      emailCodeSending.value = false;
+      registerCodeSending.value = false;
+    }
+  };
+
+  const sendResetEmailCodeAction = async () => {
+    if (resetCountdown.seconds.value > 0 || resetCodeSending.value) return;
+
+    const email = String(emailResetForm.value.email ?? "").trim().toLowerCase();
+    if (!isValidEmail(email)) {
+      ElMessage.warning("请输入正确的邮箱地址");
+      return;
+    }
+
+    resetCodeSending.value = true;
+    try {
+      await sendPasswordResetEmailCode(email);
+      resetCountdown.start(60);
+      ElMessage.success("邮箱验证码已发送");
+    } finally {
+      resetCodeSending.value = false;
     }
   };
 
   const submitEmailLogin = async () => {
-    const identifier = String(emailLoginForm.value.email ?? "").trim();
+    const email = String(emailLoginForm.value.email ?? "").trim();
     const password = String(emailLoginForm.value.password ?? "");
-
-    if (!identifier || !password) {
-      ElMessage.warning("账号和密码不能为空");
-      return;
-    }
-
-    if (!isValidLoginIdentifier(identifier)) {
-      ElMessage.warning("账号仅支持大小写字母、数字和英文符号");
+    if (!email || !password) {
+      ElMessage.warning("邮箱和密码不能为空");
       return;
     }
 
     loading.value = true;
     try {
-      await auth.login(identifier, password, { remember: emailLoginForm.value.remember });
+      await auth.login(email, password, { remember: emailLoginForm.value.remember });
       router.replace("/dashboard");
-    } catch {} finally {
+    } finally {
       loading.value = false;
     }
   };
 
-  const submitSmsLogin = async () => {
-    const { phone, code } = smsLoginForm.value;
-
-    if (!isValidPhone(phone)) {
-      ElMessage.warning("请输入正确的 11 位手机号");
-      return;
-    }
-
-    if (!VERIFY_CODE_PATTERN.test(String(code ?? "").trim())) {
-      ElMessage.warning("请输入 4-6 位短信验证码");
-      return;
-    }
-
-    ElMessage.info("短信登录功能开发中");
-  };
-
   const submitEmailRegister = async () => {
-    const { email, code, password, confirmPassword, agree } = emailRegisterForm.value;
+    const email = String(emailRegisterForm.value.email ?? "").trim().toLowerCase();
+    const code = toDigits(emailRegisterForm.value.code, 6);
+    const password = String(emailRegisterForm.value.password ?? "");
 
-    if (!isValidEmail(email)) {
-      ElMessage.warning("请输入正确的邮箱地址");
-      return;
-    }
-
-    if (!VERIFY_CODE_PATTERN.test(String(code ?? "").trim())) {
-      ElMessage.warning("请输入 4-6 位邮箱验证码");
-      return;
-    }
-
-    if (!password || password.length < 6) {
-      ElMessage.warning("密码至少 6 位");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      ElMessage.warning("两次输入的密码不一致");
-      return;
-    }
-
-    if (!agree) {
-      ElMessage.warning("请先勾选协议后再注册");
+    if (!email || !code || !password) {
+      ElMessage.warning("请填写完整信息");
       return;
     }
 
     loading.value = true;
     try {
-      await registerByEmail({ email, code, password, confirmPassword });
-      ElMessage.success("注册成功，请使用密码登录");
-
+      await registerByEmail({ email, code, password });
+      ElMessage.success("注册成功，请使用新密码登录");
       emailLoginForm.value.email = email;
       emailLoginForm.value.password = "";
-      emailRegisterForm.value = {
+      switchMode("emailLogin");
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const submitEmailReset = async () => {
+    const email = String(emailResetForm.value.email ?? "").trim().toLowerCase();
+    const code = toDigits(emailResetForm.value.code, 6);
+    const password = String(emailResetForm.value.password ?? "");
+
+    if (!email || !code || !password) {
+      ElMessage.warning("请填写完整信息");
+      return;
+    }
+
+    loading.value = true;
+    try {
+      await resetPasswordByEmail({ email, code, password });
+      ElMessage.success("密码重置成功，请重新登录");
+      emailLoginForm.value.email = email;
+      emailLoginForm.value.password = password;
+      emailResetForm.value = {
         email: "",
         code: "",
         password: "",
-        confirmPassword: "",
-        agree: false,
       };
       switchMode("emailLogin");
     } finally {
@@ -262,56 +233,38 @@ export function useLoginPage() {
   };
 
   const handleSubmit = async () => {
-    const submitters = {
+    const submitterMap = {
       emailLogin: submitEmailLogin,
-      smsLogin: submitSmsLogin,
       emailRegister: submitEmailRegister,
+      emailReset: submitEmailReset,
     };
 
-    const submit = submitters[activeMode.value] ?? submitEmailLogin;
-    await submit();
+    const submitter = submitterMap[activeMode.value] ?? submitEmailLogin;
+    await submitter();
   };
-
-  const switchMode = (mode) => {
-    if (mode === activeMode.value) return;
-
-    const nextIndex = modeOptions.findIndex((item) => item.key === mode);
-    slideDirection.value = nextIndex > previousModeIndex.value ? "next" : "prev";
-    previousModeIndex.value = nextIndex;
-
-    activeMode.value = mode;
-  };
-
-  bindSanitizer(emailLoginForm, "email", toAsciiPrintableNoSpace);
-  bindSanitizer(emailLoginForm, "password", toAsciiPrintableNoSpace);
-  bindSanitizer(smsLoginForm, "phone", (value) => toDigits(value, 11));
-  bindSanitizer(smsLoginForm, "code", (value) => toDigits(value, 6));
-  bindSanitizer(emailRegisterForm, "email", toAsciiPrintableNoSpace);
-  bindSanitizer(emailRegisterForm, "code", (value) => toDigits(value, 6));
-  bindSanitizer(emailRegisterForm, "password", toAsciiPrintableNoSpace);
-  bindSanitizer(emailRegisterForm, "confirmPassword", toAsciiPrintableNoSpace);
 
   onUnmounted(() => {
-    smsCountdown.stop();
-    emailCountdown.stop();
+    registerCountdown.stop();
+    resetCountdown.stop();
   });
 
   return {
     activeMode,
-    emailCodeCountdown: emailCountdown.seconds,
-    emailCodeSending,
+    emailCodeCountdown: registerCountdown.seconds,
+    emailCodeSending: registerCodeSending,
     emailLoginForm,
     emailRegisterForm,
+    emailResetForm,
     handleSubmit,
     loading,
     modeIndex,
     modeOptions,
     modeSubtitle,
     modeTitle,
-    sendEmailCode,
-    sendSmsCode,
-    smsCodeCountdown: smsCountdown.seconds,
-    smsLoginForm,
+    resetCodeCountdown: resetCountdown.seconds,
+    resetCodeSending,
+    sendEmailCode: sendRegisterEmailCodeAction,
+    sendResetEmailCode: sendResetEmailCodeAction,
     submitLabel,
     switchMode,
     transitionName,

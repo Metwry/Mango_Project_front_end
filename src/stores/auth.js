@@ -141,6 +141,11 @@ export const useAuthStore = defineStore("auth", () => {
     persistAuthState({ remember: rememberLogin.value });
   }
 
+  function setUser(nextUser) {
+    user.value = nextUser ?? null;
+    persistAuthState({ remember: rememberLogin.value });
+  }
+
   return {
     accessToken,
     refreshToken,
@@ -151,5 +156,6 @@ export const useAuthStore = defineStore("auth", () => {
     logout,
     setAccessToken,
     setRefreshToken,
+    setUser,
   };
 });

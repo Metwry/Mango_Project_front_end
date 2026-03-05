@@ -1,17 +1,21 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { onClickOutside } from '@vueuse/core'
 import BaseIcon from '../ui/BaseIcon.vue'
 import SettingsModal from '../windows/SettingsModal.vue'
-import { ElMessage, ElMessageBox } from "element-plus";
+import UserProfileModal from '../windows/UserProfileModal.vue'
+import { ElMessage } from "element-plus";
 
 const router = useRouter()
 const authStore = useAuthStore()
 const showUserMenu = ref(false)
 const userMenuRef = ref(null)
 const isOpenSetting = ref(false)
+const isOpenUserProfile = ref(false)
+const displayName = computed(() => String(authStore.user?.username ?? "User").trim() || "User")
+const displayInitial = computed(() => displayName.value.slice(0, 1).toUpperCase())
 // 逻辑：退出登录
 const handleLogout = async () => {
     await authStore.logout()
@@ -21,6 +25,11 @@ const handleLogout = async () => {
 const triggerSettings = () => {
     isOpenSetting.value = true
 
+    showUserMenu.value = false
+}
+
+const triggerUserProfile = () => {
+    isOpenUserProfile.value = true
     showUserMenu.value = false
 }
 // 点击外部自动关闭
@@ -41,6 +50,7 @@ function todo() {
 
     <!-- 系统设置弹窗 -->
     <SettingsModal :is-Open="isOpenSetting" @close="isOpenSetting = false" />
+    <UserProfileModal :is-open="isOpenUserProfile" @close="isOpenUserProfile = false" />
 
 
     <div class="relative flex items-center h-full" ref="userMenuRef">
@@ -48,6 +58,12 @@ function todo() {
         <Transition name="dropdown-drawer">
             <div v-if="showUserMenu"
                 class="dropdown-panel absolute top-full right-0 mt-2 w-56 py-2 transform transition-all origin-top-right">
+                <button @click="triggerUserProfile"
+                    class="dropdown-menu-item hover:text-primary-600">
+                    <BaseIcon name="settings" class="w-4 h-4" />
+                    用户设置
+                </button>
+
                 <button @click="triggerSettings"
                     class="dropdown-menu-item hover:text-primary-600">
                     <BaseIcon name="settings" class="w-4 h-4" />
@@ -75,11 +91,11 @@ function todo() {
 
             <div
                 class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800 text-xs">
-                User
+                {{ displayInitial }}
             </div>
 
             <div class="hidden sm:block">
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-200">我的账户</p>
+                <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ displayName }}</p>
             </div>
 
             <svg class="w-4 h-4 text-gray-400 transition-transform duration-200"

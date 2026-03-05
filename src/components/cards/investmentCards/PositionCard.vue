@@ -10,6 +10,7 @@ import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import TradePositionPanel from "@/components/windows/TradePositionPanel.vue";
 import { getPayload } from "@/utils/api";
+import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 import { buildSnapshotTimeline, getPositionSnapshots } from "@/utils/snapshot";
 import { useInvestmentStore } from "@/stores/investment";
 
@@ -69,6 +70,9 @@ const MARKET_MONEY_META = {
   HK: { prefix: "HK$", locale: "zh-HK" },
   US: { prefix: "$", locale: "en-US" },
 };
+const TREND_AUTO_REFRESH_INTERVAL_MINUTES = 15;
+const TREND_AUTO_REFRESH_SECOND = 20;
+let trendAutoRefreshScheduler = null;
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -510,6 +514,29 @@ async function fetchPositionTrend() {
   }
 }
 
+function startTrendAutoRefresh() {
+  if (trendAutoRefreshScheduler) return;
+
+  trendAutoRefreshScheduler = createMinuteAlignedScheduler({
+    intervalMinutes: TREND_AUTO_REFRESH_INTERVAL_MINUTES,
+    second: TREND_AUTO_REFRESH_SECOND,
+    task: async () => {
+      await fetchPositionTrend();
+    },
+    onError: () => {
+      // Keep scheduler alive even when one refresh fails.
+    },
+  });
+
+  trendAutoRefreshScheduler.start();
+}
+
+function stopTrendAutoRefresh() {
+  if (!trendAutoRefreshScheduler) return;
+  trendAutoRefreshScheduler.stop();
+  trendAutoRefreshScheduler = null;
+}
+
 function notifyTradePanelOpen(mode) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(TRADE_PANEL_OPEN_EVENT, {
@@ -594,12 +621,14 @@ useResizeObserver(nameViewportRef, () => {
 });
 
 onMounted(() => {
+  startTrendAutoRefresh();
   if (typeof window === "undefined") return;
   window.addEventListener(TRADE_PANEL_OPEN_EVENT, onExternalTradePanelOpen);
 });
 
 onUnmounted(() => {
   trendRequestSeq += 1;
+  stopTrendAutoRefresh();
   if (typeof window === "undefined") return;
   window.removeEventListener(TRADE_PANEL_OPEN_EVENT, onExternalTradePanelOpen);
 });
@@ -667,7 +696,7 @@ onUnmounted(() => {
     <div
       class="relative flex-1 min-h-[11rem] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700">
       <div class="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-3 pt-3">
-        <span class="text-xs text-gray-500 dark:text-gray-400">今日走势</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">今日走势(15m更新)</span>
         <span class="text-sm font-semibold" :class="toneTextClass">
           {{ profitValueText }}
         </span>

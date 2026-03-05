@@ -7,16 +7,17 @@ const {
   emailCodeSending,
   emailLoginForm,
   emailRegisterForm,
+  emailResetForm,
   handleSubmit,
   loading,
   modeIndex,
   modeOptions,
   modeSubtitle,
   modeTitle,
+  resetCodeCountdown,
+  resetCodeSending,
   sendEmailCode,
-  sendSmsCode,
-  smsCodeCountdown,
-  smsLoginForm,
+  sendResetEmailCode,
   submitLabel,
   switchMode,
   transitionName
@@ -68,14 +69,14 @@ const {
               <div :key="activeMode" class="space-y-4">
                 <template v-if="activeMode === 'emailLogin'">
                   <div>
-                    <label class="mb-2 block text-sm font-medium text-slate-700">邮箱或用户名</label>
-                    <input v-model.trim="emailLoginForm.email" type="text" class="input-base px-4 py-3"
-                      placeholder="请输入邮箱或用户名" autocomplete="username" />
+                    <label class="mb-2 block text-sm font-medium text-slate-700">邮箱</label>
+                    <input v-model.trim="emailLoginForm.email" type="text" class="login-input px-4 py-3"
+                      placeholder="请输入邮箱" autocomplete="username" />
                   </div>
 
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">密码</label>
-                    <input v-model="emailLoginForm.password" type="password" class="input-base px-4 py-3"
+                    <input v-model="emailLoginForm.password" type="password" class="login-input px-4 py-3"
                       placeholder="请输入密码" autocomplete="current-password" />
                   </div>
 
@@ -84,33 +85,19 @@ const {
                       class="h-4 w-4 rounded border-slate-300 text-indigo-600" />
                     记住登录状态
                   </label>
-                </template>
 
-                <template v-else-if="activeMode === 'smsLogin'">
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-slate-700">手机号</label>
-                    <input v-model.trim="smsLoginForm.phone" type="tel" class="input-base px-4 py-3"
-                      placeholder="请输入 11 位手机号" autocomplete="tel" />
-                  </div>
-
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-slate-700">短信验证码</label>
-                    <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-                      <input v-model.trim="smsLoginForm.code" type="text" maxlength="6" class="input-base px-4 py-3"
-                        placeholder="请输入验证码" />
-                      <button type="button" @click="sendSmsCode" :disabled="smsCodeCountdown > 0"
-                        class="button-base justify-center px-4 py-3 text-sm sm:min-w-[120px]"
-                        :class="smsCodeCountdown > 0 ? 'cursor-not-allowed opacity-60' : ''">
-                        {{ smsCodeCountdown > 0 ? `${smsCodeCountdown}s` : '发送验证码' }}
-                      </button>
-                    </div>
+                  <div class="pt-1 text-right">
+                    <button type="button" class="text-xs text-slate-500 hover:text-slate-700"
+                      @click="switchMode('emailReset')">
+                      忘记密码？
+                    </button>
                   </div>
                 </template>
 
-                <template v-else>
+                <template v-else-if="activeMode === 'emailRegister'">
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">注册邮箱</label>
-                    <input v-model.trim="emailRegisterForm.email" type="email" class="input-base px-4 py-3"
+                    <input v-model.trim="emailRegisterForm.email" type="email" class="login-input px-4 py-3"
                       placeholder="name@example.com" autocomplete="email" />
                   </div>
 
@@ -118,34 +105,49 @@ const {
                     <label class="mb-2 block text-sm font-medium text-slate-700">邮箱验证码</label>
                     <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
                       <input v-model.trim="emailRegisterForm.code" type="text" maxlength="6"
-                        class="input-base px-4 py-3" placeholder="请输入验证码" />
+                        class="login-input px-4 py-3" placeholder="请输入验证码" />
                       <button type="button" @click="sendEmailCode"
                         :disabled="emailCodeCountdown > 0 || emailCodeSending"
-                        class="button-base justify-center px-4 py-3 text-sm sm:min-w-[120px]"
+                        class="login-code-btn justify-center px-4 py-3 text-sm sm:min-w-[120px]"
                         :class="emailCodeCountdown > 0 || emailCodeSending ? 'cursor-not-allowed opacity-60' : ''">
                         {{ emailCodeSending ? '发送中...' : emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送验证码' }}
                       </button>
                     </div>
                   </div>
 
-                  <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label class="mb-2 block text-sm font-medium text-slate-700">设置密码</label>
-                      <input v-model="emailRegisterForm.password" type="password" class="input-base px-4 py-3"
-                        placeholder="至少 6 位" autocomplete="new-password" />
-                    </div>
-                    <div>
-                      <label class="mb-2 block text-sm font-medium text-slate-700">确认密码</label>
-                      <input v-model="emailRegisterForm.confirmPassword" type="password" class="input-base px-4 py-3"
-                        placeholder="再次输入密码" autocomplete="new-password" />
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">设置密码</label>
+                    <input v-model="emailRegisterForm.password" type="password" class="login-input px-4 py-3"
+                      placeholder="至少 6 位" autocomplete="new-password" />
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">邮箱</label>
+                    <input v-model.trim="emailResetForm.email" type="email" class="login-input px-4 py-3"
+                      placeholder="name@example.com" autocomplete="email" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">邮箱验证码</label>
+                    <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                      <input v-model.trim="emailResetForm.code" type="text" maxlength="6" class="login-input px-4 py-3"
+                        placeholder="请输入验证码" />
+                      <button type="button" @click="sendResetEmailCode"
+                        :disabled="resetCodeCountdown > 0 || resetCodeSending"
+                        class="login-code-btn justify-center px-4 py-3 text-sm sm:min-w-[120px]"
+                        :class="resetCodeCountdown > 0 || resetCodeSending ? 'cursor-not-allowed opacity-60' : ''">
+                        {{ resetCodeSending ? '发送中...' : resetCodeCountdown > 0 ? `${resetCodeCountdown}s` : '发送验证码' }}
+                      </button>
                     </div>
                   </div>
 
-                  <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-500">
-                    <input v-model="emailRegisterForm.agree" type="checkbox"
-                      class="h-4 w-4 rounded border-slate-300 text-indigo-600" />
-                    我已阅读并同意《用户协议》与《隐私政策》
-                  </label>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">新密码</label>
+                    <input v-model="emailResetForm.password" type="password" class="login-input px-4 py-3"
+                      placeholder="请输入新密码" autocomplete="new-password" />
+                  </div>
                 </template>
               </div>
             </Transition>
@@ -180,5 +182,53 @@ const {
 .mode-slide-prev-enter-from {
   opacity: 0;
   transform: translateX(-24px);
+}
+
+.login-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgb(229 231 235);
+  background: rgb(255 255 255);
+  color: rgb(55 65 81);
+  font-size: 0.875rem;
+  font-weight: 500;
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.login-input:hover {
+  background: rgb(255 255 255);
+}
+
+.login-input:focus {
+  border-color: rgb(209 213 219);
+  box-shadow: 0 0 0 1px rgb(209 213 219 / 0.7);
+}
+
+.login-input::placeholder {
+  color: rgb(148 163 184);
+}
+
+.login-code-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid rgb(229 231 235);
+  background: rgb(255 255 255);
+  color: rgb(55 65 81);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-code-btn:hover {
+  background: rgb(249 250 251);
+}
+
+.login-code-btn:focus {
+  outline: none;
+  border-color: rgb(209 213 219);
+  box-shadow: 0 0 0 1px rgb(209 213 219 / 0.7);
 }
 </style>

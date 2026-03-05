@@ -11,7 +11,9 @@ defineProps({
         <div class="h-15 gap-2 flex items-center px-8 border-b border-gray-100 dark:border-gray-700">
             <BaseIcon name="mango" class="w-6 h-6 text-primary-600 " />
             <span class="text-lg font-bold text-primary-600 font-serif">Mango Finance</span>
+
         </div>
+
 
         <nav class="flex-1 px-4 py-6 space-y-2">
             <RouterLink v-for="item in menuItems" :key="item.path" :to="item.path" active-class="nav-item-active"

@@ -7,7 +7,7 @@ import {
   getLatestMarketQuotes,
   sellInvestmentPosition as apiSellInvestmentPosition,
 } from "@/utils/investment";
-import { getMsToNextMinuteTick } from "@/utils/refreshScheduler";
+import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = 10;
 const AUTO_REFRESH_SECOND = 30;
@@ -140,7 +140,16 @@ export const useInvestmentStore = defineStore("investment", () => {
   const fetchPromise = ref(null);
   const quotePromise = ref(null);
 
-  let autoRefreshTimer = null;
+  const autoRefreshScheduler = createMinuteAlignedScheduler({
+    intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
+    second: AUTO_REFRESH_SECOND,
+    task: async () => {
+      await refreshLatestQuotes({ silent: true });
+    },
+    onError: () => {
+      // Keep scheduler alive even when one refresh fails.
+    },
+  });
 
   function normalizeTradePayload(raw) {
     const instrumentId = Number(raw?.instrument_id ?? raw?.instrumentId);
@@ -170,34 +179,12 @@ export const useInvestmentStore = defineStore("investment", () => {
     }
   }
 
-  function clearAutoRefreshTimer() {
-    if (!autoRefreshTimer) return;
-    clearTimeout(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
-
-  function scheduleNextAutoRefresh() {
-    clearAutoRefreshTimer();
-    autoRefreshTimer = setTimeout(async () => {
-      try {
-        await refreshLatestQuotes({ silent: true });
-      } catch {
-        // Keep scheduler alive even when one refresh fails.
-      }
-
-      scheduleNextAutoRefresh();
-    }, getMsToNextMinuteTick({
-      intervalMinutes: AUTO_REFRESH_INTERVAL_MINUTES,
-      second: AUTO_REFRESH_SECOND,
-    }));
-  }
-
   function startInvestmentAutoRefresh() {
-    scheduleNextAutoRefresh();
+    autoRefreshScheduler.start();
   }
 
   function stopInvestmentAutoRefresh() {
-    clearAutoRefreshTimer();
+    autoRefreshScheduler.stop();
   }
 
   async function refreshLatestQuotes({ silent = true } = {}) {

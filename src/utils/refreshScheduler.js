@@ -19,6 +19,63 @@ export function getMsToNextMinuteTick({
   return Math.max(minDelayMs, next.getTime() - current.getTime());
 }
 
+export function createMinuteAlignedScheduler({
+  intervalMinutes = 10,
+  second = 0,
+  minDelayMs = 1000,
+  task,
+  onError,
+} = {}) {
+  if (typeof task !== "function") {
+    throw new TypeError("createMinuteAlignedScheduler requires a task function");
+  }
+
+  let timer = null;
+  let started = false;
+
+  function clearTimer() {
+    if (!timer) return;
+    clearTimeout(timer);
+    timer = null;
+  }
+
+  function scheduleNext() {
+    if (!started) return;
+
+    timer = setTimeout(async () => {
+      if (!started) return;
+
+      try {
+        await task();
+      } catch (e) {
+        if (typeof onError === "function") onError(e);
+      } finally {
+        scheduleNext();
+      }
+    }, getMsToNextMinuteTick({
+      intervalMinutes,
+      second,
+      minDelayMs,
+    }));
+  }
+
+  function start() {
+    if (started) return;
+    started = true;
+    scheduleNext();
+  }
+
+  function stop() {
+    started = false;
+    clearTimer();
+  }
+
+  return {
+    start,
+    stop,
+  };
+}
+
 export function getMsToNextHourlyTick({
   minute = 0,
   second = 0,

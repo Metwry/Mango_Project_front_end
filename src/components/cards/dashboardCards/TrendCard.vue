@@ -7,7 +7,7 @@ import { GridComponent, LegendComponent, TooltipComponent } from "echarts/compon
 import VChart from "vue-echarts";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { getPayload } from "@/utils/api";
-import { getAccountColorById, getAccountColorWithAlpha } from "@/utils/accountColors";
+import { getAccountColorById } from "@/utils/accountColors";
 import { formatCurrencyAmount } from "@/utils/formatters";
 import {
   DEFAULT_USD_PER_CURRENCY_RATES,
@@ -34,6 +34,8 @@ const RANGE_OPTIONS = [
   { key: "1y", label: "近1年", level: "MON1", days: 365 },
   { key: "all", label: "至今为止", level: "MON1", days: 3650 },
 ];
+const ALL_ACCOUNTS_THEME_COLOR = "#6366F1";
+const MAX_RENDER_POINTS = 28;
 
 const accountId = ref("");
 const activeRangeKey = ref("today");
@@ -53,11 +55,6 @@ const rangeMeta = computed(() => {
 
 const hasData = computed(() => chartSeries.value.length > 0);
 const selectedAccountId = computed(() => toPositiveInt(accountId.value));
-const chartThemeKey = computed(() => selectedAccountId.value || "all_accounts");
-const chartPanelStyle = computed(() => ({
-  borderColor: getAccountColorWithAlpha(chartThemeKey.value, 0.4),
-  background: `linear-gradient(180deg, ${getAccountColorWithAlpha(chartThemeKey.value, 0.18)} 0%, ${getAccountColorWithAlpha(chartThemeKey.value, 0.08)} 100%)`,
-}));
 const accountById = computed(() => {
   const map = new Map();
   (props.accounts || []).forEach((item) => {
@@ -112,6 +109,23 @@ function toSnapshotNumber(value) {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+function limitSeriesPoints(points, maxPoints = MAX_RENDER_POINTS) {
+  const list = Array.isArray(points) ? points : [];
+  const safeMax = Math.max(2, Math.trunc(Number(maxPoints) || MAX_RENDER_POINTS));
+  if (list.length <= safeMax) return list;
+
+  const result = [];
+  const lastIndex = list.length - 1;
+  const step = lastIndex / (safeMax - 1);
+
+  for (let i = 0; i < safeMax; i += 1) {
+    const index = Math.round(i * step);
+    result.push(list[Math.min(lastIndex, index)]);
+  }
+
+  return result;
 }
 
 async function fetchTrendData() {
@@ -233,9 +247,10 @@ const chartSeries = computed(() => {
       .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
 
     if (data.length === 0) return [];
+    const limitedData = limitSeriesPoints(data);
 
-    const singlePoint = data.length === 1;
-    const summaryColor = getAccountColorById("all_accounts");
+    const singlePoint = limitedData.length === 1;
+    const summaryColor = ALL_ACCOUNTS_THEME_COLOR;
     return [{
       id: "account-all-cny",
       name: "全部账户",
@@ -252,16 +267,14 @@ const chartSeries = computed(() => {
         color: summaryColor,
         width: 3.4,
       },
-      areaStyle: {
-        color: getAccountColorWithAlpha("all_accounts", 0.16),
-      },
       emphasis: { focus: "series" },
-      data,
+      data: limitedData,
     }];
   }
 
   return snapshotSeries.value.map((entry) => {
-    const singlePoint = entry.data.length === 1;
+    const limitedData = limitSeriesPoints(entry.data);
+    const singlePoint = limitedData.length === 1;
     const seriesColor = getAccountColorById(entry.accountId);
     return {
       id: `account-${entry.accountId}`,
@@ -279,11 +292,8 @@ const chartSeries = computed(() => {
         color: seriesColor,
         width: 3,
       },
-      areaStyle: {
-        color: getAccountColorWithAlpha(entry.accountId, 0.13),
-      },
       emphasis: { focus: "series" },
-      data: entry.data,
+      data: limitedData,
     };
   });
 });
@@ -425,6 +435,10 @@ const chartOption = computed(() => ({
   tooltip: {
     trigger: "axis",
     axisPointer: { type: "line" },
+    textStyle: {
+      fontFamily: "Times New Roman, Times, serif",
+    },
+    extraCssText: "font-family:'Times New Roman',Times,serif;",
     formatter: (params) => {
       const rows = Array.isArray(params) ? params : [params];
       if (rows.length === 0) return "--";
@@ -445,9 +459,9 @@ const chartOption = computed(() => ({
   legend: {
     top: 0,
     right: 0,
-    icon: "roundRect",
-    itemWidth: 12,
-    itemHeight: 3,
+    icon: "circle",
+    itemWidth: 8,
+    itemHeight: 8,
     textStyle: {
       color: "#6b7280",
       fontSize: 11,
@@ -495,15 +509,10 @@ const chartOption = computed(() => ({
 
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-          <button
-            v-for="item in RANGE_OPTIONS"
-            :key="item.key"
-            type="button"
-            class="button-base !px-3 !py-1.5 !text-xs sm:!text-sm"
-            :class="activeRangeKey === item.key
+          <button v-for="item in RANGE_OPTIONS" :key="item.key" type="button"
+            class="button-base !px-3 !py-1.5 !text-xs sm:!text-sm" :class="activeRangeKey === item.key
               ? '!bg-primary-50 !text-primary-700 !border-primary-200 dark:!bg-primary-900/25 dark:!text-primary-200 dark:!border-primary-800'
-              : ''"
-            @click="activeRangeKey = item.key">
+              : ''" @click="activeRangeKey = item.key">
             {{ item.label }}
           </button>
         </div>
@@ -514,14 +523,16 @@ const chartOption = computed(() => ({
       </div>
     </div>
 
-    <div class="flex-1 rounded-xl border p-2" :style="chartPanelStyle">
+    <div class="flex-1 rounded-xl border border-gray-200 bg-gray-50/70 p-2 dark:border-gray-700 dark:bg-gray-800/40">
       <div v-if="loading" class="h-full min-h-[16rem] grid place-items-center text-sm text-gray-500 dark:text-gray-400">
         正在加载走势数据...
       </div>
-      <div v-else-if="queryError" class="h-full min-h-[16rem] grid place-items-center text-sm text-red-600 dark:text-red-400">
+      <div v-else-if="queryError"
+        class="h-full min-h-[16rem] grid place-items-center text-sm text-red-600 dark:text-red-400">
         走势数据加载失败
       </div>
-      <div v-else-if="!hasData" class="h-full min-h-[16rem] grid place-items-center text-sm text-gray-500 dark:text-gray-400">
+      <div v-else-if="!hasData"
+        class="h-full min-h-[16rem] grid place-items-center text-sm text-gray-500 dark:text-gray-400">
         暂无走势数据
       </div>
       <v-chart v-else class="h-full min-h-[16rem] w-full" :option="chartOption" autoresize />

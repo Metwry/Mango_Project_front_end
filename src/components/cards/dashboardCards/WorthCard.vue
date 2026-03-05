@@ -73,38 +73,28 @@ const amountParts = computed(() => {
         <div class="relative z-10">
             <div class="card-title">&#24635;&#36164;&#20135;</div>
 
-            <h2 v-if="!ready" class="mb-4 h-[3.8rem] text-5xl font-bold tracking-tight leading-none amount-line text-gray-500" aria-label="loading">
+            <h2 v-if="!ready"
+                class="mb-4 h-[3.8rem] text-5xl font-bold tracking-tight leading-none amount-line text-gray-500"
+                aria-label="loading">
                 &#165;--.--</h2>
 
-            <h2 v-else class="mb-4 h-[3.8rem] text-5xl font-bold tracking-tight leading-none amount-line" :aria-label="amountLabel">
+            <h2 v-else class="mb-4 h-[3.8rem] text-5xl font-bold tracking-tight leading-none amount-line"
+                :aria-label="amountLabel">
                 <span v-if="isNegative" class="amount-separator">-</span>
                 <span class="amount-separator currency-symbol">&#165;</span>
 
                 <template v-for="token in amountParts.integerTokens" :key="token.key">
-                    <RollingDigit
-                        v-if="token.type === 'digit'"
-                        :digit="token.digit"
-                        :delay="token.delay"
-                    />
+                    <RollingDigit v-if="token.type === 'digit'" :digit="token.digit" :delay="token.delay" />
                     <span v-else class="amount-separator">{{ token.char }}</span>
                 </template>
 
                 <span class="amount-separator decimal-dot">.</span>
 
-                <RollingDigit
-                    v-for="token in amountParts.fractionTokens"
-                    :key="token.key"
-                    :digit="token.digit"
-                    :delay="token.delay"
-                />
+                <RollingDigit v-for="token in amountParts.fractionTokens" :key="token.key" :digit="token.digit"
+                    :delay="token.delay" />
             </h2>
 
-            <div class="flex items-center gap-2">
-                <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                    {{ change }}%
-                </span>
-                <span class="text-gray-400 text-sm">&#36739;&#19978;&#26376;&#22686;&#38271;</span>
-            </div>
+
         </div>
     </div>
 </template>

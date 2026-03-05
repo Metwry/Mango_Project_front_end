@@ -1,16 +1,20 @@
 export const ACCOUNT_BRAND_PALETTE = Object.freeze([
-  "#4F46E5",
-  "#6366F1",
-  "#3730A3",
+  "#2563EB",
   "#0EA5E9",
   "#06B6D4",
   "#14B8A6",
+  "#10B981",
   "#22C55E",
   "#84CC16",
+  "#A3E635",
+  "#EAB308",
   "#F59E0B",
   "#F97316",
+  "#FB7185",
+  "#F43F5E",
   "#EF4444",
-  "#EC4899",
+  "#8B5CF6",
+  "#6366F1",
 ]);
 
 function normalizeAccountKey(accountId) {
@@ -53,6 +57,6 @@ export function getAccountColorById(accountId) {
 
 export function getAccountColorWithAlpha(accountId, alpha = 0.15) {
   const rgb = hexToRgb(getAccountColorById(accountId));
-  if (!rgb) return `rgba(79, 70, 229, ${alpha})`;
+  if (!rgb) return `rgba(37, 99, 235, ${alpha})`;
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 }
