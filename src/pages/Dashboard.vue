@@ -5,10 +5,11 @@ import AccountListCard from '@/components/cards/dashboardCards/AccountListCard.v
 import FundProportionCard from '@/components/cards/dashboardCards/FundProportionCard.vue'
 import { ref } from 'vue'
 import { useDashboardWorth } from '@/composables/useDashboardWorth'
+import { DASHBOARD_WORTH_CONFIG } from '@/config/featureConfig'
 
 const { accounts, valuedAccounts, totalWorthCny, worthReady } = useDashboardWorth()
 
-const monthlyChange = ref(3.2)
+const monthlyChange = ref(DASHBOARD_WORTH_CONFIG.monthlyChangeDefault)
 </script>
 
 <template>

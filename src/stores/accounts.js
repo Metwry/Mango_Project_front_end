@@ -9,9 +9,10 @@ import {
 } from "@/utils/accounts";
 import { getPayload, getResultsList } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
+import { STORE_REFRESH_CONFIG } from "@/config/featureConfig";
 
-const AUTO_REFRESH_INTERVAL_MINUTES = 10;
-const AUTO_REFRESH_SECOND = 5;
+const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.accounts.intervalMinutes;
+const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.accounts.second;
 
 export const useAccountsStore = defineStore("accounts", () => {
   // ===== state =====

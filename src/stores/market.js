@@ -7,10 +7,11 @@ import {
 } from "@/utils/markets";
 import { getPayload } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
+import { STORE_REFRESH_CONFIG } from "@/config/featureConfig";
 
-const AUTO_REFRESH_INTERVAL_MINUTES = 10;
-const AUTO_REFRESH_SECOND = 30;
-const SELECTED_MARKET_KEY = "market_selected_market";
+const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.market.intervalMinutes;
+const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.market.second;
+const SELECTED_MARKET_KEY = STORE_REFRESH_CONFIG.market.selectedMarketStorageKey;
 
 function normalizeDataMarketCode(value) {
   return String(value ?? "").trim().toUpperCase();

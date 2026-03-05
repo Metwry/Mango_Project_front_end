@@ -3,6 +3,7 @@ import AddAccount from '@/components/windows/AddAccount.vue'
 import ChangeAccount from '@/components/windows/ChangeAccount.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import { computed, ref } from 'vue'
+import { getAccountColorById, getAccountColorWithAlpha } from '@/utils/accountColors'
 import { formatCurrencyAmount, toSafeNumber } from '@/utils/formatters'
 
 const props = defineProps({
@@ -31,6 +32,15 @@ const openEditModal = (item) => {
     selectedAccount.value = item
     showChangeAccount.value = true
 }
+
+const getAccountBadgeStyle = (account) => {
+    const accountKey = account?.id ?? account?.accountId ?? account?.account_id ?? ''
+    return {
+        color: getAccountColorById(accountKey),
+        borderColor: getAccountColorWithAlpha(accountKey, 0.5),
+        backgroundColor: getAccountColorWithAlpha(accountKey, 0.18),
+    }
+}
 </script>
 
 <template>
@@ -46,7 +56,8 @@ const openEditModal = (item) => {
             <div v-for="item in sortedAccounts" :key="item.id" class="center gap-3">
                 <div class="flex min-w-0 items-center gap-3">
                     <div
-                        class="py-1 w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 flex items-center justify-center text-sm">
+                        class="py-1 w-10 h-10 rounded-full border flex items-center justify-center text-sm"
+                        :style="getAccountBadgeStyle(item)">
                         {{ (item.type || '').substring(0, 1).toUpperCase() }}
                     </div>
                     <div class="min-w-0">

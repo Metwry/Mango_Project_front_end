@@ -1,17 +1,9 @@
 import api, { getPayload } from "@/utils/api";
+import { FX_RATES_CONFIG } from "@/config/featureConfig";
 
-const DEFAULT_USD_PER_CURRENCY_RATES = Object.freeze({
-  USD: 1,
-  CNY: 0.14,
-  EUR: 1.08,
-  JPY: 0.0067,
-  GBP: 1.27,
-  HKD: 0.128,
-});
-const FX_RATES_STALE_MS = 10 * 60 * 1000;
-const DEFAULT_USD_RATES_ENDPOINT = "/user/markets/fx-rates/";
-const USD_RATES_ENDPOINT =
-  import.meta.env.VITE_USD_RATES_ENDPOINT ?? DEFAULT_USD_RATES_ENDPOINT;
+const DEFAULT_USD_PER_CURRENCY_RATES = FX_RATES_CONFIG.defaultUsdPerCurrencyRates;
+const FX_RATES_STALE_MS = FX_RATES_CONFIG.staleMs;
+const USD_RATES_ENDPOINT = FX_RATES_CONFIG.usdRatesEndpoint;
 
 let cachedUsdPerCurrencyRates = { ...DEFAULT_USD_PER_CURRENCY_RATES };
 let cachedFetchedAt = 0;

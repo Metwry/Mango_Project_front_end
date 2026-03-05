@@ -1,5 +1,6 @@
 <script setup>
 import BaseIcon from '../ui/BaseIcon.vue';
+import { APP_VERSION_LABEL } from '@/config/appConfig';
 defineProps({
     menuItems: { type: Array, default: () => [] }
 })
@@ -10,7 +11,10 @@ defineProps({
         class="w-60 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 hidden md:flex flex-col z-20 transition-colors duration-300">
         <div class="h-15 gap-2 flex items-center px-8 border-b border-gray-100 dark:border-gray-700">
             <BaseIcon name="mango" class="w-6 h-6 text-primary-600 " />
-            <span class="text-lg font-bold text-primary-600 font-serif">Mango Finance</span>
+            <div class="min-w-0">
+                <p class="text-lg font-bold text-primary-600 font-serif leading-tight">Mango Finance</p>
+                <p class="text-[10px] font-medium tracking-wide text-primary-500/85 leading-tight">{{ APP_VERSION_LABEL }}</p>
+            </div>
 
         </div>
 

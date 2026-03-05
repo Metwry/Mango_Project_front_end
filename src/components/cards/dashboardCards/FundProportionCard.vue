@@ -7,6 +7,7 @@ import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/compon
 import VChart from 'vue-echarts'
 import { toSafeNumber } from '@/utils/formatters'
 import { getAccountColorById } from '@/utils/accountColors'
+import { FUND_PROPORTION_CONFIG } from '@/config/featureConfig'
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -27,16 +28,16 @@ const chartData = computed(() => {
         .filter(x => x.name && x.value > 0)
         .sort((a, b) => b.value - a.value)
 
-    if (data.length <= 5) return data
+    if (data.length <= FUND_PROPORTION_CONFIG.maxDisplayedAccounts) return data
 
-    const top5 = data.slice(0, 5)
-    const others = data.slice(5).reduce((sum, item) => sum + item.value, 0)
-    return [...top5, {
+    const topAccounts = data.slice(0, FUND_PROPORTION_CONFIG.maxDisplayedAccounts)
+    const others = data.slice(FUND_PROPORTION_CONFIG.maxDisplayedAccounts).reduce((sum, item) => sum + item.value, 0)
+    return [...topAccounts, {
         id: "others",
-        name: '其他',
+        name: FUND_PROPORTION_CONFIG.othersName,
         value: others,
         itemStyle: {
-            color: "#94A3B8",
+            color: FUND_PROPORTION_CONFIG.othersColor,
         },
     }]
 })

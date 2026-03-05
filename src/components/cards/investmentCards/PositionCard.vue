@@ -13,6 +13,7 @@ import { getPayload } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 import { buildSnapshotTimeline, getPositionSnapshots } from "@/utils/snapshot";
 import { useInvestmentStore } from "@/stores/investment";
+import { POSITION_TREND_CONFIG } from "@/config/featureConfig";
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent]);
 
@@ -70,8 +71,8 @@ const MARKET_MONEY_META = {
   HK: { prefix: "HK$", locale: "zh-HK" },
   US: { prefix: "$", locale: "en-US" },
 };
-const TREND_AUTO_REFRESH_INTERVAL_MINUTES = 15;
-const TREND_AUTO_REFRESH_SECOND = 20;
+const TREND_AUTO_REFRESH_INTERVAL_MINUTES = POSITION_TREND_CONFIG.autoRefresh.intervalMinutes;
+const TREND_AUTO_REFRESH_SECOND = POSITION_TREND_CONFIG.autoRefresh.second;
 let trendAutoRefreshScheduler = null;
 
 function toNumber(value, fallback = 0) {
@@ -154,6 +155,23 @@ function toSnapshotNumber(value) {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+function limitSeriesPoints(points, maxPoints = POSITION_TREND_CONFIG.maxRenderPoints) {
+  const list = Array.isArray(points) ? points : [];
+  const safeMax = Math.max(2, Math.trunc(Number(maxPoints) || POSITION_TREND_CONFIG.maxRenderPoints));
+  if (list.length <= safeMax) return list;
+
+  const result = [];
+  const lastIndex = list.length - 1;
+  const step = lastIndex / (safeMax - 1);
+
+  for (let i = 0; i < safeMax; i += 1) {
+    const index = Math.round(i * step);
+    result.push(list[Math.min(lastIndex, index)]);
+  }
+
+  return result;
 }
 
 const instrumentId = computed(() => toPositiveInt(
@@ -418,6 +436,7 @@ const profitPercentText = computed(() => {
   if (profitPercent.value === null) return "--";
   return `${profitPercent.value >= 0 ? "+" : ""}${profitPercent.value.toFixed(2)}%`;
 });
+const trendHeaderLabel = computed(() => POSITION_TREND_CONFIG.headerLabel);
 
 function formatMoney(value) {
   const n = Number(value);
@@ -457,14 +476,14 @@ async function fetchPositionTrend() {
   }
 
   const end = new Date();
-  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  const start = new Date(end.getTime() - POSITION_TREND_CONFIG.lookbackHours * 60 * 60 * 1000);
   const params = {
-    level: "M15",
+    level: POSITION_TREND_CONFIG.level,
     start_time: start.toISOString(),
     end_time: end.toISOString(),
     account_id: accountId,
     instrument_id: targetInstrumentId,
-    limit: 10000,
+    limit: POSITION_TREND_CONFIG.snapshotLimit,
   };
 
   trendLoading.value = true;
@@ -489,7 +508,7 @@ async function fetchPositionTrend() {
     let firstValidIndex = -1;
     let lastValidIndex = -1;
 
-    trendSeries.value = timeline.reduce((acc, ts, index) => {
+    const rawSeries = timeline.reduce((acc, ts, index) => {
       const trendValue = toSnapshotNumber(valueList[index]);
       if (trendValue === null) return acc;
 
@@ -498,6 +517,8 @@ async function fetchPositionTrend() {
       acc.push([ts, trendValue]);
       return acc;
     }, []);
+
+    trendSeries.value = limitSeriesPoints(rawSeries);
 
     trendStartIndex.value = firstValidIndex;
     trendEndIndex.value = lastValidIndex;
@@ -696,7 +717,7 @@ onUnmounted(() => {
     <div
       class="relative flex-1 min-h-[11rem] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700">
       <div class="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-3 pt-3">
-        <span class="text-xs text-gray-500 dark:text-gray-400">今日走势(15m更新)</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{ trendHeaderLabel }}</span>
         <span class="text-sm font-semibold" :class="toneTextClass">
           {{ profitValueText }}
         </span>

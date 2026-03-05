@@ -8,9 +8,10 @@ import {
   sellInvestmentPosition as apiSellInvestmentPosition,
 } from "@/utils/investment";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
+import { STORE_REFRESH_CONFIG } from "@/config/featureConfig";
 
-const AUTO_REFRESH_INTERVAL_MINUTES = 10;
-const AUTO_REFRESH_SECOND = 30;
+const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.investmentQuotes.intervalMinutes;
+const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.investmentQuotes.second;
 
 function toFiniteNumber(value) {
   const n = Number(value);

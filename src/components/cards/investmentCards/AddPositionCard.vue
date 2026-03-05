@@ -8,6 +8,7 @@ import { searchMarketInstruments } from "@/utils/markets";
 import { getPayload } from "@/utils/api";
 import { filterNonInvestmentAccounts } from "@/utils/accounts";
 import { useInvestmentStore } from "@/stores/investment";
+import { SEARCH_CONFIG } from "@/config/featureConfig";
 
 const props = defineProps({
   accounts: {
@@ -34,7 +35,8 @@ const form = reactive({
 const advancedMode = ref(false);
 const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
-const SEARCH_DEBOUNCE_MS = 250;
+const SEARCH_DEBOUNCE_MS = SEARCH_CONFIG.addPosition.debounceMs;
+const SEARCH_DROPDOWN_HIDE_DELAY_MS = SEARCH_CONFIG.addPosition.dropdownHideDelayMs;
 let searchRequestSeq = 0;
 
 const MARKET_LABEL_MAP = {
@@ -135,7 +137,7 @@ function onSearchEnter() {
 function hideSearchDropdownSoon() {
   setTimeout(() => {
     showSearchDropdown.value = false;
-  }, 120);
+  }, SEARCH_DROPDOWN_HIDE_DELAY_MS);
 }
 
 async function executeSearch(query) {
@@ -216,7 +218,7 @@ async function onSubmit() {
     });
     ElMessage.success("买入成功");
     resetForm();
-  } catch {}
+  } catch { }
 }
 
 watch(
@@ -253,7 +255,7 @@ watch(
     <div class="space-y-2.5">
       <div class="relative mx-auto w-full max-w-[16.75rem]">
         <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">股票代码</label>
-        <input v-model="keywordInput" type="text" placeholder="输入股票代码或名称"
+        <input v-model="keywordInput" type="text"
           class="input-base px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200" @input="onSearchInput"
           @focus="onSearchFocus" @keyup.enter="onSearchEnter" @compositionstart="onCompositionStart"
           @compositionend="onCompositionEnd" @blur="hideSearchDropdownSoon" />
@@ -297,13 +299,13 @@ watch(
       <div class="mx-auto w-full max-w-[16.75rem]">
         <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">买入价</label>
         <input v-model="form.price" type="number" inputmode="decimal" min="0" step="any"
-          class="input-base px-3 py-1.5 text-sm" placeholder="请输入价格" @keydown.enter.prevent="onSubmit" />
+          class="input-base px-3 py-1.5 text-sm" @keydown.enter.prevent="onSubmit" />
       </div>
 
       <div class="mx-auto w-full max-w-[16.75rem]">
         <label class="mb-0.5 block text-[11px] font-medium text-gray-500 dark:text-gray-400">买入数量</label>
         <input v-model="form.quantity" type="number" inputmode="decimal" min="0" step="any"
-          class="input-base px-3 py-1.5 text-sm" placeholder="请输入数量" @keydown.enter.prevent="onSubmit" />
+          class="input-base px-3 py-1.5 text-sm" @keydown.enter.prevent="onSubmit" />
       </div>
 
       <div class="mx-auto w-full max-w-[16.75rem]">

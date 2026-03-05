@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import RollingDigit from '@/components/ui/RollingDigit.vue'
+import { DASHBOARD_WORTH_CONFIG } from '@/config/featureConfig'
 
 const props = defineProps({
     amount: { type: Number, required: true },
@@ -18,9 +19,9 @@ const isNegative = computed(() => safeAmount.value < 0)
 
 const amountLabel = computed(() => {
     if (!props.ready) return '--'
-    return new Intl.NumberFormat('zh-CN', {
+    return new Intl.NumberFormat(DASHBOARD_WORTH_CONFIG.displayLocale, {
         style: 'currency',
-        currency: 'CNY',
+        currency: DASHBOARD_WORTH_CONFIG.displayCurrency,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }).format(safeAmount.value)

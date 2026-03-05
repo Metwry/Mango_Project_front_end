@@ -5,6 +5,7 @@ import { ElMessage } from "element-plus";
 import { searchMarketInstruments } from "@/utils/markets";
 import { getResultsList } from "@/utils/api";
 import { useMarketStore } from "@/stores/market";
+import { SEARCH_CONFIG } from "@/config/featureConfig";
 
 const MARKET_META = {
   CN: { label: "A股", pricePrefix: "¥" },
@@ -15,8 +16,8 @@ const MARKET_META = {
 };
 const MARKET_ORDER = ["CN", "HK", "US", "FX", "CRYPTO"];
 const MARKET_ORDER_MAP = new Map(MARKET_ORDER.map((market, idx) => [market, idx]));
-const SEARCH_DEBOUNCE_MS = 250;
-const SEARCH_CACHE_LIMIT = 50;
+const SEARCH_DEBOUNCE_MS = SEARCH_CONFIG.marketPage.debounceMs;
+const SEARCH_CACHE_LIMIT = SEARCH_CONFIG.marketPage.cacheLimit;
 
 function normalizeMarketCode(value) {
   return String(value ?? "").trim().toUpperCase();

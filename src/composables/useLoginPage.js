@@ -75,6 +75,19 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function extractErrorMessage(error) {
+  const payload = error?.response?.data;
+  const raw = payload?.message ?? payload?.massage;
+
+  if (typeof raw === "string") return raw.trim() || "登录失败";
+  if (Array.isArray(raw)) {
+    const first = raw.find((item) => typeof item === "string" && item.trim());
+    if (first) return first.trim();
+  }
+
+  return "登录失败，请检查账号和密码";
+}
+
 export function useLoginPage() {
   const auth = useAuthStore();
   const router = useRouter();
@@ -178,6 +191,8 @@ export function useLoginPage() {
     try {
       await auth.login(email, password, { remember: emailLoginForm.value.remember });
       router.replace("/dashboard");
+    } catch (error) {
+      ElMessage.error(extractErrorMessage(error));
     } finally {
       loading.value = false;
     }

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { use } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
@@ -9,6 +9,8 @@ import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { getPayload } from "@/utils/api";
 import { getAccountColorById } from "@/utils/accountColors";
 import { formatCurrencyAmount } from "@/utils/formatters";
+import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
+import { DASHBOARD_TREND_CONFIG } from "@/config/featureConfig";
 import {
   DEFAULT_USD_PER_CURRENCY_RATES,
   ensureUsdPerCurrencyRates,
@@ -27,15 +29,11 @@ const props = defineProps({
   },
 });
 
-const RANGE_OPTIONS = [
-  { key: "today", label: "今天", level: "M15", days: 0 },
-  { key: "7d", label: "近7天", level: "H4", days: 7 },
-  { key: "30d", label: "近30天", level: "D1", days: 30 },
-  { key: "1y", label: "近1年", level: "MON1", days: 365 },
-  { key: "all", label: "至今为止", level: "MON1", days: 3650 },
-];
-const ALL_ACCOUNTS_THEME_COLOR = "#6366F1";
-const MAX_RENDER_POINTS = 28;
+const RANGE_OPTIONS = DASHBOARD_TREND_CONFIG.rangeOptions;
+const ALL_ACCOUNTS_THEME_COLOR = DASHBOARD_TREND_CONFIG.allAccountsThemeColor;
+const MAX_RENDER_POINTS = DASHBOARD_TREND_CONFIG.maxRenderPoints;
+const TODAY_AUTO_REFRESH_INTERVAL_MINUTES = DASHBOARD_TREND_CONFIG.todayAutoRefresh.intervalMinutes;
+const TODAY_AUTO_REFRESH_SECOND = DASHBOARD_TREND_CONFIG.todayAutoRefresh.second;
 
 const accountId = ref("");
 const activeRangeKey = ref("today");
@@ -46,6 +44,7 @@ const usdPerCnyRate = ref(DEFAULT_USD_PER_CURRENCY_RATES.CNY);
 const axisStartMs = ref(0);
 const axisIntervalMs = ref(0);
 let requestSeq = 0;
+let todayAutoRefreshScheduler = null;
 
 const rangeMeta = computed(() => {
   return RANGE_OPTIONS.find((item) => item.key === activeRangeKey.value)
@@ -138,7 +137,7 @@ async function fetchTrendData() {
     level: currentRange.level,
     start_time: start,
     end_time: end,
-    limit: 10000,
+    limit: DASHBOARD_TREND_CONFIG.snapshotLimit,
   };
   if (selectedAccountId.value) params.account_id = selectedAccountId.value;
 
@@ -217,9 +216,42 @@ async function fetchTrendData() {
   }
 }
 
+function startTodayAutoRefresh() {
+  if (todayAutoRefreshScheduler) return;
+
+  todayAutoRefreshScheduler = createMinuteAlignedScheduler({
+    intervalMinutes: TODAY_AUTO_REFRESH_INTERVAL_MINUTES,
+    second: TODAY_AUTO_REFRESH_SECOND,
+    task: async () => {
+      if (activeRangeKey.value !== "today") return;
+      await fetchTrendData();
+    },
+    onError: () => {
+      // Keep scheduler alive even when one refresh fails.
+    },
+  });
+
+  todayAutoRefreshScheduler.start();
+}
+
+function stopTodayAutoRefresh() {
+  if (!todayAutoRefreshScheduler) return;
+  todayAutoRefreshScheduler.stop();
+  todayAutoRefreshScheduler = null;
+}
+
 watch([activeRangeKey, accountId], () => {
   void fetchTrendData();
 }, { immediate: true });
+
+onMounted(() => {
+  startTodayAutoRefresh();
+});
+
+onUnmounted(() => {
+  requestSeq += 1;
+  stopTodayAutoRefresh();
+});
 
 const chartSeries = computed(() => {
   if (!snapshotSeries.value.length) return [];
@@ -265,7 +297,7 @@ const chartSeries = computed(() => {
       itemStyle: { color: summaryColor },
       lineStyle: {
         color: summaryColor,
-        width: 3.4,
+        width: DASHBOARD_TREND_CONFIG.lineWidth.allAccounts,
       },
       emphasis: { focus: "series" },
       data: limitedData,
@@ -290,7 +322,7 @@ const chartSeries = computed(() => {
       itemStyle: { color: seriesColor },
       lineStyle: {
         color: seriesColor,
-        width: 3,
+        width: DASHBOARD_TREND_CONFIG.lineWidth.account,
       },
       emphasis: { focus: "series" },
       data: limitedData,
@@ -485,6 +517,7 @@ const chartOption = computed(() => ({
   },
   yAxis: {
     type: "value",
+    min: DASHBOARD_TREND_CONFIG.yAxisMin,
     scale: true,
     splitNumber: 5,
     axisLine: { show: false },
