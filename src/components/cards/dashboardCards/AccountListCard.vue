@@ -52,7 +52,7 @@ const getAccountBadgeStyle = (account) => {
         </div>
 
 
-        <div class="py-5 space-y-4">
+        <div class="min-h-0 flex-1 overflow-y-auto py-5 pr-1 space-y-4">
             <div v-for="item in sortedAccounts" :key="item.id" class="center gap-3">
                 <div class="flex min-w-0 items-center gap-3">
                     <div
