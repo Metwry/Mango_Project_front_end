@@ -545,7 +545,7 @@ const chartOption = computed(() => ({
         <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
           <button v-for="item in RANGE_OPTIONS" :key="item.key" type="button"
             class="button-base !px-3 !py-1.5 !text-xs sm:!text-sm" :class="activeRangeKey === item.key
-              ? '!bg-primary-50 !text-primary-700 !border-primary-200 dark:!bg-primary-900/25 dark:!text-primary-200 dark:!border-primary-800'
+              ? '!bg-primary-50 !text-primary-700 !border-primary-200 dark:!bg-[#2c3138] dark:!text-white dark:!border-[#343a42]'
               : ''" @click="activeRangeKey = item.key">
             {{ item.label }}
           </button>

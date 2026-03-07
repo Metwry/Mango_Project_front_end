@@ -59,24 +59,24 @@ function todo() {
             <div v-if="showUserMenu"
                 class="dropdown-panel absolute top-full right-0 mt-2 w-56 py-2 transform transition-all origin-top-right">
                 <button @click="triggerUserProfile"
-                    class="dropdown-menu-item hover:text-primary-600">
+                    class="dropdown-menu-item">
                     <BaseIcon name="settings" class="w-4 h-4" />
                     用户设置
                 </button>
 
                 <button @click="triggerSettings"
-                    class="dropdown-menu-item hover:text-primary-600">
+                    class="dropdown-menu-item">
                     <BaseIcon name="settings" class="w-4 h-4" />
                     系统设置
                 </button>
 
                 <button @click="todo()"
-                    class="dropdown-menu-item hover:text-primary-600">
+                    class="dropdown-menu-item">
                     <BaseIcon name="export" class="w-4 h-4" />
                     导出数据
                 </button>
 
-                <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+                <div class="dropdown-divider h-px bg-gray-100 my-1"></div>
 
                 <button @click="handleLogout"
                     class="dropdown-menu-item dropdown-menu-item-danger">
@@ -87,10 +87,10 @@ function todo() {
         </Transition>
 
         <div @click="showUserMenu = !showUserMenu"
-            class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-xl transition-colors select-none">
+            class="user-menu-trigger flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors select-none">
 
             <div
-                class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800 text-xs">
+                class="user-menu-avatar w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold border border-primary-200 text-xs">
                 {{ displayInitial }}
             </div>
 

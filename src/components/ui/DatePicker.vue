@@ -161,7 +161,7 @@ const nextMonth = () => shiftMonth(1);
 
         <teleport to="body">
             <div v-if="open" ref="floatingRef" :style="floatingStyles"
-                class="z-50 w-[280px] sm:w-[320px] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden flex flex-col">
+                class="date-picker-panel z-50 w-[280px] sm:w-[320px] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden flex flex-col">
 
                 <div
                     class="px-3 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-1">
@@ -234,10 +234,10 @@ const nextMonth = () => shiftMonth(1);
                             d && isFuture(d)
                                 ? 'opacity-40 cursor-not-allowed border-transparent bg-transparent shadow-none'
                                 : isSelected(d)
-                                    ? 'bg-gray-200 border-gray-300 text-gray-900 dark:bg-gray-600 dark:border-gray-500 dark:text-white'
+                                    ? 'bg-gray-200 border-gray-300 text-gray-900 dark:bg-[#2c3138] dark:border-[#343a42] dark:text-white'
                                     : isToday(d)
-                                        ? 'border-gray-300 bg-transparent text-gray-900 dark:border-gray-500 dark:text-white font-semibold'
-                                        : 'border-transparent bg-transparent shadow-none hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        ? 'border-gray-300 bg-transparent text-gray-900 dark:border-[#343a42] dark:text-white font-semibold'
+                                        : 'border-transparent bg-transparent shadow-none hover:bg-gray-100 dark:hover:bg-[#20242a]'
                         ]" @click="selectDay(d)">
                             {{ d ? d.getDate() : "" }}
                         </button>

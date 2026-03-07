@@ -289,7 +289,7 @@ onClickOutside(historyModeWrapRef, () => {
                         @click="filtersOpen = !filtersOpen">
                         <span>筛选</span>
                         <span v-if="activeSearchCount > 0"
-                            class="inline-flex min-w-5 items-center justify-center rounded-full bg-gray-900 px-1.5 py-0.5 text-[10px] font-semibold text-white dark:bg-gray-100 dark:text-gray-900">
+                            class="preserve-dark-white inline-flex min-w-5 items-center justify-center rounded-full bg-gray-900 px-1.5 py-0.5 text-[10px] font-semibold text-white dark:bg-gray-100 dark:text-gray-900">
                             {{ activeSearchCount }}
                         </span>
                     </button>
@@ -372,16 +372,16 @@ onClickOutside(historyModeWrapRef, () => {
             </div>
         </div>
 
-        <div v-if="loading" class="text-base">
+        <div v-if="loading" class="status-base">
             <BaseIcon name="spinner" spin :size="30" />
         </div>
-        <div v-else-if="error" class="text-base">
+        <div v-else-if="error" class="status-base">
             加载失败，请重试
         </div>
 
         <div v-else
             class="flex-1 min-h-0 overflow-x-auto overflow-y-auto scrollbar-thin rounded-2xl border border-gray-100 dark:border-gray-700/70 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
-            <table class="w-full min-w-[840px] text-left border-collapse table-auto">
+            <table class="history-table w-full min-w-[840px] text-left border-collapse table-auto">
                 <thead class="sticky top-0 z-10 backdrop-blur-md bg-gray-50/95 dark:bg-gray-900/95">
                     <tr>
                         <th class="th-text">账户</th>
@@ -502,7 +502,7 @@ onClickOutside(historyModeWrapRef, () => {
                     <BaseIcon name="leftArrow" class="!w-3 !h-3" />
                 </button>
 
-                <span class="text-base">
+                <span class="status-base">
                     {{ page }} / {{ totalPages }}
                 </span>
 

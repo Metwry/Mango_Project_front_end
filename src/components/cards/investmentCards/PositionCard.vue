@@ -55,6 +55,7 @@ const tradeMode = ref("");
 const tradePanelVisible = ref(false);
 const tradeTransitionName = ref("trade-panel-drawer");
 const logoLoadFailed = ref(false);
+const isDarkMode = ref(false);
 const trendLoading = ref(false);
 const trendFetchError = ref(null);
 const trendSeries = ref([]);
@@ -63,6 +64,7 @@ const trendAxisIntervalMs = ref(0);
 const trendStartIndex = ref(-1);
 const trendEndIndex = ref(-1);
 let trendRequestSeq = 0;
+let themeObserver = null;
 
 const MARKET_MONEY_META = {
   CRYPTO: { prefix: "$", locale: "en-US" },
@@ -128,21 +130,14 @@ function hexToRgb(hex) {
 
 const cardThemeStyle = computed(() => {
   const rgb = hexToRgb(props.position?.logoColor);
-  if (!rgb) return null;
+  if (!rgb) {
+    return {
+      "--position-accent-rgb": "148 163 184",
+    };
+  }
   const { r, g, b } = rgb;
   return {
-    backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
-    borderColor: `rgba(${r}, ${g}, ${b}, 0.35)`,
-  };
-});
-
-const statThemeStyle = computed(() => {
-  const rgb = hexToRgb(props.position?.logoColor);
-  if (!rgb) return null;
-  const { r, g, b } = rgb;
-  return {
-    backgroundColor: `rgba(${r}, ${g}, ${b}, 0.05)`,
-    borderColor: `rgba(${r}, ${g}, ${b}, 0.36)`,
+    "--position-accent-rgb": `${r} ${g} ${b}`,
   };
 });
 
@@ -268,6 +263,8 @@ const trendBounds = computed(() => {
   return { min, max };
 });
 
+const chartAxisTextColor = computed(() => (isDarkMode.value ? "#ffffff" : "#111827"));
+
 function formatHourTick(value) {
   const rawMs = new Date(value).getTime();
   if (!Number.isFinite(rawMs)) return "--";
@@ -301,7 +298,7 @@ const trendOption = computed(() => ({
     axisPointer: { type: "line" },
     textStyle: {
       color: "#374151",
-      fontFamily: "Times New Roman, Times, serif",
+      fontFamily: "PingFang SC, Microsoft YaHei, sans-serif",
     },
     formatter: (params) => {
       const first = Array.isArray(params) ? params[0] : params;
@@ -313,7 +310,7 @@ const trendOption = computed(() => ({
       const markerColor = trendColor.value;
 
       return `
-        <div style="font-family:'Times New Roman',Times,serif;">
+        <div style="font-family:'PingFang SC','Microsoft YaHei',sans-serif;">
           <div style="margin-bottom:6px;">${timeText}</div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="width:12px;height:12px;border-radius:999px;background:${markerColor};display:inline-block;"></span>
@@ -331,9 +328,9 @@ const trendOption = computed(() => ({
     axisLine: { lineStyle: { color: "rgba(148,163,184,0.35)" } },
     axisTick: { show: false },
     axisLabel: {
-      color: "#94a3b8",
-      fontSize: 10,
-      fontFamily: "Times New Roman, Times, serif",
+      color: chartAxisTextColor.value,
+      fontSize: 11,
+      fontFamily: "PingFang SC, Microsoft YaHei, sans-serif",
       hideOverlap: true,
       showMinLabel: true,
       showMaxLabel: true,
@@ -386,7 +383,7 @@ const trendOption = computed(() => ({
   ],
 }));
 
-const companyNameClass = "text-base font-semibold text-black dark:text-white company-name-font";
+const companyNameClass = "text-[1rem] font-semibold text-black dark:text-white company-name-font";
 
 const nameViewportRef = ref(null);
 const nameMeasureRef = ref(null);
@@ -544,6 +541,11 @@ function startTrendAutoRefresh() {
   trendAutoRefreshScheduler.start();
 }
 
+function syncThemeState() {
+  if (typeof document === "undefined") return;
+  isDarkMode.value = document.documentElement.classList.contains("dark");
+}
+
 function stopTrendAutoRefresh() {
   if (!trendAutoRefreshScheduler) return;
   trendAutoRefreshScheduler.stop();
@@ -635,6 +637,16 @@ useResizeObserver(nameViewportRef, () => {
 
 onMounted(() => {
   startTrendAutoRefresh();
+  syncThemeState();
+  if (typeof MutationObserver !== "undefined" && typeof document !== "undefined") {
+    themeObserver = new MutationObserver(() => {
+      syncThemeState();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+  }
   if (typeof window === "undefined") return;
   window.addEventListener(TRADE_PANEL_OPEN_EVENT, onExternalTradePanelOpen);
 });
@@ -642,6 +654,10 @@ onMounted(() => {
 onUnmounted(() => {
   trendRequestSeq += 1;
   stopTrendAutoRefresh();
+  if (themeObserver) {
+    themeObserver.disconnect();
+    themeObserver = null;
+  }
   if (typeof window === "undefined") return;
   window.removeEventListener(TRADE_PANEL_OPEN_EVENT, onExternalTradePanelOpen);
 });
@@ -649,10 +665,11 @@ onUnmounted(() => {
 
 <template>
   <article
-    class="card-base min-h-[24rem] gap-3 transition-all duration-200 ease-linear hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_24px_rgba(0,0,0,0.3)]"
+    class="position-card card-base !border-2 min-h-[24rem] gap-3 transition-all duration-200 ease-linear hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_24px_rgba(0,0,0,0.3)] dark:!border-[rgb(var(--position-accent-rgb)/0.6)] dark:!bg-[#121519] dark:!bg-none dark:!text-white"
     :style="cardThemeStyle">
     <header class="flex items-center gap-3 min-h-12">
-      <div class="h-12 w-12 rounded-xl grid place-items-center text-sm font-bold text-gray-700 dark:text-gray-100">
+      <div
+        class="position-card-logo h-12 w-12 rounded-xl grid place-items-center text-sm font-bold text-gray-700 dark:text-gray-100 dark:!border-[rgb(var(--position-accent-rgb)/0.30)] dark:!bg-[rgb(var(--position-accent-rgb)/1)]">
         <img v-if="showLogoImage" :src="logoUrl" :alt="safeName" loading="lazy" decoding="async"
           @error="logoLoadFailed = true" class="h-full w-full rounded-xl object-cover" />
         <span v-else>{{ logoText }}</span>
@@ -686,28 +703,25 @@ onUnmounted(() => {
 
     <div class="grid grid-cols-3 gap-2">
       <div
-        class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
-        :style="statThemeStyle">
+        class="position-card-stat min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-gray-50/80 px-2 py-2 flex flex-col items-center justify-center text-center dark:!border-[rgb(var(--position-accent-rgb)/0.5)] dark:!bg-[#161a1f] dark:!bg-none">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">市场价</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ currentPriceText }}</p>
         <p v-if="!hasCurrentPrice" class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">待接入</p>
       </div>
       <div
-        class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
-        :style="statThemeStyle">
+        class="position-card-stat min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-gray-50/80 px-2 py-2 flex flex-col items-center justify-center text-center dark:!border-[rgb(var(--position-accent-rgb)/0.5)] dark:!bg-[#161a1f] dark:!bg-none">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">成本价</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ costPriceText }}</p>
       </div>
       <div
-        class="min-h-[4.6rem] rounded-xl  border-2 border-gray-100 bg-gray-50/80 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center"
-        :style="statThemeStyle">
+        class="position-card-stat min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-gray-50/80 px-2 py-2 flex flex-col items-center justify-center text-center dark:!border-[rgb(var(--position-accent-rgb)/0.5)] dark:!bg-[#161a1f] dark:!bg-none">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">持仓数量</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ quantityText }}</p>
       </div>
     </div>
 
     <div
-      class="relative flex-1 min-h-[11rem] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700">
+      class="position-card-trend relative flex-1 min-h-[11rem] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 dark:!border-[rgb(var(--position-accent-rgb)/0.7)] dark:!bg-[#111418] dark:!bg-none">
       <div class="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-3 pt-3">
         <span class="text-xs text-gray-500 dark:text-gray-400">{{ trendHeaderLabel }}</span>
         <span class="text-sm font-semibold" :class="toneTextClass">
@@ -740,16 +754,17 @@ onUnmounted(() => {
 
       <footer class="grid grid-cols-3 gap-2">
         <button type="button" data-trade-trigger="true"
-          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-[#123128] dark:!text-emerald-200 dark:!border-emerald-700 dark:hover:!bg-[#174236]"
           :disabled="trading" @click="openTradePanel('buy')">
           买入
         </button>
         <button type="button" data-trade-trigger="true"
-          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-red-900/30 dark:!text-red-200 dark:!border-red-800 dark:hover:!bg-red-900/50"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]"
           :disabled="trading" @click="openTradePanel('sell')">
           卖出
         </button>
-        <button type="button" class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold"
+        <button type="button"
+          class="position-card-detail button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold dark:!bg-[#111519] dark:!border-white/10 dark:!text-white"
           @click="onDetailClick">
           详情
         </button>
@@ -770,6 +785,39 @@ onUnmounted(() => {
 .company-name-font {
   font-family: "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif;
 }
+
+.position-card {
+  border-color: rgb(var(--position-accent-rgb) / 0.22);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(248 250 252 / 0.96));
+  box-shadow:
+    0 14px 30px rgb(15 23 42 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.45);
+}
+
+.position-card-logo {
+  border: 1px solid rgb(var(--position-accent-rgb) / 0.18);
+  background:
+    linear-gradient(180deg, rgb(var(--position-accent-rgb) / 0.16), rgb(var(--position-accent-rgb) / 0.08));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28);
+}
+
+.position-card-stat {
+  border-color: rgb(var(--position-accent-rgb) / 0.24);
+  background:
+    linear-gradient(180deg, rgb(var(--position-accent-rgb) / 0.08), rgb(255 255 255 / 0.8));
+}
+
+.position-card-trend {
+  border-color: rgb(var(--position-accent-rgb) / 0.16);
+  background:
+    linear-gradient(180deg, rgb(var(--position-accent-rgb) / 0.05), rgb(248 250 252 / 0.96));
+}
+
+.position-card-detail {
+  background-color: rgb(255 255 255 / 0.82);
+}
+
 
 @keyframes name-marquee {
 
@@ -839,4 +887,3 @@ onUnmounted(() => {
   transform: translateX(16px);
 }
 </style>
-

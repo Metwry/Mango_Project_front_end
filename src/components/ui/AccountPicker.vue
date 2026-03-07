@@ -111,7 +111,7 @@ onUnmounted(() => {
 
             <teleport to="body">
                 <div v-if="open" ref="floatingRef" :style="floatingStyles"
-                    class="z-50 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
+                    class="account-picker-panel z-50 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
 
                     <div class="p-2 border-b border-gray-100 dark:border-gray-700">
                         <input v-model="query" type="text" :placeholder="searchPlaceholder" class="input-base" />

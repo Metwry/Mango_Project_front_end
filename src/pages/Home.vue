@@ -93,7 +93,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="app-shell flex bg-gray-50 dark:bg-gray-900">
+    <div class="app-shell flex">
         <Sidebar :menu-items="menuItems" />
 
         <main class="flex flex-1 min-w-0 flex-col overflow-hidden">
@@ -118,6 +118,7 @@ onUnmounted(() => {
 .app-shell {
     height: 100vh;
     height: 100dvh;
+    background-color: var(--app-bg);
 }
 
 .page-transition-stage {
@@ -134,7 +135,7 @@ onUnmounted(() => {
     z-index: 1;
     width: 100%;
     min-width: 0;
-    background-color: rgb(249, 250, 251);
+    background-color: var(--page-panel-bg);
     backface-visibility: hidden;
     transform: translateZ(0);
 }
@@ -144,10 +145,6 @@ onUnmounted(() => {
     overscroll-behavior: contain;
     padding: 0.75rem;
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-}
-
-.dark .page-panel {
-    background-color: rgb(17, 24, 39);
 }
 
 .page-slide-up-enter-active,

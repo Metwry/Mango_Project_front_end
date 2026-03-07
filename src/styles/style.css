@@ -2,6 +2,22 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --app-bg: #f8fafc;
+    --page-panel-bg: #f8fafc;
+    --surface-1: #ffffff;
+    --surface-2: #ffffff;
+    --surface-3: #f8fafc;
+    --surface-hover: #f3f4f6;
+    --surface-selected: #e5e7eb;
+    --border-subtle: #e5e7eb;
+    --border-strong: #d1d5db;
+    --text-primary: #111827;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --shadow-elevated: 0 20px 44px rgba(15, 23, 42, 0.12);
+  }
+
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -22,6 +38,12 @@
   body {
     font-family:
       "Times New Roman", Times, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+
+  body,
+  #app {
+    background-color: var(--app-bg);
+    color: var(--text-primary);
   }
 }
 
@@ -61,7 +83,7 @@
     dark:focus:ring-gray-300/70;
   }
 
-  .text-base {
+  .status-base {
     @apply flex flex-1 items-center justify-center text-gray-500 dark:text-gray-400;
   }
 
@@ -189,6 +211,277 @@
   .market-market-tag {
     @apply inline-flex px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300;
   }
+}
+
+.dark {
+  --app-bg: #0b0d10;
+  --page-panel-bg: #0b0d10;
+  --surface-1: #111315;
+  --surface-2: #15181c;
+  --surface-3: #191d21;
+  --surface-hover: #20242a;
+  --surface-selected: #2c3138;
+  --border-subtle: #262a31;
+  --border-strong: #343a42;
+  --text-primary: #d1d5db;
+  --text-secondary: #b5bec9;
+  --text-muted: #8f98a6;
+  --shadow-elevated: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+.dark [class*="dark:text-white"]:not(.preserve-dark-white),
+.dark [class*="dark:!text-white"]:not(.preserve-dark-white),
+.dark [class~="text-white"]:not(.preserve-dark-white),
+.dark [class*="!text-white"]:not(.preserve-dark-white) {
+  color: var(--text-primary) !important;
+}
+
+.dark .card-base {
+  background-color: var(--surface-1);
+  border-color: var(--border-subtle);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.dark .card-title,
+.dark .app-sidebar-brand,
+.dark .topbar-shell,
+.dark .modal-content,
+.dark .el-message-box__title,
+.dark .el-message__content {
+  color: var(--text-primary);
+}
+
+.dark .button-base {
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.dark .button-base:hover {
+  background-color: var(--surface-hover);
+}
+
+.dark .button-base:focus-visible {
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.dark .input-base {
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.dark .input-base:hover,
+.dark .input-base:focus {
+  background-color: var(--surface-3);
+}
+
+.dark .input-base::placeholder {
+  color: var(--text-muted);
+}
+
+.dark .dropdown-trigger {
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.dark .dropdown-trigger:hover {
+  background-color: var(--surface-hover);
+}
+
+.dark .dropdown-arrow,
+.dark .app-sidebar-version,
+.dark .th-text,
+.dark .label-text,
+.dark .status-base,
+.dark .market-search-head,
+.dark .market-market-tag,
+.dark .dropdown-item-idle,
+.dark .dropdown-menu-item,
+.dark .nav-item,
+.dark .td-cell {
+  color: var(--text-secondary);
+}
+
+.dark .dropdown-panel,
+.dark .market-search-dropdown,
+.dark .date-picker-panel,
+.dark .account-picker-panel,
+.dark .trade-panel-surface,
+.dark .topbar-shell,
+.dark .app-sidebar,
+.dark .modal-content {
+  background-color: var(--surface-2);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-elevated);
+}
+
+.dark .dropdown-item-active,
+.dark .nav-item-active,
+.dark .surface-selected {
+  background-color: var(--surface-selected);
+  color: var(--text-primary);
+}
+
+.dark .dropdown-item-idle:hover,
+.dark .dropdown-menu-item:hover,
+.dark .nav-item:hover,
+.dark .market-search-item:hover,
+.dark .surface-hover {
+  background-color: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.dark .market-search-head {
+  background-color: var(--surface-3);
+  border-color: var(--border-subtle);
+}
+
+.dark .market-market-tag {
+  background-color: var(--surface-selected);
+}
+
+.dark .market-search-item {
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+.dark .market-table thead {
+  background-color: var(--surface-3);
+}
+
+.dark .market-table thead tr {
+  color: var(--text-secondary);
+}
+
+.dark .market-table td {
+  background-color: var(--surface-1);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .market-table td[class*="text-gray-800"],
+.dark .market-table td[class*="text-gray-900"],
+.dark .market-table td .truncate {
+  color: var(--text-primary);
+}
+
+.dark .market-table td[class*="text-gray-600"] {
+  color: var(--text-secondary);
+}
+
+.dark .history-table thead {
+  background-color: var(--surface-3);
+}
+
+.dark .history-table tbody {
+  background-color: var(--surface-1);
+}
+
+.dark .history-table tbody tr:hover {
+  background-color: var(--surface-hover) !important;
+}
+
+.dark .history-table tbody tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.015);
+}
+
+.dark .td-cell {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .surface-chip {
+  background-color: var(--surface-3);
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.dark .surface-chip:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.dark .dropdown-divider {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .app-sidebar-brand {
+  color: #ffffff;
+}
+
+.dark .app-sidebar-version {
+  color: var(--text-muted);
+}
+
+.dark .app-sidebar-header {
+  border-color: var(--border-subtle);
+}
+
+.dark .user-menu-trigger {
+  color: var(--text-primary);
+}
+
+.dark .user-menu-trigger:hover {
+  background-color: var(--surface-hover);
+}
+
+.dark .user-menu-avatar {
+  background-color: var(--surface-3);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.dark .modal-content {
+  border: 1px solid var(--border-subtle);
+}
+
+.dark .el-overlay-message-box {
+  background-color: rgba(0, 0, 0, 0.72) !important;
+}
+
+.dark .el-message {
+  background-color: var(--surface-2) !important;
+  border-color: var(--border-subtle) !important;
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+.dark .el-message .el-message__content,
+.dark .el-message .el-message__closeBtn {
+  color: var(--text-primary) !important;
+}
+
+.dark .el-message-box {
+  background-color: var(--surface-2) !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+.dark .el-message-box__header,
+.dark .el-message-box__content,
+.dark .el-message-box__btns {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .el-message-box__message,
+.dark .el-message-box__title {
+  color: var(--text-primary) !important;
+}
+
+.dark .el-message-box__headerbtn .el-message-box__close {
+  color: var(--text-muted) !important;
+}
+
+.dark .el-message-box__headerbtn .el-message-box__close:hover {
+  color: var(--text-primary) !important;
+}
+
+.dark .el-message-box .el-button--default {
+  background-color: var(--surface-3) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .el-message-box .el-button--default:hover {
+  background-color: var(--surface-hover) !important;
 }
 
 .dropdown-drawer-enter-active,

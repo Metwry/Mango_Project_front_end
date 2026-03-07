@@ -26,7 +26,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full w-full bg-gray-50 dark:bg-gray-900">
+  <div class="h-full w-full">
     <section class="investment-scroll h-full w-full overflow-y-auto">
       <div v-if="loading" class="h-full grid place-items-center text-sm text-gray-500 dark:text-gray-400">
         正在加载持仓数据...

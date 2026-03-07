@@ -51,12 +51,12 @@ watch(
 
 <template>
     <header
-        class="topbar-shell relative z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-3 sm:px-6 transition-colors duration-300">
+        class="topbar-shell relative z-30 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 transition-colors duration-300">
 
         <div class="flex items-center gap-3 min-w-0">
             <div ref="mobileNavRef" class="relative md:hidden">
                 <button type="button"
-                    class="inline-flex items-center gap-2 rounded-xl px-1 py-1 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    class="inline-flex items-center gap-2 rounded-xl px-1 py-1 text-left hover:bg-gray-100 transition-colors"
                     @click="showMobileNavMenu = !showMobileNavMenu">
                     <BaseIcon v-if="mobileIcon" :name="mobileIcon" class="w-6 h-6 text-gray-800 dark:text-white" />
                     <span class="text-xl font-bold text-gray-800 dark:text-white font-serif truncate max-w-[9rem]">
@@ -68,11 +68,11 @@ watch(
 
                 <Transition name="mobile-nav-dropdown">
                     <div v-if="showMobileNavMenu"
-                        class="absolute left-0 top-full mt-2 w-44 rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                        class="dropdown-panel absolute left-0 top-full mt-2 w-44 rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
                         <button v-for="item in menuItems" :key="item.path" type="button"
-                            class="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+                            class="dropdown-menu-item"
                             :class="normalizePath(item.path) === normalizePath(route.path)
-                                ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
+                                ? 'dropdown-item-active'
                                 : ''"
                             @click="navigateTo(item.path)">
                             <BaseIcon :name="item.icon" class="w-4 h-4" />

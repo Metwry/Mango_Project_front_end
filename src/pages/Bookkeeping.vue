@@ -36,7 +36,7 @@ async function handleSubmitTransaction(payload) {
 </script>
 
 <template>
-    <div class="h-full w-full min-w-0 bg-gray-50 dark:bg-gray-900">
+    <div class="h-full w-full min-w-0">
         <section class="h-full w-full min-w-0 overflow-hidden">
             <TransactionsHistoryCard :transactions="transactions" :accounts="accounts" :loading="transactionsLoading"
                 :error="transactionsError" :page="txFilters.page" :page-size="txFilters.page_size" :total="transactionsTotal"

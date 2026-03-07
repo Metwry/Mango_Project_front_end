@@ -62,7 +62,7 @@ onClickOutside(marketDropdownWrapRef, () => {
 </script>
 
 <template>
-  <div class="h-full w-full min-h-0 min-w-0 bg-gray-50 dark:bg-gray-900">
+  <div class="h-full w-full min-h-0 min-w-0">
     <section class="card-base flex-1 h-full min-h-0 min-w-0 p-4 md:p-5">
       <div class="mb-4">
         <div class="w-full">
@@ -149,7 +149,7 @@ onClickOutside(marketDropdownWrapRef, () => {
       </div>
 
       <div v-else class="flex-1 min-h-0 overflow-auto pr-1">
-        <table class="min-w-[1080px] w-full table-fixed text-sm border-separate [border-spacing:0_8px]">
+        <table class="market-table min-w-[1080px] w-full table-fixed text-sm border-separate [border-spacing:0_8px]">
           <colgroup>
             <col class="w-[84px]" />
             <col class="w-[98px]" />
