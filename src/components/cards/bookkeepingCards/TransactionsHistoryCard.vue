@@ -270,7 +270,7 @@ onClickOutside(historyModeWrapRef, () => {
                 记账
             </button>
             <button
-                class="button-base px-3 py-1.5 text-xs sm:text-sm !text-red-600 !border-red-200 !bg-red-50 hover:!bg-red-100 dark:!text-red-300 dark:!border-red-800 dark:!bg-red-900/20 dark:hover:!bg-red-900/35"
+                class="button-base !rounded-xl !font-semibold px-3 py-1.5 text-xs sm:text-sm !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]"
                 :disabled="loading || clearingAll || transactions.length === 0" @click="onDeleteAllClick">
                 {{ clearingAll ? "删除中..." : "全部删除" }}
             </button>
@@ -446,7 +446,7 @@ onClickOutside(historyModeWrapRef, () => {
                                 </button>
 
                                 <button :class="[
-                                    'button-base ring-0 inline-flex text-xs !px-2.5 !py-1.5 !text-red-600 !border-red-200 !bg-red-50 hover:!bg-red-100 dark:!text-red-300 dark:!border-red-800 dark:!bg-red-900/20 dark:hover:!bg-red-900/35',
+                                    'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]',
                                     (!tx?.id || clearingAll) && '!cursor-not-allowed !opacity-60'
                                 ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
                                     {{ deletingId === tx?.id ? "删除中..." : "删除" }}

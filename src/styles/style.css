@@ -73,7 +73,7 @@
     /* 字体 */
     @apply text-sm font-medium;
     /* 交互 */
-    @apply cursor-pointer active:scale-95 select-none;
+    @apply cursor-pointer select-none;
     /* 只过渡颜色/阴影/transform，别用 all */
     @apply transition-all duration-200 transform active:scale-95  ease-out;
 

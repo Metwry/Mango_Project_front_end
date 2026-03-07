@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { useElementSize } from '@vueuse/core'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart } from 'echarts/charts'
@@ -47,6 +48,22 @@ const animatedData = ref([])
 const hasPlayedEnterAnimation = ref(false)
 const lastDataSignature = ref('')
 let rafId = null
+const chartWrapRef = ref(null)
+const { height: chartWrapHeight } = useElementSize(chartWrapRef)
+
+const pieRadius = computed(() => {
+    const h = Number(chartWrapHeight.value) || 0
+    if (h <= 260) return '56%'
+    if (h <= 340) return '62%'
+    return '67%'
+})
+
+const pieCenterY = computed(() => {
+    const h = Number(chartWrapHeight.value) || 0
+    if (h <= 260) return '36%'
+    if (h <= 340) return '39%'
+    return '42%'
+})
 
 const getDataSignature = (data) => {
     return data.map(item => `${item.name}:${Number(item.value).toFixed(4)}`).join('|')
@@ -110,7 +127,7 @@ const option = computed(() => ({
     },
     legend: {
         orient: 'horizontal',
-        bottom: '0%',
+        bottom: 0,
         left: 'center',
         width: '90%',
         icon: 'circle',
@@ -129,8 +146,8 @@ const option = computed(() => ({
         {
             name: '资金占比',
             type: 'pie',
-            radius: '67%',
-            center: ['50%', '35%'],
+            radius: pieRadius.value,
+            center: ['50%', pieCenterY.value],
             avoidLabelOverlap: true,
             itemStyle: {
                 borderRadius: 6,
@@ -170,7 +187,7 @@ const option = computed(() => ({
             暂无账户数据
         </div>
 
-        <div v-else class="h-[250px]">
+        <div v-else ref="chartWrapRef" class="flex-1 min-h-[14rem] min-w-0">
             <v-chart class="w-full h-full" :option="option" autoresize />
         </div>
     </div>
