@@ -17,6 +17,7 @@ const emit = defineEmits(["update:modelValue"]);
 
 const open = ref(false);
 const query = ref("");
+const selectedAccountId = computed(() => String(props.modelValue ?? ""));
 
 // ===== Floating UI 配置 =====
 const referenceRef = ref(null); // 触发按钮
@@ -71,6 +72,10 @@ function pick(a) {
     close();
 }
 
+function isSelected(id) {
+    return selectedAccountId.value === String(id ?? "");
+}
+
 /** 点击外部关闭 */
 function onDocClick(e) {
     if (!open.value) return;
@@ -96,8 +101,7 @@ onUnmounted(() => {
         <div v-else-if="error" class="text-sm text-red-600">账户加载失败</div>
 
         <div v-else>
-            <button ref="referenceRef" type="button"
-                class="cursor-pointer w-full flex items-center justify-between button-base" @click="toggleOpen">
+            <button ref="referenceRef" type="button" class="dropdown-trigger !h-10" @click="toggleOpen">
                 <span class="min-w-0 flex-1 truncate text-left">
                     <span v-if="selectedAccount">
                         {{ selectedAccount.name }} · {{ selectedAccount.currency }}
@@ -106,20 +110,21 @@ onUnmounted(() => {
                     <span v-else class="text-gray-400 dark:text-gray-500">{{ placeholder }}</span>
                 </span>
 
-                <BaseIcon name="arrow" class="w-4 h-4" />
+                <BaseIcon name="arrow" :size="14" :class="['dropdown-arrow', open && 'rotate-180']" />
             </button>
 
             <teleport to="body">
                 <div v-if="open" ref="floatingRef" :style="floatingStyles"
-                    class="account-picker-panel z-50 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
+                    class="account-picker-panel dropdown-panel z-50">
 
                     <div class="p-2 border-b border-gray-100 dark:border-gray-700">
-                        <input v-model="query" type="text" :placeholder="searchPlaceholder" class="input-base" />
+                        <input v-model="query" type="text" :placeholder="searchPlaceholder" class="input-base h-10 px-3" />
                     </div>
 
-                    <div class="max-h-56 overflow-y-auto">
+                    <div class="dropdown-list !max-h-56 !p-0">
                         <button v-for="a in filteredAccounts" :key="a.id" type="button"
-                            class="cursor-pointer w-full text-left flex items-center justify-between border-0 button-base"
+                            class="dropdown-item !w-full !rounded-none !px-3 !py-2.5 !flex !items-center !justify-between !gap-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                            :class="isSelected(a.id) ? 'dropdown-item-active' : 'dropdown-item-idle'"
                             @click="pick(a)">
                             <div class="min-w-0">
                                 <div class="truncate text-gray-800 dark:text-gray-100" :title="a.name">{{ a.name }}</div>

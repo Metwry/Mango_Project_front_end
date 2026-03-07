@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
+import { onClickOutside } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ElMessage } from "element-plus";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
@@ -17,8 +18,21 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "submit"]);
 
+const TRANSACTION_DIRECTION = Object.freeze({
+    INCOME: "income",
+    EXPENSE: "expense",
+});
+
+const transactionDirectionOptions = [
+    { value: TRANSACTION_DIRECTION.INCOME, label: "收入" },
+    { value: TRANSACTION_DIRECTION.EXPENSE, label: "支出" },
+];
+
 const now = () => dayjs().format("YYYY-MM-DD HH:mm:ss.SSS Z");
 const isDateManuallyModified = ref(false);
+const transactionDirection = ref(TRANSACTION_DIRECTION.INCOME);
+const transactionDirectionOpen = ref(false);
+const transactionDirectionWrapRef = ref(null);
 
 const form = reactive({
     account_id: null,
@@ -30,11 +44,46 @@ const form = reactive({
 const advancedMode = ref(false);
 const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 
-const canSubmit = computed(() => !props.submitting && form.account_id && form.amount);
+const normalizedAmount = computed(() => {
+    const amount = Number(form.amount);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    const safeAmount = Math.abs(amount);
+    return transactionDirection.value === TRANSACTION_DIRECTION.EXPENSE
+        ? -safeAmount
+        : safeAmount;
+});
+const normalizedRemark = computed(() => {
+    const text = String(form.category_name ?? "").trim();
+    return text || "无";
+});
+const currentTransactionDirectionLabel = computed(() => {
+    return transactionDirectionOptions.find((item) => item.value === transactionDirection.value)?.label ?? "收入";
+});
+
+const canSubmit = computed(() => !props.submitting && form.account_id && normalizedAmount.value !== null);
 
 function onDateChange(val) {
     form.add_date = val;
     isDateManuallyModified.value = true;
+}
+
+function onAmountInput() {
+    if (form.amount === null || form.amount === undefined || form.amount === "") return;
+
+    const amount = Number(form.amount);
+    if (!Number.isFinite(amount)) return;
+    if (amount < 0) {
+        form.amount = Math.abs(amount);
+    }
+}
+
+function toggleTransactionDirectionOpen() {
+    transactionDirectionOpen.value = !transactionDirectionOpen.value;
+}
+
+function pickTransactionDirection(value) {
+    transactionDirection.value = value;
+    transactionDirectionOpen.value = false;
 }
 
 function resetForm() {
@@ -45,11 +94,14 @@ function resetForm() {
         amount: null,
         add_date: now(),
     });
+    transactionDirection.value = TRANSACTION_DIRECTION.INCOME;
+    transactionDirectionOpen.value = false;
     advancedMode.value = false;
     isDateManuallyModified.value = false;
 }
 
 function closeModal() {
+    transactionDirectionOpen.value = false;
     emit("close");
 }
 
@@ -61,7 +113,10 @@ function submit() {
     if (!canSubmit.value) return;
 
     emit("submit", {
-        ...form,
+        account_id: form.account_id,
+        counterparty: form.counterparty,
+        category_name: normalizedRemark.value,
+        amount: normalizedAmount.value,
         account: form.account_id,
         add_date: isDateManuallyModified.value ? form.add_date : now(),
     });
@@ -73,6 +128,10 @@ watch(
         if (opened) resetForm();
     },
 );
+
+onClickOutside(transactionDirectionWrapRef, () => {
+    transactionDirectionOpen.value = false;
+});
 </script>
 
 <template>
@@ -115,18 +174,48 @@ watch(
                         </div>
 
                         <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">交易类型:</label>
-                            <input v-model="form.category_name" type="text" placeholder="输入类型"
-                                class="input-base w-full" />
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">收支类型:</label>
+                            <div ref="transactionDirectionWrapRef" class="relative">
+                                <button type="button" class="dropdown-trigger !h-10"
+                                    @click="toggleTransactionDirectionOpen">
+                                    <span class="truncate text-sm font-medium text-gray-700 dark:text-gray-200">
+                                        {{ currentTransactionDirectionLabel }}
+                                    </span>
+                                    <BaseIcon name="arrow" :size="14"
+                                        :class="['dropdown-arrow', transactionDirectionOpen && 'rotate-180']" />
+                                </button>
+
+                                <Transition name="dropdown-drawer">
+                                    <div v-if="transactionDirectionOpen"
+                                        class="dropdown-panel absolute left-0 top-[calc(100%+8px)] w-full">
+                                        <div class="dropdown-list !max-h-56">
+                                            <button v-for="option in transactionDirectionOptions" :key="option.value"
+                                                type="button" class="dropdown-item" :class="transactionDirection === option.value
+                                                    ? 'dropdown-item-active'
+                                                    : 'dropdown-item-idle'"
+                                                @click="pickTransactionDirection(option.value)">
+                                                {{ option.label }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </Transition>
+                            </div>
                         </div>
 
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">金额:</label>
-                            <input v-model="form.amount" type="number" inputmode="decimal" placeholder="输入金额"
-                                class="input-base w-full" @keydown.enter="submit" />
+                            <input v-model.number="form.amount" type="number" inputmode="decimal" min="0" step="any"
+                                placeholder="输入金额" class="input-base w-full" @input="onAmountInput"
+                                @keydown.enter="submit" />
                         </div>
 
-                        <div class="space-y-2 md:col-span-2">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">备注:</label>
+                            <input v-model="form.category_name" type="text" placeholder="输入备注"
+                                class="input-base w-full" />
+                        </div>
+
+                        <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">交易时间:</label>
                             <DatePicker :model-value="form.add_date" @update:model-value="onDateChange" />
                         </div>

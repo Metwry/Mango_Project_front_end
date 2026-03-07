@@ -76,7 +76,7 @@
 
 1. `WorthCard`
 - 只负责展示金额
-- 使用 `RollingDigit` 做数字滚动动画
+- 使用文本节点直接渲染格式化后的总资产金额
 - 不包含业务写逻辑
 
 2. `FundProportionCard`
