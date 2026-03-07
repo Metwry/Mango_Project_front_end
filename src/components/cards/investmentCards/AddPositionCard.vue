@@ -315,7 +315,7 @@ watch(
       </div>
     </div>
 
-    <div class="submit-bar mt-auto">
+    <div class="add-position-submit-bar mt-auto">
       <button type="button"
         class="button-base mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-[#0f3a2c] dark:!text-[#8ff0c9] dark:!border-[#0c6a4a] dark:hover:!bg-[#124735]"
         :disabled="!canSubmit" @click="onSubmit">
@@ -325,9 +325,9 @@ watch(
   </article>
 </template>
 
-<style scoped>
+<style>
 @media (max-width: 767px) {
-  .submit-bar {
+  .add-position-submit-bar {
     position: sticky;
     bottom: 0;
     z-index: 5;
@@ -337,7 +337,7 @@ watch(
     backdrop-filter: blur(6px);
   }
 
-  :global(.dark) .submit-bar {
+  .dark .add-position-submit-bar {
     background: linear-gradient(to top, rgba(17, 24, 39, 0.98), rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0));
   }
 }
