@@ -2,200 +2,160 @@
 
 ## 1. 功能概览
 
-记账页面用于管理手工交易流水，支持：
+记账页面用于管理手工交易流水，当前支持：
 
-- 按模式查看记录（活动记录 / 交易记录 / 已撤销记录）
+- 按模式查看记录（活动记录 / 投资记录 / 已撤销记录）
 - 多条件筛选（账户、交易方、备注、起止日期）
 - 分页浏览
 - 新增交易
-- 撤销交易（自动生成撤销记录）
+- 撤销交易
 - 删除单条记录
 - 按当前模式全部删除
 
-核心目标是保证交易列表、账户余额、用户提示三者同步。
-
----
+核心目标是保持：交易记录、账户余额、用户反馈 三者一致。
 
 ## 2. 相关文件
 
-### 页面与组合函数
+### 2.1 页面与组合函数
 
-- `src/pages/Bookkeeping.vue`
-- `src/composables/useBookkeepingPage.js`
+- 页面：`src/pages/Bookkeeping.vue`
+- 组合函数：`src/composables/useBookkeepingPage.js`
 
-### 组件
+### 2.2 组件
 
 - `src/components/cards/bookkeepingCards/TransactionsHistoryCard.vue`
 - `src/components/windows/AddTransaction.vue`
 
-### 状态与 API
+### 2.3 数据与 API
 
 - `src/stores/transaction.js`
-- `src/stores/accounts.js`（用于交易后刷新账户）
+- `src/stores/accounts.js`
 - `src/utils/transaction.js`
-- `src/utils/api.js`（统一 axios 实例与错误处理）
+- `src/utils/api.js`
 
----
+## 3. 页面布局与当前交互
 
-## 3. 页面布局与风格
+`Bookkeeping.vue` 当前是“单主卡 + 弹窗录入”结构。
 
-`Bookkeeping.vue` 采用左右一体的“单主卡 + 弹窗表单”结构：
+主卡 `TransactionsHistoryCard` 包含：
 
-- 主体是 `TransactionsHistoryCard`：
-  - 顶部：模式切换、记录计数、记账按钮、全部删除按钮
-  - 中部：筛选区 + 表格区
-  - 底部：分页区
-- 录入使用 `AddTransaction` 弹窗：
-  - 账户、交易方、类型、金额、交易时间
-  - 提交 / 重置
+- 模式切换
+- 记录计数
+- 记账按钮
+- 全部删除按钮
+- 筛选区
+- 交易表格
+- 分页区
 
-视觉风格沿用项目现有 Tailwind + card 体系：
+当前移动端已经做过紧凑化处理：
 
-- 浅色/深色双主题
-- 表格吸顶表头、行 hover、状态色（涨跌色）
-- 重要动作（删除）使用红色强调样式
-
----
+- 搜索筛选区不会长期占用过多纵向空间
+- 表格区与分页区保持单主卡布局
+- 弹窗使用 `Teleport` 挂载到 `body`
 
 ## 4. API 请求设计
 
-API 封装集中在 `src/utils/transaction.js`。
+### 4.1 模式映射
 
-### 4.1 交易模式映射
+前端模式到后端 `activity_type` 的映射由交易模块内部处理。
 
-前端模式到后端 `activity_type`：
+当前文档层面只需要知道：
 
-- `activity` -> `manual`
-- `all` -> `investment`
-- `reversed` -> `reversed`
+- 活动记录对应手工记录
+- 投资记录对应投资流水
+- 已撤销记录对应 reversal 流程
 
-### 4.2 端点列表
+### 4.2 端点
 
 - 查询列表：`GET /user/transactions/`
-  - 参数含分页、筛选、排序、`activity_type`
 - 新增：`POST /user/transactions/`
 - 撤销：`POST /user/transactions/{id}/reverse/`
-- 删除单条：`POST /user/transactions/delete/`（`mode=single`）
-- 删除当前模式全部：`POST /user/transactions/delete/`（`mode=activity`）
+- 删除单条 / 删除当前模式全部：`POST /user/transactions/delete/`
 
----
+## 5. Store 与页面编排
 
-## 5. Store 设计（transactions）
+### 5.1 `transaction.js`
 
-`src/stores/transaction.js` 采用 Pinia setup store，职责是“交易列表状态 + CRUD 行为”。
+职责：
 
-### 5.1 状态字段
+- 持有交易列表、总数、筛选条件、错误状态
+- 负责查询、新增、撤销、删除
+- 维护分页与当前模式
 
-- `items`：当前页交易列表
-- `total`：总数
-- `loading`：列表加载中
-- `error`：最近一次错误
-- `filters`：筛选与分页参数（含 `history_mode`）
+关键方法：
 
-### 5.2 关键方法
+- `setFilters(patch)`
+- `resetFilters()`
+- `fetchList(extraParams)`
+- `createOne(payload)`
+- `removeOne(id)`
+- `removeAllByCurrentMode()`
+- `reverseOne(id)`
+- `reset()`
 
-- `setFilters(patch)`：合并筛选条件
-- `resetFilters()`：重置为默认筛选
-- `fetchList(extraParams)`：按当前筛选拉列表
-- `createOne(payload)`：新增一条交易
-- `removeOne(id)`：删除单条并处理空页回退
-- `removeAllByCurrentMode()`：删除当前模式全部后回到第一页
-- `reverseOne(id)`：撤销并刷新当前页
-- `reset()`：登出或切换账户时清空状态
+### 5.2 `useBookkeepingPage`
 
-### 5.3 参数清洗
+职责：
 
-`fetchList` 内会清洗参数（删除 `null/undefined/""`），减少无效 query 参数传递。
+- 组合 `transactionsStore + accountsStore`
+- 负责初始化加载
+- 负责查询、重置、页码切换、模式切换
+- 负责提交、撤销、删除等页面级交互
 
----
+成功写操作后会联动刷新：
 
-## 6. 页面组合层（useBookkeepingPage）
+- `accountsStore.fetchAccounts({ force: true })`
+- 当前交易列表页或第一页
 
-`src/composables/useBookkeepingPage.js` 负责把“页面交互”编排为可复用动作。
+## 6. 组件职责
 
-### 6.1 对外暴露
+### 6.1 TransactionsHistoryCard
 
-- 视图状态：`accounts`、`transactions`、`loading/error`、分页与模式等
-- 交互函数：
-  - `onSearchChange/onSearchReset`
-  - `onPageChange/onPageSizeChange`
-  - `onModeChange`
-  - `onSubmitTransaction`
-  - `onReverseTransaction`
-  - `onDeleteOne/onDeleteAll`
+职责：
 
-### 6.2 统一流程
+- 只做展示和事件抛出
+- 不直接调用 API
+- 管理筛选区、表格、分页、下拉显隐
 
-- 初始化：`onMounted` 并发请求账户列表 + 交易列表
-- 交易成功后：并发刷新
-  - 账户：`accountsStore.fetchAccounts({ force: true })`
-  - 交易：`updateAndFetch({ page: 1 })` 或当前页刷新
-- 危险操作前统一二次确认（`ElMessageBox.confirm`）
-- 提交类动作统一走 `withSubmitting`，避免按钮状态失控
+当前关键点：
 
----
+- 使用 `SmallAccountPicker` / `DatePicker`
+- 表格支持金额色、类别胶囊、危险按钮
+- 分页与 page size 使用统一 dropdown 样式
 
-## 7. 组件行为细节
+### 6.2 AddTransaction
 
-## 7.1 TransactionsHistoryCard
+职责：
 
-主要职责：
+- 弹窗表单录入
+- 基础表单校验
+- 提交 payload 标准化
 
-- 展示筛选器、表格和分页
-- 负责纯展示与事件抛出（`emit`）
-- 不直接做 API 请求
+当前关键点：
 
-关键点：
+- 仅允许选择非投资账户
+- 时间默认当前时间
+- 高级模式 UI 保留，但逻辑仍未展开
 
-- 使用 `SmallAccountPicker` + `DatePicker` 作为筛选输入
-- 金额/标签颜色按交易方向动态计算
-- 模式切换与 page size 下拉使用点击外部关闭
-- 表格操作只发事件：`reverse/delete-one/delete-all`
+## 7. 错误处理与边界
 
-## 7.2 AddTransaction
+1. 删除 / 撤销
+- 统一二次确认
 
-主要职责：
+2. 提交类动作
+- 有本地 submitting 状态，避免重复触发
 
-- 交易录入弹窗
-- 表单校验（最小必填：账户 + 金额）
-- 提交 payload 标准化后抛给父级
+3. 请求失败
+- 统一通过 `api.js` 处理 token 刷新和错误节流
 
-关键点：
+4. 当前边界
+- 记账模块还没有前台编辑功能
+- 仍以新增 / 查询 / 撤销 / 删除 为主链路
 
-- 仅允许非投资账户（`filterNonInvestmentAccounts`）
-- 时间字段默认当前时间；手动修改后保持用户输入
+## 8. 阅读源码建议
 
----
-
-## 8. 错误处理与用户反馈
-
-- 网络与后端错误由 `src/utils/api.js` 全局拦截
-- 记账交互成功反馈由 `ElMessage.success`
-- 危险操作（删除/撤销）统一确认框
-- 删除、清空、提交均有本地 `loading/submitting` 状态，防止重复触发
-
----
-
-## 9. 当前实现边界
-
-当前记账流程为“新增 / 查询 / 撤销 / 删除”，不包含前台编辑（update/patch）入口。
-
-如果后续要加“编辑交易”：
-
-- API 层补回 `PUT/PATCH` 接口函数
-- store 增加 `updateOne/patchOne`
-- 表格新增编辑按钮 + 弹窗复用 `AddTransaction` 或单独编辑窗
-
----
-
-## 10. 一次完整交互示例
-
-“新增一条交易”的前端链路：
-
-1. 用户在 `AddTransaction` 填写并点击提交
-2. `Bookkeeping.vue` 接收 `submit` 事件并调用 `onSubmitTransaction`
-3. `useBookkeepingPage` 调用 `transactionsStore.createOne`
-4. 成功后并发刷新账户与交易列表
-5. 交易表格和账户余额同时更新，弹窗关闭
-
-这套链路确保“列表和余额一致”。
+1. `src/pages/Bookkeeping.vue`
+2. `src/composables/useBookkeepingPage.js`
+3. `src/stores/transaction.js`
+4. `src/components/cards/bookkeepingCards/TransactionsHistoryCard.vue`
+5. `src/components/windows/AddTransaction.vue`

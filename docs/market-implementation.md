@@ -2,125 +2,161 @@
 
 ## 1. 功能目标
 
-行情页面用于维护用户自选标的并查看最新行情，核心能力：
+行情页面用于管理用户自选标的并查看最新行情，当前已实现：
 
 - 拉取并展示自选行情列表
-- 按市场分组筛选（全部/A股/港股/美股/外汇/加密）
-- 搜索标的并加入自选
+- 按市场筛选（全部 / A股 / 港股 / 美股 / 外汇 / 加密货币）
+- 搜索标的并添加到自选
 - 删除自选标的
-- 显示更新时间与行情涨跌状态
-
----
+- 显示更新时间与涨跌状态
+- 页面回到前台时静默刷新
 
 ## 2. 文件与调用链
 
-## 2.1 页面与编排
+### 2.1 页面与编排
 
 - 页面：`src/pages/Market.vue`
 - 组合函数：`src/composables/useMarketPage.js`
 
-`Market.vue` 主要承担展示和事件绑定，业务逻辑集中在 `useMarketPage`。
+`Market.vue` 负责展示与事件绑定，交互和数据编排集中在 `useMarketPage()`。
 
-## 2.2 数据与状态源
+### 2.2 数据源
 
-- Store：`src/stores/market.js`
+- store：`src/stores/market.js`
 - API：`src/utils/markets.js`
 
 调用关系：
 
-1. `Market.vue` 调用 `useMarketPage`
-2. `useMarketPage` 通过 `storeToRefs(useMarketStore())` 获取状态
-3. 页面交互触发 store action（查询、添加、删除、刷新）
-
----
+1. `Market.vue` 调用 `useMarketPage()`
+2. `useMarketPage()` 从 `marketStore` 取状态并封装格式化函数
+3. 页面触发搜索、添加、删除、筛选
+4. 组合函数调用 store 或 API 并回写状态
 
 ## 3. API 请求与参数
 
-1. 获取用户自选行情  
-- `GET /user/markets/`  
-- store：`fetchMarkets({ force, silent })`
+### 3.1 自选行情列表
 
-2. 搜索标的  
-- `GET /user/markets/search/?q=...&limit=...`  
-- composable：`executeSearch()`
+- `GET /user/markets/`
+- 对应 store 方法：`fetchMarkets({ force, silent })`
 
-3. 添加自选  
-- `POST /user/markets/watchlist/`  
+### 3.2 搜索标的
+
+- `GET /user/markets/search/?q=...&limit=...`
+- 对应：`searchMarketInstruments(query)`
+
+### 3.3 添加自选
+
+- `POST /user/markets/watchlist/`
 - body：`{ symbol }`
 
-4. 删除自选  
-- `DELETE /user/markets/watchlist/`  
-- body：`{ market, short_code }`
+### 3.4 删除自选
 
----
+- `DELETE /user/markets/watchlist/`
+- body：`{ market, short_code }`
 
 ## 4. 页面布局与交互
 
-页面结构：
+### 4.1 顶部工具区
 
-1. 顶部工具区
-- 自选市场下拉筛选
-- 搜索输入框与搜索结果下拉
-- 更新时间文本
+顶部包含三块：
 
-2. 主体行情表格
-- 市场、代码、名称、最新价、涨跌幅、最高/最低、昨收、成交量、删除操作
+1. 市场筛选下拉
+- 显示当前市场标签与数量
+- 使用 `dropdown-trigger / dropdown-panel` 体系
 
-交互机制：
+2. 搜索输入框
+- 输入股票代码或名称
+- 支持防抖搜索和即时 Enter 搜索
+- 下方显示搜索结果下拉
 
-- 搜索：防抖 + 请求序号去抖（避免旧请求覆盖新结果）
-- 缓存：Map 缓存最近查询结果（减少重复请求）
-- 组合输入：处理中文输入法 `compositionstart/end`
-- 页面回前台：可选触发 `visibilitychange` 刷新（受 `AUTO_REFRESH_ENABLED` 控制）
+3. 更新时间文本
+- 显示后端返回的最新更新时间
+- 当前文案为“每 10 分钟更新”
 
----
+### 4.2 主表格
+
+表格字段包括：
+
+- 市场
+- 代码
+- 名称
+- 最新价
+- 涨跌幅
+- 今日最高
+- 今日最低
+- 昨收
+- 成交量（亿）
+- 删除按钮
+
+### 4.3 搜索交互细节
+
+- 输入法组合输入由 `compositionstart/end` 保护
+- 同一关键字优先使用缓存结果
+- 使用 `searchRequestSeq` 避免旧请求覆盖新结果
+- 输入框失焦后延迟关闭结果面板，保证点击结果不丢失
 
 ## 5. Store 与核心函数职责
 
-`src/stores/market.js` 负责行情数据生命周期管理。
+主 store：`src/stores/market.js`
 
-核心状态：
+### 5.1 核心状态
 
-- `markets`：按市场分块后的行情数据
-- `updatedAt`：后端更新时间
-- `selectedMarket`：当前筛选市场（本地持久化）
-- `loading/error`
+- `markets`
+- `updatedAt`
+- `selectedMarket`
+- `loading`
+- `error`
 
-核心函数：
+### 5.2 核心方法
 
 - `fetchMarkets({ force, silent })`
 - `refreshMarkets({ silent })`
 - `addWatchlistInstrument(symbol)`
 - `deleteWatchlistInstrument(payload)`
 - `setSelectedMarket(market)`
+- `startMarketAutoRefresh()`
+- `stopMarketAutoRefresh()`
 
-关键实现点：
+### 5.3 当前实现点
 
-- `fetchPromise` 并发复用，避免重复请求
-- 强制刷新时等待当前请求完成后再发新请求
-- `selectedMarket` 通过 localStorage 保存
-- 自动刷新通过 `createMinuteAlignedScheduler`，并受全局开关控制
+1. 市场排序
+- 按 `CN -> HK -> US -> FX -> CRYPTO` 排序
 
----
+2. 选中市场持久化
+- 使用 `STORE_REFRESH_CONFIG.market.selectedMarketStorageKey`
+
+3. 搜索缓存
+- `useMarketPage()` 内部维护 `Map` 缓存
+- 缓存上限由 `SEARCH_CONFIG.marketPage.cacheLimit` 控制
+
+4. 页面回前台刷新
+- `useMarketPage()` 监听 `visibilitychange`
+- 只有在 `AUTO_REFRESH_ENABLED` 打开时才执行静默刷新
 
 ## 6. 错误处理与边界
 
 1. 搜索失败
-- 仅重置搜索状态，不中断主列表显示。
+- 仅清空搜索态，不影响主表格
 
-2. 刷新失败
-- `silent` 场景下尽量保持现有列表，避免闪空。
+2. 自选删除失败
+- 失败时保留当前列表，错误提示走全局拦截
 
-3. 全局错误提示
-- 统一由 `api.js` 拦截并节流去重。
+3. 市场失效回退
+- 当当前选中市场在新数据中不存在时，自动回退到 `ALL`
 
-4. 市场有效性
-- 当前选中市场在新数据中不存在时，自动回退到 `ALL`。
+4. 空数据
+- 页面显示“未找到符合条件的行情数据”
 
----
+## 7. 当前版本特点
 
-## 7. 本轮保守清理记录
+- 行情页已接入统一深色 token 风格
+- 搜索结果面板、市场下拉、表格均使用共享样式基类
+- 页面主体为单大卡布局，不再拆成多个小组件
 
-- 保持 `Market.vue + useMarketPage + marketStore` 结构不变；
-- 收敛 store 对外暴露，只保留实际消费字段，移除未被页面使用的返回项（`fetched`、`lastFetchedAt`）；
-- 未修改接口协议、列表结构与交互行为。
+## 8. 阅读源码建议
+
+1. `src/pages/Market.vue`
+2. `src/composables/useMarketPage.js`
+3. `src/stores/market.js`
+4. `src/utils/markets.js`
+5. `src/styles/style.css`
