@@ -317,7 +317,7 @@ watch(
 
     <div class="submit-bar mt-auto">
       <button type="button"
-        class="button-base mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
+        class="button-base mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-[#0f3a2c] dark:!text-[#8ff0c9] dark:!border-[#0c6a4a] dark:hover:!bg-[#124735]"
         :disabled="!canSubmit" @click="onSubmit">
         {{ trading ? "提交中..." : "确定买入" }}
       </button>

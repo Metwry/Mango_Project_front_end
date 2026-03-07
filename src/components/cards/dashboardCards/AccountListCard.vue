@@ -64,7 +64,7 @@ const getAccountBadgeStyle = (account) => {
                         <p class="flex items-center gap-1.5 text-sm text-gray-800 dark:text-gray-200">
                             <span class="truncate">{{ item.name }}</span>
                             <button type="button"
-                                class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300/70 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700/60 dark:hover:text-gray-200 dark:focus:ring-gray-300/70"
+                                class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-transparent text-gray-500 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300/70 dark:text-gray-400 dark:hover:bg-gray-700/60 dark:hover:text-gray-200 dark:focus:ring-gray-300/70"
                                 :title="`编辑 ${item.name || '账户'}`" @click="openEditModal(item)">
                                 <BaseIcon name='bookkeeping' class="h-3.5 w-3.5" />
                             </button>

@@ -557,7 +557,7 @@ const chartOption = computed(() => ({
       </div>
     </div>
 
-    <div class="flex-1 rounded-xl border border-gray-200 bg-gray-50/70 p-2 dark:border-gray-700 dark:bg-gray-800/40">
+    <div class="flex-1 rounded-xl border border-gray-200 bg-transparent p-2 dark:border-gray-700 dark:bg-transparent">
       <div v-if="loading" class="h-full min-h-[16rem] grid place-items-center text-sm text-gray-500 dark:text-gray-400">
         正在加载走势数据...
       </div>
