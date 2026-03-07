@@ -22,6 +22,12 @@ const icon = computed(() => {
     return route.meta.icon || ''
 })
 
+const pageLayoutClass = computed(() => {
+    return normalizePath(route.path) === '/dashboard'
+        ? 'min-h-full xl:h-full xl:min-h-0'
+        : 'min-h-full md:h-full md:min-h-0'
+})
+
 const menuItems = [
     { name: '仪表盘', path: '/dashboard', icon: 'dashboard' },
     { name: '记账', path: '/bookkeeping', icon: 'bookkeeping' },
@@ -90,15 +96,15 @@ onUnmounted(() => {
     <div class="app-shell flex bg-gray-50 dark:bg-gray-900">
         <Sidebar :menu-items="menuItems" />
 
-        <main class="flex flex-1 flex-col overflow-hidden">
+        <main class="flex flex-1 min-w-0 flex-col overflow-hidden">
             <TopBar :title="currentTitle" :icon="icon" :menu-items="menuItems"></TopBar>
 
-            <div ref="pageScrollRef" class="page-scroll flex-1 min-h-0 overflow-y-auto">
-                <div class="page-transition-stage min-h-full xl:h-full xl:min-h-0">
+            <div ref="pageScrollRef" class="page-scroll flex-1 min-h-0 min-w-0 overflow-y-auto">
+                <div :class="['page-transition-stage', pageLayoutClass]">
                     <RouterView v-slot="{ Component, route: currentRoute }">
                         <Transition :name="pageTransitionName" @after-enter="handlePageAfterEnter">
-                            <div :key="currentRoute.fullPath" class="page-panel min-h-full xl:h-full xl:min-h-0">
-                                <component :is="Component" class="min-h-full xl:h-full xl:min-h-0" />
+                            <div :key="currentRoute.fullPath" :class="['page-panel', pageLayoutClass]">
+                                <component :is="Component" :class="pageLayoutClass" />
                             </div>
                         </Transition>
                     </RouterView>
@@ -116,6 +122,8 @@ onUnmounted(() => {
 
 .page-transition-stage {
     position: relative;
+    width: 100%;
+    min-width: 0;
     overflow: hidden;
     isolation: isolate;
     contain: paint;
@@ -125,6 +133,7 @@ onUnmounted(() => {
     position: relative;
     z-index: 1;
     width: 100%;
+    min-width: 0;
     background-color: rgb(249, 250, 251);
     backface-visibility: hidden;
     transform: translateZ(0);

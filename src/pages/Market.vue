@@ -62,8 +62,8 @@ onClickOutside(marketDropdownWrapRef, () => {
 </script>
 
 <template>
-  <div class="h-full w-full min-h-0 bg-gray-50 dark:bg-gray-900">
-    <section class="card-base flex-1 h-full min-h-0 p-4 md:p-5">
+  <div class="h-full w-full min-h-0 min-w-0 bg-gray-50 dark:bg-gray-900">
+    <section class="card-base flex-1 h-full min-h-0 min-w-0 p-4 md:p-5">
       <div class="mb-4">
         <div class="w-full">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
