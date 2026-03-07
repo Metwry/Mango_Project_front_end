@@ -39,6 +39,7 @@ const pageSizeOpen = ref(false);
 const pageSizeWrapRef = ref(null);
 const historyModeOpen = ref(false);
 const historyModeWrapRef = ref(null);
+const filtersOpen = ref(false);
 const pageSizeOptions = [10, 20, 50, 100];
 const historyModeOptions = [
     { value: TRANSACTION_HISTORY_MODE.ACTIVITY, label: "活动记录" },
@@ -55,6 +56,7 @@ const searchState = reactive({
 });
 
 const hasSearch = computed(() => Object.values(searchState).some(Boolean));
+const activeSearchCount = computed(() => Object.values(searchState).filter(Boolean).length);
 const searchableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 const isReversedMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.REVERSED);
 const isInvestmentHistoryMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.ALL);
@@ -100,6 +102,7 @@ function rowKey(tx, idx) {
 const trimOrEmpty = (v) => (v ? String(v).trim() : "");
 
 function emitSearch() {
+    filtersOpen.value = false;
     emit("search-change", {
         account_id: searchState.accountId || "",
         counterparty: trimOrEmpty(searchState.counterparty),
@@ -174,6 +177,7 @@ function resetSearch() {
         start: "",
         end: "",
     });
+    filtersOpen.value = false;
     emit("search-reset");
 }
 
@@ -233,8 +237,8 @@ onClickOutside(historyModeWrapRef, () => {
 
 <template>
     <div class="card-base">
-        <div class="card-title !justify-start gap-3 border-b border-gray-100 dark:border-gray-700/80 pb-3 mb-2">
-            <div ref="historyModeWrapRef" class="relative min-w-[122px]">
+        <div class="card-title !justify-start gap-2.5 sm:gap-3 border-b border-gray-100 dark:border-gray-700/80 pb-3 mb-2 flex-wrap">
+            <div ref="historyModeWrapRef" class="relative min-w-[122px] flex-1 sm:flex-none">
                 <button class="dropdown-trigger !h-9 min-w-[122px]" @click="historyModeOpen = !historyModeOpen">
                     <span class="truncate text-sm font-medium text-gray-700 dark:text-gray-200">{{
                         currentHistoryModeLabel }}</span>
@@ -259,7 +263,7 @@ onClickOutside(historyModeWrapRef, () => {
             </div>
 
             <span
-                class="hidden sm:inline-flex text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                class="inline-flex text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 order-last sm:order-none">
                 {{ total }} 条
             </span>
             <button class="button-base px-3 py-1.5 text-xs sm:text-sm" @click="emit('open-add-transaction')">
@@ -274,7 +278,66 @@ onClickOutside(historyModeWrapRef, () => {
 
         <!-- 查询栏 -->
         <div class="px-1 py-2 mb-1">
-            <div class="flex flex-wrap items-end gap-2.5 sm:gap-3">
+            <div class="mobile-search-shell md:hidden">
+                <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+                    <div class="mobile-account-field min-w-0">
+                        <SmallAccountPicker v-model="searchState.accountId" :accounts="searchableAccounts" />
+                    </div>
+
+                    <button type="button"
+                        class="button-base mobile-action-button !px-3 !py-2 text-xs"
+                        @click="filtersOpen = !filtersOpen">
+                        <span>筛选</span>
+                        <span v-if="activeSearchCount > 0"
+                            class="preserve-dark-white inline-flex min-w-5 items-center justify-center rounded-full bg-gray-900 px-1.5 py-0.5 text-[10px] font-semibold text-white dark:bg-gray-100 dark:text-gray-900">
+                            {{ activeSearchCount }}
+                        </span>
+                    </button>
+
+                    <button type="button" class="button-base mobile-action-button !px-3 !py-2 text-xs" @click="emitSearch">
+                        查询
+                    </button>
+                </div>
+
+                <Transition name="mobile-filter-panel">
+                    <div v-if="filtersOpen" class="mobile-filter-panel mt-2.5">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="col-span-2">
+                                <input v-model="searchState.counterparty" type="text" placeholder="交易方"
+                                    class="input-base mobile-filter-input" @keydown.enter="emitSearch" />
+                            </div>
+
+                            <div class="col-span-2">
+                                <input v-model="searchState.category" type="text" placeholder="备注"
+                                    class="input-base mobile-filter-input" @keydown.enter="emitSearch" />
+                            </div>
+
+                            <div class="mobile-date-field col-span-1">
+                                <DatePicker v-model="searchState.start" class="w-full" />
+                            </div>
+
+                            <div class="mobile-date-field col-span-1">
+                                <DatePicker v-model="searchState.end" class="w-full" />
+                            </div>
+                        </div>
+
+                        <div class="mt-2 grid grid-cols-2 gap-2">
+                            <button type="button"
+                                class="button-base mobile-action-button !px-3 !py-2 text-xs"
+                                :disabled="!hasSearch" @click="resetSearch">
+                                清空
+                            </button>
+                            <button type="button"
+                                class="button-base mobile-action-button !px-3 !py-2 text-xs"
+                                @click="filtersOpen = false">
+                                收起
+                            </button>
+                        </div>
+                    </div>
+                </Transition>
+            </div>
+
+            <div class="hidden md:flex flex-wrap items-end gap-2.5 sm:gap-3">
 
                 <div class="w-full min-w-0 sm:min-w-[220px] sm:flex-[1.6]">
                     <SmallAccountPicker v-model="searchState.accountId" :accounts="searchableAccounts" />
@@ -309,16 +372,16 @@ onClickOutside(historyModeWrapRef, () => {
             </div>
         </div>
 
-        <div v-if="loading" class="text-base">
+        <div v-if="loading" class="status-base">
             <BaseIcon name="spinner" spin :size="30" />
         </div>
-        <div v-else-if="error" class="text-base">
+        <div v-else-if="error" class="status-base">
             加载失败，请重试
         </div>
 
         <div v-else
             class="flex-1 min-h-0 overflow-x-auto overflow-y-auto scrollbar-thin rounded-2xl border border-gray-100 dark:border-gray-700/70 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
-            <table class="w-full min-w-[840px] text-left border-collapse table-auto">
+            <table class="history-table w-full min-w-[840px] text-left border-collapse table-auto">
                 <thead class="sticky top-0 z-10 backdrop-blur-md bg-gray-50/95 dark:bg-gray-900/95">
                     <tr>
                         <th class="th-text">账户</th>
@@ -439,7 +502,7 @@ onClickOutside(historyModeWrapRef, () => {
                     <BaseIcon name="leftArrow" class="!w-3 !h-3" />
                 </button>
 
-                <span class="text-base">
+                <span class="status-base">
                     {{ page }} / {{ totalPages }}
                 </span>
 
@@ -452,3 +515,54 @@ onClickOutside(historyModeWrapRef, () => {
 
     </div>
 </template>
+
+<style scoped>
+.mobile-search-shell {
+    padding: 0.25rem 0;
+}
+
+.mobile-filter-panel {
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.94));
+    padding: 0.75rem;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.mobile-filter-input {
+    min-height: 2.5rem;
+    padding-inline: 0.875rem;
+    padding-block: 0.625rem;
+    font-size: 0.875rem;
+}
+
+.mobile-action-button {
+    min-height: 2.5rem;
+    white-space: nowrap;
+}
+
+.mobile-account-field :deep(.dropdown-trigger),
+.mobile-date-field :deep(.button-base) {
+    min-height: 2.5rem;
+    border-radius: 0.95rem;
+    padding-inline: 0.875rem;
+    font-size: 0.875rem;
+}
+
+.mobile-filter-panel-enter-active,
+.mobile-filter-panel-leave-active {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.mobile-filter-panel-enter-from,
+.mobile-filter-panel-leave-to {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+:global(.dark) .mobile-filter-panel {
+    border-color: rgba(55, 65, 81, 0.85);
+    background: linear-gradient(180deg, rgba(31, 41, 55, 0.96), rgba(17, 24, 39, 0.92));
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+}
+</style>

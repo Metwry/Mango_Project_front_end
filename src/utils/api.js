@@ -1,17 +1,63 @@
 import axios from "axios";
+import {
+  API_BASE_URL,
+  API_ERROR_TOAST_DUPLICATE_SUPPRESS_MS,
+  API_ERROR_TOAST_MIN_INTERVAL_MS,
+  API_TIMEOUT_MS,
+  AUTH_ENDPOINTS,
+} from "@/config/Config";
 import { useAuthStore } from "@/stores/auth";
 import { ElMessage } from "element-plus";
 import router from "@/router";
 
+const NGROK_SKIP_HEADER = "ngrok-skip-browser-warning";
+const NGROK_SKIP_VALUE = "true";
+
 const api = axios.create({
-  baseURL: "/api",
-  timeout: 10000,
+  baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT_MS,
+  headers: {
+    [NGROK_SKIP_HEADER]: NGROK_SKIP_VALUE,
+  },
 });
+
+axios.defaults.headers.common[NGROK_SKIP_HEADER] = NGROK_SKIP_VALUE;
 
 const AUTH_FREE_PATHS = ["/login/", "/token/refresh/"];
 
+let lastErrorToastAt = 0;
+let lastErrorToastKey = "";
+
 function isAuthFreeRequest(url = "") {
   return AUTH_FREE_PATHS.some((path) => String(url).includes(path));
+}
+
+function isPageHidden() {
+  return typeof document !== "undefined" && document.hidden;
+}
+
+function shouldSuppressErrorToast(key = "", now = Date.now()) {
+  if (isPageHidden()) return true;
+
+  const elapsed = now - lastErrorToastAt;
+  if (elapsed < API_ERROR_TOAST_MIN_INTERVAL_MS) return true;
+
+  const sameKey = key && key === lastErrorToastKey;
+  if (sameKey && elapsed < API_ERROR_TOAST_DUPLICATE_SUPPRESS_MS) return true;
+
+  return false;
+}
+
+function notifyError(message, { key = String(message ?? "") } = {}) {
+  const text = String(message ?? "").trim();
+  if (!text) return;
+
+  const now = Date.now();
+  if (shouldSuppressErrorToast(String(key ?? ""), now)) return;
+
+  lastErrorToastAt = now;
+  lastErrorToastKey = String(key ?? "");
+  ElMessage.error(text);
 }
 
 function extractBackendErrorMessage(payload) {
@@ -34,6 +80,7 @@ api.interceptors.request.use(
     const auth = useAuthStore();
 
     config.headers = config.headers || {};
+    config.headers[NGROK_SKIP_HEADER] = NGROK_SKIP_VALUE;
     if (isAuthFreeRequest(config.url)) {
       if (config.headers.Authorization) delete config.headers.Authorization;
       return config;
@@ -71,9 +118,15 @@ api.interceptors.response.use(
   async (error) => {
     const auth = useAuthStore();
     const originalRequest = error.config || {};
+    const suppressErrorToast = Boolean(
+      originalRequest?.suppressErrorToast ??
+      originalRequest?.meta?.suppressErrorToast,
+    );
 
     if (!error.response) {
-      ElMessage.error("网络连接失败，请检查网络");
+      if (!suppressErrorToast) {
+        notifyError("网络连接失败，请检查网络", { key: "network_error" });
+      }
       return Promise.reject(error);
     }
 
@@ -83,7 +136,9 @@ api.interceptors.response.use(
       if (isAuthFreeRequest(originalRequest.url)) {
         await auth.logout();
         router.replace("/login");
-        ElMessage.error("认证失败，请重新登录");
+        if (!suppressErrorToast) {
+          notifyError("认证失败，请重新登录", { key: "401_auth_free" });
+        }
         return Promise.reject(error);
       }
 
@@ -103,7 +158,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data: resData } = await axios.post("/api/token/refresh/", {
+        const { data: resData } = await axios.post(AUTH_ENDPOINTS.tokenRefreshUrl, {
           refresh: auth.refreshToken,
         });
 
@@ -122,7 +177,9 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         await auth.logout();
         router.replace("/login");
-        ElMessage.error("登录已过期，请重新登录");
+        if (!suppressErrorToast) {
+          notifyError("登录已过期，请重新登录", { key: "401_refresh_failed" });
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -130,8 +187,8 @@ api.interceptors.response.use(
     }
 
     const message = extractBackendErrorMessage(data) || "请求失败";
-    if (status !== 401) {
-      ElMessage.error(message);
+    if (status !== 401 && !suppressErrorToast) {
+      notifyError(message, { key: `${status}:${message}` });
     }
 
     return Promise.reject(error);
@@ -167,3 +224,4 @@ export function getPagedList(response) {
 }
 
 export default api;
+

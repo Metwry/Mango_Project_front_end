@@ -6,6 +6,7 @@ import TopBar from '@/components/layout/Topbar.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useInvestmentStore } from '@/stores/investment'
 import { useMarketStore } from '@/stores/market'
+import { AUTO_REFRESH_ENABLED } from '@/config/Config'
 
 const route = useRoute()
 const pageScrollRef = ref(null)
@@ -19,6 +20,12 @@ const currentTitle = computed(() => {
 
 const icon = computed(() => {
     return route.meta.icon || ''
+})
+
+const pageLayoutClass = computed(() => {
+    return normalizePath(route.path) === '/dashboard'
+        ? 'min-h-full xl:h-full xl:min-h-0'
+        : 'min-h-full md:h-full md:min-h-0'
 })
 
 const menuItems = [
@@ -67,9 +74,11 @@ watch(
 )
 
 onMounted(() => {
-    accountsStore.startAccountsAutoRefresh()
-    investmentStore.startInvestmentAutoRefresh()
-    marketStore.startMarketAutoRefresh()
+    if (AUTO_REFRESH_ENABLED) {
+        accountsStore.startAccountsAutoRefresh()
+        investmentStore.startInvestmentAutoRefresh()
+        marketStore.startMarketAutoRefresh()
+    }
     void accountsStore.fetchAccounts()
     void investmentStore.fetchPositions({ silent: true })
     void marketStore.fetchMarkets({ silent: true })
@@ -84,18 +93,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="app-shell flex">
         <Sidebar :menu-items="menuItems" />
 
-        <main class="flex flex-1 flex-col overflow-hidden">
-            <TopBar :title="currentTitle" :icon="icon"></TopBar>
+        <main class="flex flex-1 min-w-0 flex-col overflow-hidden">
+            <TopBar :title="currentTitle" :icon="icon" :menu-items="menuItems"></TopBar>
 
-            <div ref="pageScrollRef" class="page-scroll flex-1 min-h-0 overflow-y-auto p-3">
-                <div class="page-transition-stage min-h-full xl:h-full xl:min-h-0">
+            <div ref="pageScrollRef" class="page-scroll flex-1 min-h-0 min-w-0 overflow-y-auto">
+                <div :class="['page-transition-stage', pageLayoutClass]">
                     <RouterView v-slot="{ Component, route: currentRoute }">
                         <Transition :name="pageTransitionName" @after-enter="handlePageAfterEnter">
-                            <div :key="currentRoute.fullPath" class="page-panel min-h-full xl:h-full xl:min-h-0">
-                                <component :is="Component" class="min-h-full xl:h-full xl:min-h-0" />
+                            <div :key="currentRoute.fullPath" :class="['page-panel', pageLayoutClass]">
+                                <component :is="Component" :class="pageLayoutClass" />
                             </div>
                         </Transition>
                     </RouterView>
@@ -106,8 +115,16 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.app-shell {
+    height: 100vh;
+    height: 100dvh;
+    background-color: var(--app-bg);
+}
+
 .page-transition-stage {
     position: relative;
+    width: 100%;
+    min-width: 0;
     overflow: hidden;
     isolation: isolate;
     contain: paint;
@@ -117,7 +134,8 @@ onUnmounted(() => {
     position: relative;
     z-index: 1;
     width: 100%;
-    background-color: rgb(249, 250, 251);
+    min-width: 0;
+    background-color: var(--page-panel-bg);
     backface-visibility: hidden;
     transform: translateZ(0);
 }
@@ -125,10 +143,8 @@ onUnmounted(() => {
 .page-scroll {
     scrollbar-gutter: stable;
     overscroll-behavior: contain;
-}
-
-.dark .page-panel {
-    background-color: rgb(17, 24, 39);
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
 }
 
 .page-slide-up-enter-active,
@@ -206,3 +222,4 @@ onUnmounted(() => {
     }
 }
 </style>
+

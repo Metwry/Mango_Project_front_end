@@ -9,7 +9,7 @@ import {
 } from "@/utils/accounts";
 import { getPayload, getResultsList } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
-import { STORE_REFRESH_CONFIG } from "@/config/featureConfig";
+import { AUTO_REFRESH_ENABLED, STORE_REFRESH_CONFIG } from "@/config/Config";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.accounts.intervalMinutes;
 const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.accounts.second;
@@ -39,6 +39,7 @@ export const useAccountsStore = defineStore("accounts", () => {
   });
 
   function startAccountsAutoRefresh() {
+    if (!AUTO_REFRESH_ENABLED) return;
     autoRefreshScheduler.start();
   }
 
@@ -190,3 +191,4 @@ export const useAccountsStore = defineStore("accounts", () => {
     reset,
   };
 });
+

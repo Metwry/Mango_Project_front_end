@@ -23,6 +23,7 @@ export function createMinuteAlignedScheduler({
   intervalMinutes = 10,
   second = 0,
   minDelayMs = 1000,
+  runWhenHidden = false,
   task,
   onError,
 } = {}) {
@@ -44,6 +45,15 @@ export function createMinuteAlignedScheduler({
 
     timer = setTimeout(async () => {
       if (!started) return;
+      const shouldSkipHiddenTask =
+        !runWhenHidden &&
+        typeof document !== "undefined" &&
+        document.hidden;
+
+      if (shouldSkipHiddenTask) {
+        scheduleNext();
+        return;
+      }
 
       try {
         await task();

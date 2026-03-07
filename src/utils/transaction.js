@@ -32,14 +32,6 @@ export function createTransaction(data) {
   return api.post(`${BASE_URL}/`, data);
 }
 
-export function updateTransaction(id, data) {
-  return api.put(`${BASE_URL}/${id}/`, data);
-}
-
-export function patchTransaction(id, data) {
-  return api.patch(`${BASE_URL}/${id}/`, data);
-}
-
 export function reverseTransaction(id) {
   return api.post(`${BASE_URL}/${id}/reverse/`);
 }

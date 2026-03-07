@@ -10,7 +10,7 @@ import { getPayload } from "@/utils/api";
 import { getAccountColorById } from "@/utils/accountColors";
 import { formatCurrencyAmount } from "@/utils/formatters";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
-import { DASHBOARD_TREND_CONFIG } from "@/config/featureConfig";
+import { AUTO_REFRESH_ENABLED, DASHBOARD_TREND_CONFIG } from "@/config/Config";
 import {
   DEFAULT_USD_PER_CURRENCY_RATES,
   ensureUsdPerCurrencyRates,
@@ -217,6 +217,7 @@ async function fetchTrendData() {
 }
 
 function startTodayAutoRefresh() {
+  if (!AUTO_REFRESH_ENABLED) return;
   if (todayAutoRefreshScheduler) return;
 
   todayAutoRefreshScheduler = createMinuteAlignedScheduler({
@@ -544,7 +545,7 @@ const chartOption = computed(() => ({
         <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
           <button v-for="item in RANGE_OPTIONS" :key="item.key" type="button"
             class="button-base !px-3 !py-1.5 !text-xs sm:!text-sm" :class="activeRangeKey === item.key
-              ? '!bg-primary-50 !text-primary-700 !border-primary-200 dark:!bg-primary-900/25 dark:!text-primary-200 dark:!border-primary-800'
+              ? '!bg-primary-50 !text-primary-700 !border-primary-200 dark:!bg-[#2c3138] dark:!text-white dark:!border-[#343a42]'
               : ''" @click="activeRangeKey = item.key">
             {{ item.label }}
           </button>
@@ -572,3 +573,4 @@ const chartOption = computed(() => ({
     </div>
   </div>
 </template>
+

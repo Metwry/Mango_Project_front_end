@@ -5,6 +5,10 @@ import { useAccountsStore } from "@/stores/accounts";
 import { useTransactionsStore } from "@/stores/transaction";
 import { TRANSACTION_HISTORY_MODE } from "@/utils/transaction.js";
 
+function isCancelAction(error) {
+  return error === "cancel" || error === "close";
+}
+
 export function useBookkeepingPage() {
   const accountsStore = useAccountsStore();
   const transactionsStore = useTransactionsStore();
@@ -19,7 +23,6 @@ export function useBookkeepingPage() {
   } = storeToRefs(transactionsStore);
 
   const submitting = ref(false);
-  const resetKey = ref(0);
   const deletingId = ref(null);
   const clearingAll = ref(false);
 
@@ -30,7 +33,7 @@ export function useBookkeepingPage() {
     return "活动记录";
   }
 
-  function updateAndFetch(patch) {
+  function updateAndFetch(patch = {}) {
     transactionsStore.setFilters(patch);
     return transactionsStore.fetchList(patch);
   }
@@ -62,6 +65,16 @@ export function useBookkeepingPage() {
     return updateAndFetch({ page: 1, history_mode });
   }
 
+  async function confirmDanger(message) {
+    try {
+      await ElMessageBox.confirm(message, "提示", { type: "warning" });
+      return true;
+    } catch (e) {
+      if (isCancelAction(e)) return false;
+      throw e;
+    }
+  }
+
   async function withSubmitting(task) {
     submitting.value = true;
     try {
@@ -72,14 +85,8 @@ export function useBookkeepingPage() {
   }
 
   async function onReverseTransaction(id) {
-    try {
-      await ElMessageBox.confirm("确定撤销该记录？将自动生成已撤销记录。", "提示", {
-        type: "warning",
-      });
-    } catch (e) {
-      if (e === "cancel" || e === "close") return;
-      throw e;
-    }
+    const confirmed = await confirmDanger("确定撤销该记录？将自动生成已撤销记录。");
+    if (!confirmed) return;
 
     return withSubmitting(async () => {
       await transactionsStore.reverseOne(id);
@@ -91,8 +98,6 @@ export function useBookkeepingPage() {
   async function onSubmitTransaction(payload) {
     return withSubmitting(async () => {
       await transactionsStore.createOne(payload);
-      resetKey.value += 1;
-
       await Promise.all([
         accountsStore.fetchAccounts({ force: true }),
         updateAndFetch({ page: 1 }),
@@ -102,16 +107,9 @@ export function useBookkeepingPage() {
 
   async function onDeleteOne(id) {
     if (!id) return;
-    const modeText = currentModeLabel();
 
-    try {
-      await ElMessageBox.confirm(`确定删除该${modeText}？删除后无法恢复。`, "提示", {
-        type: "warning",
-      });
-    } catch (e) {
-      if (e === "cancel" || e === "close") return;
-      throw e;
-    }
+    const confirmed = await confirmDanger(`确定删除该${currentModeLabel()}？删除后无法恢复。`);
+    if (!confirmed) return;
 
     deletingId.value = id;
     try {
@@ -125,14 +123,8 @@ export function useBookkeepingPage() {
 
   async function onDeleteAll() {
     const modeText = currentModeLabel();
-    try {
-      await ElMessageBox.confirm(`确定删除全部${modeText}？该操作不可恢复。`, "提示", {
-        type: "warning",
-      });
-    } catch (e) {
-      if (e === "cancel" || e === "close") return;
-      throw e;
-    }
+    const confirmed = await confirmDanger(`确定删除全部${modeText}？该操作不可恢复。`);
+    if (!confirmed) return;
 
     clearingAll.value = true;
     try {
@@ -150,18 +142,17 @@ export function useBookkeepingPage() {
     accounts,
     accountsError,
     accountsLoading,
+    onDeleteAll,
+    onDeleteOne,
+    onModeChange,
     onPageChange,
     onPageSizeChange,
     onReverseTransaction,
     onSearchChange,
     onSearchReset,
-    onModeChange,
-    onDeleteOne,
-    onDeleteAll,
     onSubmitTransaction,
-    resetKey,
-    deletingId,
     clearingAll,
+    deletingId,
     submitting,
     transactions,
     transactionsError,

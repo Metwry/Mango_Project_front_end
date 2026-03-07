@@ -154,7 +154,7 @@ const {
           </div>
 
           <button type="submit"
-            class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            class="preserve-dark-white w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
             :disabled="loading">
             {{ loading ? '处理中...' : submitLabel }}
           </button>

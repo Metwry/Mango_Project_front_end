@@ -15,8 +15,9 @@
     "@floating-ui/vue": "^1.1.10",
     "@headlessui/vue": "^1.7.23",
     "@tailwindcss/vite": "^4.1.17",
+    "@vercel/analytics": "^1.6.1",
     "@vueuse/core": "^14.2.0",
-    "axios": "^1.13.2",
+    "axios": "^1.13.6",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
     "echarts": "^6.0.0",
@@ -36,8 +37,9 @@
     "@vitejs/plugin-vue": "^6.0.2",
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
+    "rollup": "^4.59.0",
     "tailwindcss": "^4.1.18",
-    "vite": "^7.2.4",
+    "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.5"
   }
 }
