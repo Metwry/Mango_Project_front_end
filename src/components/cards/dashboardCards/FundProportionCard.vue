@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -48,6 +48,8 @@ const animatedData = ref([])
 const hasPlayedEnterAnimation = ref(false)
 const lastDataSignature = ref('')
 let rafId = null
+const isDarkMode = ref(false)
+let themeObserver = null
 const chartWrapRef = ref(null)
 const { height: chartWrapHeight } = useElementSize(chartWrapRef)
 
@@ -115,11 +117,26 @@ onUnmounted(() => {
         cancelAnimationFrame(rafId)
         rafId = null
     }
+    if (themeObserver) {
+        themeObserver.disconnect()
+        themeObserver = null
+    }
+})
+
+onMounted(() => {
+    const root = document.documentElement
+    const syncDarkMode = () => {
+        isDarkMode.value = root.classList.contains('dark')
+    }
+
+    syncDarkMode()
+    themeObserver = new MutationObserver(syncDarkMode)
+    themeObserver.observe(root, { attributes: true, attributeFilter: ['class'] })
 })
 
 const option = computed(() => ({
     textStyle: {
-        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif"
+        fontFamily: "\"Times New Roman\", Times, \"PingFang SC\", \"Microsoft YaHei\", sans-serif"
     },
     tooltip: {
         trigger: 'item',
@@ -135,8 +152,9 @@ const option = computed(() => ({
         itemHeight: 10,
         itemGap: 15,
         textStyle: {
-            color: '#6b7280',
+            color: isDarkMode.value ? '#b5bec9' : '#475569',
             fontSize: 12,
+            fontFamily: "\"Times New Roman\", Times, \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
             width: 70,
             overflow: 'truncate'
         },
@@ -151,7 +169,7 @@ const option = computed(() => ({
             avoidLabelOverlap: true,
             itemStyle: {
                 borderRadius: 6,
-                borderColor: '#fff',
+                borderColor: isDarkMode.value ? '#000000' : '#ffffff',
                 borderWidth: 2
             },
             label: {
