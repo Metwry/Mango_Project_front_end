@@ -10,7 +10,7 @@ import { getPayload } from "@/utils/api";
 import { getAccountColorById } from "@/utils/accountColors";
 import { formatCurrencyAmount } from "@/utils/formatters";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
-import { DASHBOARD_TREND_CONFIG } from "@/config/featureConfig";
+import { AUTO_REFRESH_ENABLED, DASHBOARD_TREND_CONFIG } from "@/config/Config";
 import {
   DEFAULT_USD_PER_CURRENCY_RATES,
   ensureUsdPerCurrencyRates,
@@ -217,6 +217,7 @@ async function fetchTrendData() {
 }
 
 function startTodayAutoRefresh() {
+  if (!AUTO_REFRESH_ENABLED) return;
   if (todayAutoRefreshScheduler) return;
 
   todayAutoRefreshScheduler = createMinuteAlignedScheduler({
@@ -572,3 +573,4 @@ const chartOption = computed(() => ({
     </div>
   </div>
 </template>
+

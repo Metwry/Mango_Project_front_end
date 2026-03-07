@@ -1,6 +1,6 @@
 <script setup>
 import BaseIcon from '../ui/BaseIcon.vue';
-import { APP_VERSION_LABEL } from '@/config/appConfig';
+import { APP_VERSION_LABEL } from '@/config/Config';
 defineProps({
     menuItems: { type: Array, default: () => [] }
 })
@@ -40,3 +40,4 @@ defineProps({
         </div>
     </aside>
 </template>
+

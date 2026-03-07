@@ -1,25 +1,18 @@
 import { defineStore } from "pinia";
-import { ref, reactive, computed } from "vue";
-import {
-  getTransactionsByMode,
-  TRANSACTION_HISTORY_MODE,
-  getActivityTypeByMode,
-  createTransaction,
-  updateTransaction,
-  patchTransaction,
-  deleteTransactionByMode,
-  deleteAllTransactionsByActivity,
-  reverseTransaction,
-} from "@/utils/transaction.js";
+import { reactive, ref } from "vue";
 import { getPagedList, getPayload } from "@/utils/api";
+import {
+  createTransaction,
+  deleteAllTransactionsByActivity,
+  deleteTransactionByMode,
+  getActivityTypeByMode,
+  getTransactionsByMode,
+  reverseTransaction,
+  TRANSACTION_HISTORY_MODE,
+} from "@/utils/transaction.js";
 
-export const useTransactionsStore = defineStore("transactions", () => {
-  const items = ref([]);
-  const total = ref(0);
-  const loading = ref(false);
-  const error = ref(null);
-
-  const defaultFilters = () => ({
+function createDefaultFilters() {
+  return {
     account_id: null,
     counterparty: null,
     category: null,
@@ -29,27 +22,33 @@ export const useTransactionsStore = defineStore("transactions", () => {
     history_mode: TRANSACTION_HISTORY_MODE.ACTIVITY,
     page: 1,
     page_size: 10,
+  };
+}
+
+function sanitizeParams(params) {
+  const next = { ...params };
+  Object.keys(next).forEach((key) => {
+    const value = next[key];
+    if (value === null || value === undefined || value === "") {
+      delete next[key];
+    }
   });
+  return next;
+}
 
-  const filters = reactive(defaultFilters());
-  const detailMap = reactive({});
+export const useTransactionsStore = defineStore("transactions", () => {
+  const items = ref([]);
+  const total = ref(0);
+  const loading = ref(false);
+  const error = ref(null);
+  const filters = reactive(createDefaultFilters());
 
-  const hasFilters = computed(() =>
-    [
-      filters.account_id,
-      filters.counterparty,
-      filters.category,
-      filters.start,
-      filters.end,
-    ].some(Boolean),
-  );
-
-  function setFilters(patch) {
+  function setFilters(patch = {}) {
     Object.assign(filters, patch);
   }
 
   function resetFilters() {
-    Object.assign(filters, defaultFilters());
+    Object.assign(filters, createDefaultFilters());
   }
 
   async function fetchList(extraParams = {}) {
@@ -57,20 +56,14 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
 
     try {
-      const params = { ...filters, ...extraParams };
+      const params = sanitizeParams({ ...filters, ...extraParams });
       const historyMode = params.history_mode || TRANSACTION_HISTORY_MODE.ACTIVITY;
       delete params.history_mode;
-
-      Object.keys(params).forEach((k) => {
-        const v = params[k];
-        if (v === null || v === undefined || v === "") delete params[k];
-      });
 
       const res = await getTransactionsByMode(historyMode, params);
       const normalized = getPagedList(res);
       items.value = normalized.list;
       total.value = normalized.total;
-
       return items.value;
     } catch (e) {
       error.value = e;
@@ -78,10 +71,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
     } finally {
       loading.value = false;
     }
-  }
-
-  function refresh() {
-    return fetchList();
   }
 
   async function createOne(payload) {
@@ -95,39 +84,10 @@ export const useTransactionsStore = defineStore("transactions", () => {
     }
   }
 
-  async function updateOne(id, payload) {
-    error.value = null;
-    try {
-      const res = await updateTransaction(id, payload);
-      const data = getPayload(res);
-      if (data) detailMap[id] = data;
-      await refresh();
-      return data;
-    } catch (e) {
-      error.value = e;
-      throw e;
-    }
-  }
-
-  async function patchOne(id, patch) {
-    error.value = null;
-    try {
-      const res = await patchTransaction(id, patch);
-      const data = getPayload(res);
-      if (data) detailMap[id] = data;
-      await refresh();
-      return data;
-    } catch (e) {
-      error.value = e;
-      throw e;
-    }
-  }
-
   async function removeOne(id) {
     error.value = null;
     try {
       await deleteTransactionByMode(id);
-      delete detailMap[id];
 
       const currentPage = Number(filters.page) || 1;
       await fetchList({
@@ -154,7 +114,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
     try {
       const activityType = getActivityTypeByMode(filters.history_mode);
       await deleteAllTransactionsByActivity(activityType);
-
       await fetchList({
         page: 1,
         page_size: filters.page_size,
@@ -171,13 +130,11 @@ export const useTransactionsStore = defineStore("transactions", () => {
     try {
       const res = await reverseTransaction(id);
       const data = getPayload(res);
-
       await fetchList({
         page: filters.page,
         page_size: filters.page_size,
         history_mode: filters.history_mode,
       });
-
       return data;
     } catch (e) {
       error.value = e;
@@ -190,9 +147,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     total.value = 0;
     loading.value = false;
     error.value = null;
-
-    Object.assign(filters, defaultFilters());
-    Object.keys(detailMap).forEach((k) => delete detailMap[k]);
+    Object.assign(filters, createDefaultFilters());
   }
 
   return {
@@ -201,16 +156,10 @@ export const useTransactionsStore = defineStore("transactions", () => {
     loading,
     error,
     filters,
-    detailMap,
-    hasFilters,
-
     setFilters,
     resetFilters,
     fetchList,
-    refresh,
     createOne,
-    updateOne,
-    patchOne,
     removeOne,
     reverseOne,
     removeAllByCurrentMode,

@@ -7,7 +7,7 @@ import {
 } from "@/utils/markets";
 import { getPayload } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
-import { STORE_REFRESH_CONFIG } from "@/config/featureConfig";
+import { AUTO_REFRESH_ENABLED, STORE_REFRESH_CONFIG } from "@/config/Config";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.market.intervalMinutes;
 const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.market.second;
@@ -147,6 +147,7 @@ export const useMarketStore = defineStore("market", () => {
   }
 
   function startMarketAutoRefresh() {
+    if (!AUTO_REFRESH_ENABLED) return;
     autoRefreshScheduler.start();
   }
 
@@ -173,8 +174,6 @@ export const useMarketStore = defineStore("market", () => {
     selectedMarket,
     loading,
     error,
-    fetched,
-    lastFetchedAt,
 
     fetchMarkets,
     refreshMarkets,
@@ -186,3 +185,4 @@ export const useMarketStore = defineStore("market", () => {
     reset,
   };
 });
+

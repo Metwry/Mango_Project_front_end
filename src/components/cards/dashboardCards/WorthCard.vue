@@ -1,11 +1,10 @@
 <script setup>
 import { computed } from 'vue'
 import RollingDigit from '@/components/ui/RollingDigit.vue'
-import { DASHBOARD_WORTH_CONFIG } from '@/config/featureConfig'
+import { DASHBOARD_WORTH_CONFIG } from '@/config/Config'
 
 const props = defineProps({
     amount: { type: Number, required: true },
-    change: { type: Number, default: 0 },
     ready: { type: Boolean, default: true }
 })
 
@@ -122,3 +121,4 @@ const amountParts = computed(() => {
     padding: 0 0.03em;
 }
 </style>
+

@@ -27,7 +27,7 @@ onMounted(() => {
 
 <template>
   <div class="h-full w-full bg-gray-50 dark:bg-gray-900">
-    <section class="h-full w-full overflow-y-auto p-1">
+    <section class="investment-scroll h-full w-full overflow-y-auto">
       <div v-if="loading" class="h-full grid place-items-center text-sm text-gray-500 dark:text-gray-400">
         正在加载持仓数据...
       </div>
@@ -51,3 +51,10 @@ onMounted(() => {
     </section>
   </div>
 </template>
+
+<style scoped>
+.investment-scroll {
+  padding: 0.25rem;
+  padding-bottom: calc(0.25rem + env(safe-area-inset-bottom));
+}
+</style>

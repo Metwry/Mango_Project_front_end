@@ -1,5 +1,5 @@
 import api, { getPayload } from "@/utils/api";
-import { FX_RATES_CONFIG } from "@/config/featureConfig";
+import { FX_RATES_CONFIG } from "@/config/Config";
 
 const DEFAULT_USD_PER_CURRENCY_RATES = FX_RATES_CONFIG.defaultUsdPerCurrencyRates;
 const FX_RATES_STALE_MS = FX_RATES_CONFIG.staleMs;
@@ -278,3 +278,4 @@ export function buildAccountsValuation(accounts, usdPerCurrencyRates) {
 }
 
 export { DEFAULT_USD_PER_CURRENCY_RATES };
+

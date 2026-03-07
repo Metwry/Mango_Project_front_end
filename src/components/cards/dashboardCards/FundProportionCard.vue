@@ -7,7 +7,7 @@ import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/compon
 import VChart from 'vue-echarts'
 import { toSafeNumber } from '@/utils/formatters'
 import { getAccountColorById } from '@/utils/accountColors'
-import { FUND_PROPORTION_CONFIG } from '@/config/featureConfig'
+import { FUND_PROPORTION_CONFIG } from '@/config/Config'
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] },
@@ -175,3 +175,4 @@ const option = computed(() => ({
         </div>
     </div>
 </template>
+

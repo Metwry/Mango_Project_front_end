@@ -13,7 +13,7 @@ import { getPayload } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 import { buildSnapshotTimeline, getPositionSnapshots } from "@/utils/snapshot";
 import { useInvestmentStore } from "@/stores/investment";
-import { POSITION_TREND_CONFIG } from "@/config/featureConfig";
+import { AUTO_REFRESH_ENABLED, POSITION_TREND_CONFIG } from "@/config/Config";
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent]);
 
@@ -287,15 +287,6 @@ function formatTimeTickWithSeconds(value) {
   return `${hh}:${mm}:${ss}`;
 }
 
-function formatTrendValue(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "--";
-  return new Intl.NumberFormat("zh-CN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
 const trendOption = computed(() => ({
   animationDuration: 420,
   grid: {
@@ -536,6 +527,7 @@ async function fetchPositionTrend() {
 }
 
 function startTrendAutoRefresh() {
+  if (!AUTO_REFRESH_ENABLED) return;
   if (trendAutoRefreshScheduler) return;
 
   trendAutoRefreshScheduler = createMinuteAlignedScheduler({
@@ -847,3 +839,4 @@ onUnmounted(() => {
   transform: translateX(16px);
 }
 </style>
+

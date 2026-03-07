@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import axios from "axios";
+import { AUTH_ENDPOINTS } from "@/config/Config";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -105,7 +106,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   async function login(username, password, options = {}) {
     const remember = options?.remember ?? true;
-    const res = await axios.post("/api/login/", { username, password });
+    const res = await axios.post(AUTH_ENDPOINTS.loginUrl, { username, password });
 
     const { access, refresh, user: u } = res.data;
 
@@ -159,3 +160,4 @@ export const useAuthStore = defineStore("auth", () => {
     setUser,
   };
 });
+

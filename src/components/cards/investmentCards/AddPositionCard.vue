@@ -8,7 +8,7 @@ import { searchMarketInstruments } from "@/utils/markets";
 import { getPayload } from "@/utils/api";
 import { filterNonInvestmentAccounts } from "@/utils/accounts";
 import { useInvestmentStore } from "@/stores/investment";
-import { SEARCH_CONFIG } from "@/config/featureConfig";
+import { SEARCH_CONFIG } from "@/config/Config";
 
 const props = defineProps({
   accounts: {
@@ -315,10 +315,31 @@ watch(
       </div>
     </div>
 
-    <button type="button"
-      class="button-base mt-auto mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
-      :disabled="!canSubmit" @click="onSubmit">
-      {{ trading ? "提交中..." : "确定买入" }}
-    </button>
+    <div class="submit-bar mt-auto">
+      <button type="button"
+        class="button-base mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50"
+        :disabled="!canSubmit" @click="onSubmit">
+        {{ trading ? "提交中..." : "确定买入" }}
+      </button>
+    </div>
   </article>
 </template>
+
+<style scoped>
+@media (max-width: 767px) {
+  .submit-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-inline: -0.25rem;
+    padding: 0.75rem 0.25rem calc(0.25rem + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(6px);
+  }
+
+  :global(.dark) .submit-bar {
+    background: linear-gradient(to top, rgba(17, 24, 39, 0.98), rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0));
+  }
+}
+</style>
+

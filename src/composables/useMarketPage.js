@@ -5,7 +5,7 @@ import { ElMessage } from "element-plus";
 import { searchMarketInstruments } from "@/utils/markets";
 import { getResultsList } from "@/utils/api";
 import { useMarketStore } from "@/stores/market";
-import { SEARCH_CONFIG } from "@/config/featureConfig";
+import { AUTO_REFRESH_ENABLED, SEARCH_CONFIG } from "@/config/Config";
 
 const MARKET_META = {
   CN: { label: "A股", pricePrefix: "¥" },
@@ -330,6 +330,7 @@ export function useMarketPage() {
   }
 
   function handleVisibilityChange() {
+    if (!AUTO_REFRESH_ENABLED) return;
     if (document.hidden) return;
     marketStore
       .refreshMarkets({ silent: true })
@@ -346,7 +347,7 @@ export function useMarketPage() {
     ensureSelectedMarketAvailable();
   });
 
-  if (typeof document !== "undefined") {
+  if (AUTO_REFRESH_ENABLED && typeof document !== "undefined") {
     useEventListener(document, "visibilitychange", handleVisibilityChange);
   }
 
@@ -380,3 +381,4 @@ export function useMarketPage() {
     visibleQuotes,
   };
 }
+

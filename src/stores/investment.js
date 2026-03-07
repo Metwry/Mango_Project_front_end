@@ -8,7 +8,7 @@ import {
   sellInvestmentPosition as apiSellInvestmentPosition,
 } from "@/utils/investment";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
-import { STORE_REFRESH_CONFIG } from "@/config/featureConfig";
+import { AUTO_REFRESH_ENABLED, STORE_REFRESH_CONFIG } from "@/config/Config";
 
 const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.investmentQuotes.intervalMinutes;
 const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.investmentQuotes.second;
@@ -181,6 +181,7 @@ export const useInvestmentStore = defineStore("investment", () => {
   }
 
   function startInvestmentAutoRefresh() {
+    if (!AUTO_REFRESH_ENABLED) return;
     autoRefreshScheduler.start();
   }
 
@@ -318,10 +319,6 @@ export const useInvestmentStore = defineStore("investment", () => {
     loading,
     error,
     trading,
-    tradeError,
-    fetched,
-    lastFetchedAt,
-    lastQuotesFetchedAt,
 
     fetchPositions,
     refreshPositions,
@@ -333,3 +330,4 @@ export const useInvestmentStore = defineStore("investment", () => {
     reset,
   };
 });
+

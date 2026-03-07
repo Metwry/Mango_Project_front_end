@@ -6,6 +6,7 @@ import TopBar from '@/components/layout/Topbar.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { useInvestmentStore } from '@/stores/investment'
 import { useMarketStore } from '@/stores/market'
+import { AUTO_REFRESH_ENABLED } from '@/config/Config'
 
 const route = useRoute()
 const pageScrollRef = ref(null)
@@ -67,9 +68,11 @@ watch(
 )
 
 onMounted(() => {
-    accountsStore.startAccountsAutoRefresh()
-    investmentStore.startInvestmentAutoRefresh()
-    marketStore.startMarketAutoRefresh()
+    if (AUTO_REFRESH_ENABLED) {
+        accountsStore.startAccountsAutoRefresh()
+        investmentStore.startInvestmentAutoRefresh()
+        marketStore.startMarketAutoRefresh()
+    }
     void accountsStore.fetchAccounts()
     void investmentStore.fetchPositions({ silent: true })
     void marketStore.fetchMarkets({ silent: true })
@@ -84,13 +87,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="app-shell flex bg-gray-50 dark:bg-gray-900">
         <Sidebar :menu-items="menuItems" />
 
         <main class="flex flex-1 flex-col overflow-hidden">
-            <TopBar :title="currentTitle" :icon="icon"></TopBar>
+            <TopBar :title="currentTitle" :icon="icon" :menu-items="menuItems"></TopBar>
 
-            <div ref="pageScrollRef" class="page-scroll flex-1 min-h-0 overflow-y-auto p-3">
+            <div ref="pageScrollRef" class="page-scroll flex-1 min-h-0 overflow-y-auto">
                 <div class="page-transition-stage min-h-full xl:h-full xl:min-h-0">
                     <RouterView v-slot="{ Component, route: currentRoute }">
                         <Transition :name="pageTransitionName" @after-enter="handlePageAfterEnter">
@@ -106,6 +109,11 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.app-shell {
+    height: 100vh;
+    height: 100dvh;
+}
+
 .page-transition-stage {
     position: relative;
     overflow: hidden;
@@ -125,6 +133,8 @@ onUnmounted(() => {
 .page-scroll {
     scrollbar-gutter: stable;
     overscroll-behavior: contain;
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
 }
 
 .dark .page-panel {
@@ -206,3 +216,4 @@ onUnmounted(() => {
     }
 }
 </style>
+

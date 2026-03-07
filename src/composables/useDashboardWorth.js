@@ -9,7 +9,6 @@ import {
 
 const sharedValuedAccounts = ref([]);
 const sharedTotalWorthCny = ref(0);
-const sharedTotalWorthUsd = ref(0);
 const sharedWorthReady = ref(false);
 
 export function useDashboardWorth() {
@@ -18,7 +17,6 @@ export function useDashboardWorth() {
 
   const valuedAccounts = sharedValuedAccounts;
   const totalWorthCny = sharedTotalWorthCny;
-  const totalWorthUsd = sharedTotalWorthUsd;
   const worthReady = sharedWorthReady;
 
   let syncToken = 0;
@@ -27,7 +25,6 @@ export function useDashboardWorth() {
     const result = buildAccountsValuation(accounts.value, rates);
     valuedAccounts.value = result.valuedAccounts;
     totalWorthCny.value = result.totalValueCny;
-    totalWorthUsd.value = result.totalValueUsd;
     worthReady.value = true;
   };
 
@@ -71,8 +68,6 @@ export function useDashboardWorth() {
     accounts,
     valuedAccounts,
     totalWorthCny,
-    totalWorthUsd,
     worthReady,
-    refreshWorth,
   };
 }
