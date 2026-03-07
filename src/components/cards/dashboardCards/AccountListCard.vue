@@ -3,7 +3,7 @@ import AddAccount from '@/components/windows/AddAccount.vue'
 import ChangeAccount from '@/components/windows/ChangeAccount.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import { computed, ref } from 'vue'
-import { getAccountColorById, getAccountColorWithAlpha } from '@/utils/accountColors'
+import { getAccountColorById } from '@/utils/accountColors'
 import { formatCurrencyAmount, toSafeNumber } from '@/utils/formatters'
 
 const props = defineProps({
@@ -16,8 +16,8 @@ const selectedAccount = ref()
 
 const sortedAccounts = computed(() => {
     return [...(props.accounts || [])].sort((a, b) => {
-        const left = Math.abs(toSafeNumber(a?.valueCny ?? a?.balance))
-        const right = Math.abs(toSafeNumber(b?.valueCny ?? b?.balance))
+        const left = toSafeNumber(a?.valueCny ?? a?.balance)
+        const right = toSafeNumber(b?.valueCny ?? b?.balance)
         return right - left
     })
 })
@@ -34,12 +34,23 @@ const openEditModal = (item) => {
 }
 
 const getAccountBadgeStyle = (account) => {
-    const accountKey = account?.id ?? account?.accountId ?? account?.account_id ?? ''
+    const accountKey = account?.name ?? account?.id ?? account?.accountId ?? account?.account_id ?? ''
+    const color = getAccountColorById(accountKey)
     return {
-        color: getAccountColorById(accountKey),
-        borderColor: getAccountColorWithAlpha(accountKey, 0.5),
-        backgroundColor: getAccountColorWithAlpha(accountKey, 0.18),
+        borderColor: color,
+        backgroundColor: color,
     }
+}
+
+const getAccountThemeColor = (account) => {
+    const accountKey = account?.name ?? account?.id ?? account?.accountId ?? account?.account_id ?? ''
+    return getAccountColorById(accountKey)
+}
+
+const getAccountInitial = (account) => {
+    const name = String(account?.name ?? '').trim()
+    if (!name) return '?'
+    return name.substring(0, 1).toUpperCase()
 }
 </script>
 
@@ -56,13 +67,13 @@ const getAccountBadgeStyle = (account) => {
             <div v-for="item in sortedAccounts" :key="item.id" class="center gap-3">
                 <div class="flex min-w-0 items-center gap-3">
                     <div
-                        class="py-1 w-10 h-10 rounded-full border flex items-center justify-center text-sm"
+                        class="py-1 w-10 h-10 rounded-full border flex items-center justify-center text-sm font-bold text-gray-300 dark:text-gray-300"
                         :style="getAccountBadgeStyle(item)">
-                        {{ (item.type || '').substring(0, 1).toUpperCase() }}
+                        {{ getAccountInitial(item) }}
                     </div>
                     <div class="min-w-0">
                         <p class="flex items-center gap-1.5 text-sm text-gray-800 dark:text-gray-200">
-                            <span class="truncate">{{ item.name }}</span>
+                            <span class="truncate" :style="{ color: getAccountThemeColor(item) }">{{ item.name }}</span>
                             <button type="button"
                                 class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-transparent text-gray-500 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300/70 dark:text-gray-400 dark:hover:bg-gray-700/60 dark:hover:text-gray-200 dark:focus:ring-gray-300/70"
                                 :title="`编辑 ${item.name || '账户'}`" @click="openEditModal(item)">

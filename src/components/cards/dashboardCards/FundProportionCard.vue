@@ -23,7 +23,7 @@ const chartData = computed(() => {
             name: String(acc?.name ?? ''),
             value: Math.max(0, toSafeNumber(acc?.valueCny)),
             itemStyle: {
-                color: getAccountColorById(acc?.id),
+                color: getAccountColorById(acc?.name ?? acc?.id),
             },
         }))
         .filter(x => x.name && x.value > 0)

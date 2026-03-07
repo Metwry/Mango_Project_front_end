@@ -308,7 +308,7 @@ const chartSeries = computed(() => {
   return snapshotSeries.value.map((entry) => {
     const limitedData = limitSeriesPoints(entry.data);
     const singlePoint = limitedData.length === 1;
-    const seriesColor = getAccountColorById(entry.accountId);
+    const seriesColor = getAccountColorById(entry.accountName ?? entry.accountId);
     return {
       id: `account-${entry.accountId}`,
       name: entry.accountName,

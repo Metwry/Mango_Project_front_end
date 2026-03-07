@@ -1,24 +1,28 @@
 export const ACCOUNT_BRAND_PALETTE = Object.freeze([
-  "#2563EB",
+  "#1677FF",
   "#0EA5E9",
-  "#06B6D4",
-  "#14B8A6",
-  "#10B981",
-  "#22C55E",
-  "#84CC16",
-  "#A3E635",
-  "#EAB308",
-  "#F59E0B",
-  "#F97316",
-  "#FB7185",
-  "#F43F5E",
-  "#EF4444",
-  "#8B5CF6",
   "#6366F1",
+  "#14B8A6",
+  "#13C2C2",
+  "#52C41A",
+  "#10B981",
+  "#84CC16",
+  "#F59E0B",
+  "#FA8C16",
+  "#FA541C",
+  "#F5222D",
+  "#F43F5E",
+  "#8B5CF6",
+  "#722ED1",
+  "#D946EF",
+  "#EB2F96",
+  "#64748B",
+  "#6B7280",
+  "#8D6E63",
 ]);
 
-function normalizeAccountKey(accountId) {
-  const raw = String(accountId ?? "").trim();
+function normalizeAccountKey(accountName) {
+  const raw = String(accountName ?? "").trim();
   return raw || "account_default";
 }
 
@@ -48,15 +52,15 @@ function hexToRgb(hex) {
   };
 }
 
-export function getAccountColorById(accountId) {
-  const key = normalizeAccountKey(accountId);
+export function getAccountColorById(accountName) {
+  const key = normalizeAccountKey(accountName);
   const hash = fnv1aHash(key);
   const index = hash % ACCOUNT_BRAND_PALETTE.length;
   return ACCOUNT_BRAND_PALETTE[index];
 }
 
-export function getAccountColorWithAlpha(accountId, alpha = 0.15) {
-  const rgb = hexToRgb(getAccountColorById(accountId));
+export function getAccountColorWithAlpha(accountName, alpha = 0.15) {
+  const rgb = hexToRgb(getAccountColorById(accountName));
   if (!rgb) return `rgba(37, 99, 235, ${alpha})`;
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 }
