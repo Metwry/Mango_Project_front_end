@@ -32,6 +32,7 @@ const menuItems = [
     { name: '仪表盘', path: '/dashboard', icon: 'dashboard' },
     { name: '记账', path: '/bookkeeping', icon: 'bookkeeping' },
     { name: '行情', path: '/market', icon: 'market' },
+    { name: '资讯', path: '/news', icon: 'news' },
     { name: '投资', path: '/investment', icon: 'holdings' },
     { name: '数据分析', path: '/analysis', icon: 'analysis' },
     { name: '工具箱', path: '/tools', icon: 'toolbox' },

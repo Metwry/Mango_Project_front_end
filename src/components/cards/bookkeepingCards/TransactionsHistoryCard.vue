@@ -565,4 +565,22 @@ onClickOutside(historyModeWrapRef, () => {
     background: linear-gradient(180deg, rgba(31, 41, 55, 0.96), rgba(17, 24, 39, 0.92));
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
 }
+
+:global(.dark) .mobile-filter-panel .mobile-filter-input,
+:global(.dark) .mobile-filter-panel .dropdown-trigger,
+:global(.dark) .mobile-filter-panel .mobile-date-field .button-base {
+    background-color: var(--surface-2);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+
+:global(.dark) .mobile-filter-panel .mobile-action-button {
+    background-color: var(--surface-2);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+
+:global(.dark) .mobile-filter-panel .mobile-action-button:hover {
+    background-color: var(--surface-hover);
+}
 </style>

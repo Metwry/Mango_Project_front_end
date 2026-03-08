@@ -11,6 +11,9 @@ export const iconPaths = {
 
   market: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
 
+  // 资讯图标
+  news: "M5 5h14v14H5zM8 8h8M8 11h8M8 14h5",
+
   // 数据分析图标
   analysis:
     "M4 19.5h16M6.5 16v-5m5 5V8m5 8v-3M5 7.5l4.2-3.2a1 1 0 011.1-.1l2.9 1.6a1 1 0 001.12-.08L19 2.5",

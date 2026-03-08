@@ -44,6 +44,12 @@ const router = createRouter({
           meta: { title: "行情", icon: "market" },
         },
         {
+          path: "news",
+          name: "News",
+          component: () => import("../pages/News.vue"),
+          meta: { title: "资讯", icon: "news" },
+        },
+        {
           path: "analysis",
           name: "Analysis",
           component: () => import("../pages/Analysis.vue"),

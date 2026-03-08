@@ -168,12 +168,6 @@ onClickOutside(transactionDirectionWrapRef, () => {
                         </div>
 
                         <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">交易方:</label>
-                            <input v-model="form.counterparty" type="text" placeholder="输入交易方"
-                                class="input-base w-full" />
-                        </div>
-
-                        <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">收支类型:</label>
                             <div ref="transactionDirectionWrapRef" class="relative">
                                 <button type="button" class="dropdown-trigger !h-10"
@@ -200,6 +194,12 @@ onClickOutside(transactionDirectionWrapRef, () => {
                                     </div>
                                 </Transition>
                             </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">交易方:</label>
+                            <input v-model="form.counterparty" type="text" placeholder="输入交易方"
+                                class="input-base w-full" />
                         </div>
 
                         <div class="space-y-2">

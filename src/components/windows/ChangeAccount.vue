@@ -26,6 +26,7 @@ const account = ref({
 })
 const currencyOpen = ref(false);
 const currencyWrapRef = ref(null);
+const advancedMode = ref(false);
 
 const currencyOptions = [
     { value: "CNY", label: "人民币 (CNY)" },
@@ -44,6 +45,10 @@ function pickCurrency(value) {
     currencyOpen.value = false;
 }
 
+function onAdvancedChange() {
+    ElMessage.info("该功能正在开发");
+}
+
 watch(
     () => props.isOpen,
     (newVal) => {
@@ -56,6 +61,7 @@ watch(
                 type: props.data.type
             }
             currencyOpen.value = false;
+            advancedMode.value = false;
         }
     },
     { immediate: true }
@@ -95,8 +101,17 @@ onClickOutside(currencyWrapRef, () => {
                 <div class="mb-10 grid grid-cols-[1fr_auto_1fr] items-center">
                     <div></div>
 
-                    <div class="text-center text-2xl font-bold text-gray-900 dark:text-white">
-                        修改账户
+                    <div class="flex items-center justify-center gap-2">
+                        <div class="text-center text-2xl font-bold text-gray-900 dark:text-white">
+                            修改账户
+                        </div>
+                        <label
+                            class="surface-chip inline-flex h-6 cursor-pointer select-none items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-2 text-[11px] font-semibold text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                            <input v-model="advancedMode" type="checkbox"
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:outline-none focus:ring-0 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-800"
+                                @change="onAdvancedChange" />
+                            <span>高级</span>
+                        </label>
                     </div>
 
                     <div class="flex justify-end">
@@ -119,7 +134,7 @@ onClickOutside(currencyWrapRef, () => {
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">当前余额:</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">余额:</label>
                         <input v-model.number="account.balance" type="number" class="input-base w-full"
                             placeholder="0.00" />
                     </div>
@@ -161,7 +176,9 @@ onClickOutside(currencyWrapRef, () => {
                         删除账户
                     </button>
 
-                    <button @click="UpdateAccount" class="button-base" :disabled="accountsStore.saving">
+                    <button @click="UpdateAccount"
+                        class="preserve-dark-white button-base !bg-green-600 !text-white hover:!bg-green-700 disabled:opacity-60"
+                        :disabled="accountsStore.saving">
                         {{ accountsStore.saving ? '保存中...' : '保存修改' }}
                     </button>
                 </div>

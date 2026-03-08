@@ -2,6 +2,7 @@
 import AddAccount from '@/components/windows/AddAccount.vue'
 import ChangeAccount from '@/components/windows/ChangeAccount.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
+import { ElMessage } from "element-plus";
 import { computed, ref } from 'vue'
 import { getAccountColorById } from '@/utils/accountColors'
 import { formatCurrencyAmount, toSafeNumber } from '@/utils/formatters'
@@ -52,6 +53,10 @@ const getAccountInitial = (account) => {
     if (!name) return '?'
     return name.substring(0, 1).toUpperCase()
 }
+
+const onTransferClick = () => {
+    ElMessage.info("转账功能正在开发");
+}
 </script>
 
 <template>
@@ -59,7 +64,7 @@ const getAccountInitial = (account) => {
 
         <div class="center">
             <div class="card-title">账户列表</div>
-            <!-- <button class="button-base ring-0">转账</button> -->
+            <button class="button-base ring-0 !px-3 !py-1.5 text-xs sm:text-sm" @click="onTransferClick">转账</button>
         </div>
 
 

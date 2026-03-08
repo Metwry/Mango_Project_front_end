@@ -34,6 +34,7 @@ const ALL_ACCOUNTS_THEME_COLOR = DASHBOARD_TREND_CONFIG.allAccountsThemeColor;
 const MAX_RENDER_POINTS = DASHBOARD_TREND_CONFIG.maxRenderPoints;
 const TODAY_AUTO_REFRESH_INTERVAL_MINUTES = DASHBOARD_TREND_CONFIG.todayAutoRefresh.intervalMinutes;
 const TODAY_AUTO_REFRESH_SECOND = DASHBOARD_TREND_CONFIG.todayAutoRefresh.second;
+const TREND_FONT_FAMILY = "\"Times New Roman\", Times, serif";
 
 const accountId = ref("");
 const activeRangeKey = ref("today");
@@ -458,6 +459,9 @@ function formatTooltipAmount(value, currencyCode = "") {
 }
 
 const chartOption = computed(() => ({
+  textStyle: {
+    fontFamily: TREND_FONT_FAMILY,
+  },
   grid: {
     left: 10,
     right: 12,
@@ -469,9 +473,10 @@ const chartOption = computed(() => ({
     trigger: "axis",
     axisPointer: { type: "line" },
     textStyle: {
-      fontFamily: "Times New Roman, Times, serif",
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
     },
-    extraCssText: "font-family:'Times New Roman',Times,serif;",
+    extraCssText: "font-family:'Times New Roman',Times,serif;font-size:13px;",
     formatter: (params) => {
       const rows = Array.isArray(params) ? params : [params];
       if (rows.length === 0) return "--";
@@ -497,7 +502,8 @@ const chartOption = computed(() => ({
     itemHeight: 8,
     textStyle: {
       color: "#6b7280",
-      fontSize: 11,
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
     },
   },
   xAxis: {
@@ -509,7 +515,8 @@ const chartOption = computed(() => ({
     axisTick: { show: false },
     axisLabel: {
       color: "#94a3b8",
-      fontSize: 11,
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
       hideOverlap: true,
       showMinLabel: true,
       showMaxLabel: true,
@@ -525,7 +532,8 @@ const chartOption = computed(() => ({
     axisTick: { show: false },
     axisLabel: {
       color: "#94a3b8",
-      fontSize: 11,
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
       formatter: (value) => formatAxisAmount(value, yAxisCurrency.value),
     },
     splitLine: { show: false },
