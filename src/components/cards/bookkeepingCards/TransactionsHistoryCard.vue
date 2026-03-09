@@ -44,6 +44,7 @@ const pageSizeOptions = [10, 20, 50, 100];
 const historyModeOptions = [
     { value: TRANSACTION_HISTORY_MODE.ACTIVITY, label: "活动记录" },
     { value: TRANSACTION_HISTORY_MODE.ALL, label: "交易记录" },
+    { value: TRANSACTION_HISTORY_MODE.TRANSFER, label: "转账记录" },
     { value: TRANSACTION_HISTORY_MODE.REVERSED, label: "已撤销记录" },
 ];
 
@@ -60,6 +61,7 @@ const activeSearchCount = computed(() => Object.values(searchState).filter(Boole
 const searchableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 const isReversedMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.REVERSED);
 const isInvestmentHistoryMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.ALL);
+const isTransferHistoryMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.TRANSFER);
 const isManualMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.ACTIVITY);
 const currentHistoryModeLabel = computed(() => {
     return historyModeOptions.find((item) => item.value === props.historyMode)?.label ?? "活动记录";
@@ -269,8 +271,8 @@ onClickOutside(historyModeWrapRef, () => {
             <button class="button-base px-3 py-1.5 text-xs sm:text-sm" @click="emit('open-add-transaction')">
                 记账
             </button>
-            <button
-                class="button-base px-3 py-1.5 text-xs sm:text-sm !text-red-600 !border-red-200 !bg-red-50 hover:!bg-red-100 dark:!text-red-300 dark:!border-red-800 dark:!bg-red-900/20 dark:hover:!bg-red-900/35"
+            <button v-if="!isTransferHistoryMode"
+                class="button-base !rounded-xl !font-semibold px-3 py-1.5 text-xs sm:text-sm !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]"
                 :disabled="loading || clearingAll || transactions.length === 0" @click="onDeleteAllClick">
                 {{ clearingAll ? "删除中..." : "全部删除" }}
             </button>
@@ -411,7 +413,7 @@ onClickOutside(historyModeWrapRef, () => {
                         </td>
                         <td class="td-cell">
                             <div
-                                class="max-w-[290px] truncate text-[13px] sm:text-sm font-semibold text-gray-700 dark:text-gray-100">
+                                class="max-w-[290px] truncate text-[13px] sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 {{ tx?.counterparty ?? tx?.title ?? "-" }}
                             </div>
                         </td>
@@ -435,7 +437,15 @@ onClickOutside(historyModeWrapRef, () => {
                             <div class="font-medium">{{ formatDateTime(tx?.add_date ?? tx?.date) }}</div>
                         </td>
                         <td class="td-cell text-center" @click.stop>
-                            <div class="inline-flex items-center justify-center gap-2">
+                            <div v-if="isTransferHistoryMode" class="inline-flex items-center justify-center gap-2">
+                                <button :class="[
+                                    'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]',
+                                    (!tx?.id || clearingAll) && '!cursor-not-allowed !opacity-60'
+                                ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
+                                    {{ deletingId === tx?.id ? "删除中..." : "删除" }}
+                                </button>
+                            </div>
+                            <div v-else class="inline-flex items-center justify-center gap-2">
                                 <button v-if="isManualMode" :class="[
                                     'button-base ring-0 inline-flex text-xs !px-2.5 !py-1.5',
                                     canReverse(tx)
@@ -444,9 +454,8 @@ onClickOutside(historyModeWrapRef, () => {
                                 ]" @click="onReverseClick(tx)">
                                     {{ reversingId === tx?.id ? "处理中..." : reverseLabel(tx) }}
                                 </button>
-
                                 <button :class="[
-                                    'button-base ring-0 inline-flex text-xs !px-2.5 !py-1.5 !text-red-600 !border-red-200 !bg-red-50 hover:!bg-red-100 dark:!text-red-300 dark:!border-red-800 dark:!bg-red-900/20 dark:hover:!bg-red-900/35',
+                                    'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]',
                                     (!tx?.id || clearingAll) && '!cursor-not-allowed !opacity-60'
                                 ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
                                     {{ deletingId === tx?.id ? "删除中..." : "删除" }}
@@ -459,7 +468,7 @@ onClickOutside(historyModeWrapRef, () => {
                     <tr v-if="transactions.length === 0">
                         <td colspan="7" class="px-6 py-16 text-center">
                             <span class=" text-gray-400 dark:text-gray-500">
-                                {{ isReversedMode ? "暂无已撤销记录" : isInvestmentHistoryMode ? "暂无投资交易记录" : "暂无交易记录" }}
+                                {{ isReversedMode ? "暂无已撤销记录" : isInvestmentHistoryMode ? "暂无投资交易记录" : isTransferHistoryMode ? "暂无转账记录" : "暂无交易记录" }}
                             </span>
                         </td>
                     </tr>
@@ -522,9 +531,9 @@ onClickOutside(historyModeWrapRef, () => {
 }
 
 .mobile-filter-panel {
-    border: 1px solid rgba(226, 232, 240, 0.95);
+    border: 1px solid var(--border-subtle);
     border-radius: 1rem;
-    background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.94));
+    background: var(--surface-2);
     padding: 0.75rem;
     box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
@@ -561,8 +570,26 @@ onClickOutside(historyModeWrapRef, () => {
 }
 
 :global(.dark) .mobile-filter-panel {
-    border-color: rgba(55, 65, 81, 0.85);
-    background: linear-gradient(180deg, rgba(31, 41, 55, 0.96), rgba(17, 24, 39, 0.92));
+    border-color: var(--border-subtle);
+    background: var(--surface-2);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+}
+
+:global(.dark) .mobile-filter-panel .mobile-filter-input,
+:global(.dark) .mobile-filter-panel .dropdown-trigger,
+:global(.dark) .mobile-filter-panel .mobile-date-field .button-base {
+    background-color: var(--surface-2);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+
+:global(.dark) .mobile-filter-panel .mobile-action-button {
+    background-color: var(--surface-2);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+
+:global(.dark) .mobile-filter-panel .mobile-action-button:hover {
+    background-color: var(--surface-hover);
 }
 </style>

@@ -73,7 +73,7 @@
     /* 字体 */
     @apply text-sm font-medium;
     /* 交互 */
-    @apply cursor-pointer active:scale-95 select-none;
+    @apply cursor-pointer select-none;
     /* 只过渡颜色/阴影/transform，别用 all */
     @apply transition-all duration-200 transform active:scale-95  ease-out;
 
@@ -171,12 +171,12 @@
     /* 变化 */
     @apply transition-all duration-200 transform active:scale-90;
     /* 颜色 */
-    @apply text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-primary-600;
+    @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-primary-600;
   }
 
   /* 导航激活 */
   .nav-item-active {
-    @apply bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400;
+    @apply bg-gray-100 text-gray-900 dark:bg-primary-900/30 dark:text-primary-400;
   }
 
   /* 表头文字 */
@@ -404,12 +404,19 @@
   background-color: rgba(255, 255, 255, 0.08);
 }
 
+.app-sidebar-logo,
+.app-sidebar-brand,
+.app-sidebar-version {
+  color: #111827;
+}
+
 .dark .app-sidebar-brand {
   color: #ffffff;
 }
 
+.dark .app-sidebar-logo,
 .dark .app-sidebar-version {
-  color: var(--text-muted);
+  color: #ffffff;
 }
 
 .dark .app-sidebar-header {

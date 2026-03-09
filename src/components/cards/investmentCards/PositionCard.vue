@@ -116,28 +116,43 @@ const logoText = computed(() => {
 const logoUrl = computed(() => String(props.position?.logoUrl ?? "").trim());
 const showLogoImage = computed(() => !!logoUrl.value && !logoLoadFailed.value);
 
-function hexToRgb(hex) {
-  const normalized = String(hex ?? "").trim().toUpperCase();
-  const m = /^#([0-9A-F]{6})$/.exec(normalized);
-  if (!m) return null;
-  const raw = m[1];
-  return {
-    r: parseInt(raw.slice(0, 2), 16),
-    g: parseInt(raw.slice(2, 4), 16),
-    b: parseInt(raw.slice(4, 6), 16),
-  };
+function normalizeHexColor(value) {
+  const color = String(value ?? "").trim().toUpperCase();
+  if (/^#[0-9A-F]{6}$/.test(color)) return color;
+  if (/^#[0-9A-F]{3}$/.test(color)) {
+    const r = color[1];
+    const g = color[2];
+    const b = color[3];
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return "";
 }
 
+function hexToRgbText(hex) {
+  if (!hex) return "";
+  const raw = hex.slice(1);
+  const r = parseInt(raw.slice(0, 2), 16);
+  const g = parseInt(raw.slice(2, 4), 16);
+  const b = parseInt(raw.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+
+const accentRgbText = computed(() => {
+  const normalized = normalizeHexColor(props.position?.logoColor);
+  return hexToRgbText(normalized);
+});
+
 const cardThemeStyle = computed(() => {
-  const rgb = hexToRgb(props.position?.logoColor);
-  if (!rgb) {
-    return {
-      "--position-accent-rgb": "148 163 184",
-    };
-  }
-  const { r, g, b } = rgb;
+  if (!accentRgbText.value) return {};
   return {
-    "--position-accent-rgb": `${r} ${g} ${b}`,
+    borderColor: `rgb(${accentRgbText.value} / 0.38)`,
+  };
+});
+
+const statBorderStyle = computed(() => {
+  if (!accentRgbText.value) return {};
+  return {
+    borderColor: `rgb(${accentRgbText.value} / 0.3)`,
   };
 });
 
@@ -665,11 +680,11 @@ onUnmounted(() => {
 
 <template>
   <article
-    class="position-card card-base !border-2 min-h-[24rem] gap-3 transition-all duration-200 ease-linear hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)] dark:hover:shadow-[0_10px_24px_rgba(0,0,0,0.3)] dark:!border-[rgb(var(--position-accent-rgb)/0.6)] dark:!bg-[#121519] dark:!bg-none dark:!text-white"
+    class="card-base !border-2 min-h-[24rem] gap-3 transition-all duration-200 ease-linear hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(15,23,42,0.08)]"
     :style="cardThemeStyle">
     <header class="flex items-center gap-3 min-h-12">
       <div
-        class="position-card-logo h-12 w-12 rounded-xl grid place-items-center text-sm font-bold text-gray-700 dark:text-gray-100 dark:!border-[rgb(var(--position-accent-rgb)/0.30)] dark:!bg-[rgb(var(--position-accent-rgb)/1)]">
+        class="h-12 w-12 rounded-xl grid place-items-center text-sm font-bold text-gray-700 border border-gray-200 bg-gray-50 dark:text-gray-100 dark:border-gray-700 dark:bg-gray-700/60">
         <img v-if="showLogoImage" :src="logoUrl" :alt="safeName" loading="lazy" decoding="async"
           @error="logoLoadFailed = true" class="h-full w-full rounded-xl object-cover" />
         <span v-else>{{ logoText }}</span>
@@ -703,25 +718,28 @@ onUnmounted(() => {
 
     <div class="grid grid-cols-3 gap-2">
       <div
-        class="position-card-stat min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-gray-50/80 px-2 py-2 flex flex-col items-center justify-center text-center dark:!border-[rgb(var(--position-accent-rgb)/0.5)] dark:!bg-[#161a1f] dark:!bg-none">
+        class="min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-[var(--surface-1)] px-2 py-2 flex flex-col items-center justify-center text-center dark:border-[var(--border-subtle)] dark:bg-[var(--surface-1)]"
+        :style="statBorderStyle">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">市场价</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ currentPriceText }}</p>
         <p v-if="!hasCurrentPrice" class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">待接入</p>
       </div>
       <div
-        class="position-card-stat min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-gray-50/80 px-2 py-2 flex flex-col items-center justify-center text-center dark:!border-[rgb(var(--position-accent-rgb)/0.5)] dark:!bg-[#161a1f] dark:!bg-none">
+        class="min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-[var(--surface-1)] px-2 py-2 flex flex-col items-center justify-center text-center dark:border-[var(--border-subtle)] dark:bg-[var(--surface-1)]"
+        :style="statBorderStyle">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">成本价</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ costPriceText }}</p>
       </div>
       <div
-        class="position-card-stat min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-gray-50/80 px-2 py-2 flex flex-col items-center justify-center text-center dark:!border-[rgb(var(--position-accent-rgb)/0.5)] dark:!bg-[#161a1f] dark:!bg-none">
+        class="min-h-[4.6rem] rounded-xl border-2 border-gray-100 bg-[var(--surface-1)] px-2 py-2 flex flex-col items-center justify-center text-center dark:border-[var(--border-subtle)] dark:bg-[var(--surface-1)]"
+        :style="statBorderStyle">
         <p class="text-[11px] text-gray-500 dark:text-gray-400">持仓数量</p>
         <p class="mt-1 text-sm font-semibold text-black dark:text-white">{{ quantityText }}</p>
       </div>
     </div>
 
     <div
-      class="position-card-trend relative flex-1 min-h-[11rem] overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 dark:!border-[rgb(var(--position-accent-rgb)/0.7)] dark:!bg-[#111418] dark:!bg-none">
+      class="relative flex-1 min-h-[11rem] overflow-hidden rounded-2xl border border-gray-100 bg-[var(--surface-1)] dark:border-[var(--border-subtle)] dark:bg-[var(--surface-1)]">
       <div class="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-3 pt-3">
         <span class="text-xs text-gray-500 dark:text-gray-400">{{ trendHeaderLabel }}</span>
         <span class="text-sm font-semibold" :class="toneTextClass">
@@ -764,7 +782,7 @@ onUnmounted(() => {
           卖出
         </button>
         <button type="button"
-          class="position-card-detail button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold dark:!bg-[#111519] dark:!border-white/10 dark:!text-white"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold"
           @click="onDetailClick">
           详情
         </button>
@@ -784,38 +802,6 @@ onUnmounted(() => {
 
 .company-name-font {
   font-family: "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif;
-}
-
-.position-card {
-  border-color: rgb(var(--position-accent-rgb) / 0.22);
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(248 250 252 / 0.96));
-  box-shadow:
-    0 14px 30px rgb(15 23 42 / 0.08),
-    inset 0 1px 0 rgb(255 255 255 / 0.45);
-}
-
-.position-card-logo {
-  border: 1px solid rgb(var(--position-accent-rgb) / 0.18);
-  background:
-    linear-gradient(180deg, rgb(var(--position-accent-rgb) / 0.16), rgb(var(--position-accent-rgb) / 0.08));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28);
-}
-
-.position-card-stat {
-  border-color: rgb(var(--position-accent-rgb) / 0.24);
-  background:
-    linear-gradient(180deg, rgb(var(--position-accent-rgb) / 0.08), rgb(255 255 255 / 0.8));
-}
-
-.position-card-trend {
-  border-color: rgb(var(--position-accent-rgb) / 0.16);
-  background:
-    linear-gradient(180deg, rgb(var(--position-accent-rgb) / 0.05), rgb(248 250 252 / 0.96));
-}
-
-.position-card-detail {
-  background-color: rgb(255 255 255 / 0.82);
 }
 
 

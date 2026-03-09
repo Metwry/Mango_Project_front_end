@@ -37,7 +37,6 @@ const amountParts = computed(() => {
     groupedInteger.split('').forEach((char, index) => {
         if (/\d/.test(char)) {
             const placeFromRight = integerDigits.length - consumed - 1
-            const placeFromLeft = consumed
             integerTokens.push({
                 type: 'digit',
                 key: `int-${placeFromRight}`,
@@ -93,8 +92,6 @@ const amountParts = computed(() => {
                 <RollingDigit v-for="token in amountParts.fractionTokens" :key="token.key" :digit="token.digit"
                     :delay="token.delay" />
             </h2>
-
-
         </div>
     </div>
 </template>

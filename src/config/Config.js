@@ -125,15 +125,45 @@ export const FUND_PROPORTION_CONFIG = Object.freeze({
 });
 
 export const DASHBOARD_TREND_CONFIG = Object.freeze({
+  maxRenderPoints: readIntEnv("VITE_DASHBOARD_TREND_MAX_RENDER_POINTS", 24, { min: 2, max: 5000 }),
   rangeOptions: Object.freeze([
-    Object.freeze({ key: "today", label: "今天", level: "M15", days: 0 }),
-    Object.freeze({ key: "7d", label: "近7天", level: "H4", days: 7 }),
-    Object.freeze({ key: "30d", label: "近30天", level: "D1", days: 30 }),
-    Object.freeze({ key: "1y", label: "近1年", level: "MON1", days: 365 }),
-    Object.freeze({ key: "all", label: "至今为止", level: "MON1", days: 3650 }),
+    Object.freeze({
+      key: "today",
+      label: "今天",
+      level: "M15",
+      days: 0,
+      maxRenderPoints: readIntEnv("VITE_DASHBOARD_TREND_TODAY_MAX_RENDER_POINTS", 24, { min: 2, max: 5000 }),
+    }),
+    Object.freeze({
+      key: "7d",
+      label: "近7天",
+      level: "H4",
+      days: 7,
+      maxRenderPoints: readIntEnv("VITE_DASHBOARD_TREND_7D_MAX_RENDER_POINTS", 24, { min: 2, max: 5000 }),
+    }),
+    Object.freeze({
+      key: "30d",
+      label: "近30天",
+      level: "D1",
+      days: 30,
+      maxRenderPoints: readIntEnv("VITE_DASHBOARD_TREND_30D_MAX_RENDER_POINTS", 24, { min: 2, max: 5000 }),
+    }),
+    Object.freeze({
+      key: "1y",
+      label: "近1年",
+      level: "MON1",
+      days: 365,
+      maxRenderPoints: readIntEnv("VITE_DASHBOARD_TREND_1Y_MAX_RENDER_POINTS", 24, { min: 2, max: 5000 }),
+    }),
+    Object.freeze({
+      key: "all",
+      label: "至今为止",
+      level: "MON1",
+      days: 3650,
+      maxRenderPoints: readIntEnv("VITE_DASHBOARD_TREND_ALL_MAX_RENDER_POINTS", 24, { min: 2, max: 5000 }),
+    }),
   ]),
-  allAccountsThemeColor: "#6366F1",
-  maxRenderPoints: 24,
+  allAccountsThemeColor: "#94A3B8",
   lineWidth: Object.freeze({
     allAccounts: 3.4,
     account: 3,
@@ -149,7 +179,7 @@ export const POSITION_TREND_CONFIG = Object.freeze({
   level: "M15",
   lookbackHours: 24,
   snapshotLimit: 10000,
-  maxRenderPoints: 24,
+  maxRenderPoints: readIntEnv("VITE_POSITION_TREND_MAX_RENDER_POINTS", 24, { min: 2, max: 5000 }),
   autoRefresh: Object.freeze({
     intervalMinutes: readIntEnv("VITE_REFRESH_POSITION_TREND_INTERVAL_MINUTES", 15, { min: 1, max: 240 }),
     second: readIntEnv("VITE_REFRESH_POSITION_TREND_SECOND", 20, { min: 0, max: 59 }),

@@ -31,9 +31,9 @@ const props = defineProps({
 
 const RANGE_OPTIONS = DASHBOARD_TREND_CONFIG.rangeOptions;
 const ALL_ACCOUNTS_THEME_COLOR = DASHBOARD_TREND_CONFIG.allAccountsThemeColor;
-const MAX_RENDER_POINTS = DASHBOARD_TREND_CONFIG.maxRenderPoints;
 const TODAY_AUTO_REFRESH_INTERVAL_MINUTES = DASHBOARD_TREND_CONFIG.todayAutoRefresh.intervalMinutes;
 const TODAY_AUTO_REFRESH_SECOND = DASHBOARD_TREND_CONFIG.todayAutoRefresh.second;
+const TREND_FONT_FAMILY = "\"Times New Roman\", Times, serif";
 
 const accountId = ref("");
 const activeRangeKey = ref("today");
@@ -50,6 +50,12 @@ const rangeMeta = computed(() => {
   return RANGE_OPTIONS.find((item) => item.key === activeRangeKey.value)
     ?? RANGE_OPTIONS.find((item) => item.key === "today")
     ?? RANGE_OPTIONS[0];
+});
+
+const activeRangeMaxRenderPoints = computed(() => {
+  const fromRange = Number(rangeMeta.value?.maxRenderPoints);
+  if (Number.isFinite(fromRange) && fromRange >= 2) return Math.trunc(fromRange);
+  return Math.max(2, Math.trunc(Number(DASHBOARD_TREND_CONFIG.maxRenderPoints) || 24));
 });
 
 const hasData = computed(() => chartSeries.value.length > 0);
@@ -110,9 +116,9 @@ function toSnapshotNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function limitSeriesPoints(points, maxPoints = MAX_RENDER_POINTS) {
+function limitSeriesPoints(points, maxPoints = DASHBOARD_TREND_CONFIG.maxRenderPoints) {
   const list = Array.isArray(points) ? points : [];
-  const safeMax = Math.max(2, Math.trunc(Number(maxPoints) || MAX_RENDER_POINTS));
+  const safeMax = Math.max(2, Math.trunc(Number(maxPoints) || DASHBOARD_TREND_CONFIG.maxRenderPoints));
   if (list.length <= safeMax) return list;
 
   const result = [];
@@ -280,7 +286,7 @@ const chartSeries = computed(() => {
       .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
 
     if (data.length === 0) return [];
-    const limitedData = limitSeriesPoints(data);
+    const limitedData = limitSeriesPoints(data, activeRangeMaxRenderPoints.value);
 
     const singlePoint = limitedData.length === 1;
     const summaryColor = ALL_ACCOUNTS_THEME_COLOR;
@@ -306,9 +312,9 @@ const chartSeries = computed(() => {
   }
 
   return snapshotSeries.value.map((entry) => {
-    const limitedData = limitSeriesPoints(entry.data);
+    const limitedData = limitSeriesPoints(entry.data, activeRangeMaxRenderPoints.value);
     const singlePoint = limitedData.length === 1;
-    const seriesColor = getAccountColorById(entry.accountId);
+    const seriesColor = getAccountColorById(entry.accountName ?? entry.accountId);
     return {
       id: `account-${entry.accountId}`,
       name: entry.accountName,
@@ -458,20 +464,25 @@ function formatTooltipAmount(value, currencyCode = "") {
 }
 
 const chartOption = computed(() => ({
+  textStyle: {
+    fontFamily: TREND_FONT_FAMILY,
+  },
   grid: {
     left: 10,
     right: 12,
     top: 28,
     bottom: 16,
-    containLabel: true,
+    outerBoundsMode: "same",
+    outerBoundsContain: "axisLabel",
   },
   tooltip: {
     trigger: "axis",
     axisPointer: { type: "line" },
     textStyle: {
-      fontFamily: "Times New Roman, Times, serif",
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
     },
-    extraCssText: "font-family:'Times New Roman',Times,serif;",
+    extraCssText: "font-family:'Times New Roman',Times,serif;font-size:13px;",
     formatter: (params) => {
       const rows = Array.isArray(params) ? params : [params];
       if (rows.length === 0) return "--";
@@ -497,7 +508,8 @@ const chartOption = computed(() => ({
     itemHeight: 8,
     textStyle: {
       color: "#6b7280",
-      fontSize: 11,
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
     },
   },
   xAxis: {
@@ -509,7 +521,8 @@ const chartOption = computed(() => ({
     axisTick: { show: false },
     axisLabel: {
       color: "#94a3b8",
-      fontSize: 11,
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
       hideOverlap: true,
       showMinLabel: true,
       showMaxLabel: true,
@@ -525,7 +538,8 @@ const chartOption = computed(() => ({
     axisTick: { show: false },
     axisLabel: {
       color: "#94a3b8",
-      fontSize: 11,
+      fontFamily: TREND_FONT_FAMILY,
+      fontSize: 13,
       formatter: (value) => formatAxisAmount(value, yAxisCurrency.value),
     },
     splitLine: { show: false },
@@ -545,7 +559,7 @@ const chartOption = computed(() => ({
         <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
           <button v-for="item in RANGE_OPTIONS" :key="item.key" type="button"
             class="button-base !px-3 !py-1.5 !text-xs sm:!text-sm" :class="activeRangeKey === item.key
-              ? '!bg-primary-50 !text-primary-700 !border-primary-200 dark:!bg-[#2c3138] dark:!text-white dark:!border-[#343a42]'
+              ? '!bg-gray-100 !text-gray-900 !border-gray-300 dark:!bg-[#2c3138] dark:!text-white dark:!border-[#343a42]'
               : ''" @click="activeRangeKey = item.key">
             {{ item.label }}
           </button>
@@ -557,7 +571,7 @@ const chartOption = computed(() => ({
       </div>
     </div>
 
-    <div class="flex-1 rounded-xl border border-gray-200 bg-gray-50/70 p-2 dark:border-gray-700 dark:bg-gray-800/40">
+    <div class="flex-1 rounded-xl border border-gray-200 bg-transparent p-2 dark:border-gray-700 dark:bg-transparent">
       <div v-if="loading" class="h-full min-h-[16rem] grid place-items-center text-sm text-gray-500 dark:text-gray-400">
         正在加载走势数据...
       </div>

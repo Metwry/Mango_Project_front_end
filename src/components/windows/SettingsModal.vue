@@ -60,7 +60,7 @@ const toggleTheme = (newTheme) => {
                             <button @click="toggleTheme('light')"
                                 class="button-base min-h-[92px] !flex-col !justify-center gap-2 border-2 p-4 text-center sm:min-h-[110px]"
                                 :class="theme === 'light'
-                                    ? 'border-primary-600 bg-primary-50 text-primary-700 dark:!border-[#343a42] dark:!bg-[#2c3138] dark:!text-white'
+                                    ? 'border-gray-300 bg-gray-100 text-gray-900 dark:!border-[#343a42] dark:!bg-[#2c3138] dark:!text-white'
                                     : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'">
                                 <BaseIcon name="lightIcon" class="mb-1 h-7 w-7 sm:h-8 sm:w-8" />
                                 <span class="font-medium">浅色模式</span>
@@ -69,7 +69,7 @@ const toggleTheme = (newTheme) => {
                             <button @click="toggleTheme('dark')"
                                 class="button-base min-h-[92px] !flex-col !justify-center gap-2 border-2 p-4 text-center sm:min-h-[110px]"
                                 :class="theme === 'dark'
-                                    ? 'border-primary-600 bg-primary-50/10 text-primary-400 dark:!border-[#343a42] dark:!bg-[#2c3138] dark:!text-white'
+                                    ? 'border-gray-300 bg-gray-100 text-gray-900 dark:!border-[#343a42] dark:!bg-[#2c3138] dark:!text-white'
                                     : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'">
                                 <BaseIcon name="darkIcon" class="mb-1 h-7 w-7 sm:h-8 sm:w-8" />
                                 <span class="font-medium">深色模式</span>

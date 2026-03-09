@@ -63,7 +63,7 @@ const {
           </div>
         </div>
 
-        <form class="space-y-4" @submit.prevent="handleSubmit">
+        <form class="space-y-4" autocomplete="off" @submit.prevent="handleSubmit">
           <div class="relative min-h-[320px] overflow-hidden sm:min-h-[340px]">
             <Transition :name="transitionName" mode="out-in">
               <div :key="activeMode" class="space-y-4">
@@ -71,18 +71,18 @@ const {
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">邮箱</label>
                     <input v-model.trim="emailLoginForm.email" type="text" class="login-input px-4 py-3"
-                      placeholder="请输入邮箱" autocomplete="username" />
+                      placeholder="请输入邮箱" autocomplete="off" autocapitalize="off" spellcheck="false" />
                   </div>
 
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">密码</label>
                     <input v-model="emailLoginForm.password" type="password" class="login-input px-4 py-3"
-                      placeholder="请输入密码" autocomplete="current-password" />
+                      placeholder="请输入密码" autocomplete="off" />
                   </div>
 
                   <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-500">
                     <input v-model="emailLoginForm.remember" type="checkbox"
-                      class="h-4 w-4 rounded border-slate-300 text-indigo-600" />
+                      class="h-4 w-4 rounded border-slate-300 text-[#ffb717]/80" />
                     记住登录状态
                   </label>
 
@@ -98,14 +98,14 @@ const {
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">注册邮箱</label>
                     <input v-model.trim="emailRegisterForm.email" type="email" class="login-input px-4 py-3"
-                      placeholder="name@example.com" autocomplete="email" />
+                      placeholder="name@example.com" autocomplete="off" autocapitalize="off" spellcheck="false" />
                   </div>
 
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">邮箱验证码</label>
                     <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
                       <input v-model.trim="emailRegisterForm.code" type="text" maxlength="6"
-                        class="login-input px-4 py-3" placeholder="请输入验证码" />
+                        class="login-input px-4 py-3" placeholder="请输入验证码" autocomplete="off" inputmode="numeric" />
                       <button type="button" @click="sendEmailCode"
                         :disabled="emailCodeCountdown > 0 || emailCodeSending"
                         class="login-code-btn justify-center px-4 py-3 text-sm sm:min-w-[120px]"
@@ -118,7 +118,7 @@ const {
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">设置密码</label>
                     <input v-model="emailRegisterForm.password" type="password" class="login-input px-4 py-3"
-                      placeholder="至少 6 位" autocomplete="new-password" />
+                      placeholder="至少 6 位" autocomplete="off" />
                   </div>
                 </template>
 
@@ -126,14 +126,14 @@ const {
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">邮箱</label>
                     <input v-model.trim="emailResetForm.email" type="email" class="login-input px-4 py-3"
-                      placeholder="name@example.com" autocomplete="email" />
+                      placeholder="name@example.com" autocomplete="off" autocapitalize="off" spellcheck="false" />
                   </div>
 
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">邮箱验证码</label>
                     <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
                       <input v-model.trim="emailResetForm.code" type="text" maxlength="6" class="login-input px-4 py-3"
-                        placeholder="请输入验证码" />
+                        placeholder="请输入验证码" autocomplete="off" inputmode="numeric" />
                       <button type="button" @click="sendResetEmailCode"
                         :disabled="resetCodeCountdown > 0 || resetCodeSending"
                         class="login-code-btn justify-center px-4 py-3 text-sm sm:min-w-[120px]"
@@ -146,7 +146,7 @@ const {
                   <div>
                     <label class="mb-2 block text-sm font-medium text-slate-700">新密码</label>
                     <input v-model="emailResetForm.password" type="password" class="login-input px-4 py-3"
-                      placeholder="请输入新密码" autocomplete="new-password" />
+                      placeholder="请输入新密码" autocomplete="off" />
                   </div>
                 </template>
               </div>
@@ -154,7 +154,7 @@ const {
           </div>
 
           <button type="submit"
-            class="preserve-dark-white w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            class="login-submit-btn w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
             :disabled="loading">
             {{ loading ? '处理中...' : submitLabel }}
           </button>
@@ -209,6 +209,16 @@ const {
   color: rgb(148 163 184);
 }
 
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgb(55 65 81);
+  caret-color: rgb(55 65 81);
+  box-shadow: 0 0 0 1000px rgb(255 255 255) inset;
+  -webkit-box-shadow: 0 0 0 1000px rgb(255 255 255) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
 .login-code-btn {
   display: inline-flex;
   align-items: center;
@@ -230,5 +240,9 @@ const {
   outline: none;
   border-color: rgb(209 213 219);
   box-shadow: 0 0 0 1px rgb(209 213 219 / 0.7);
+}
+
+.login-submit-btn {
+  color: rgb(255 255 255);
 }
 </style>

@@ -47,7 +47,6 @@ watch(
         }
 
         const from = hasInitialized.value ? currentDigit.value : 0
-
         clearResetTimer()
 
         if (hasInitialized.value && target === from) {

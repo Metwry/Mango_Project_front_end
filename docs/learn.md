@@ -1,319 +1,557 @@
 # 前端技术学习文档（结合当前项目版本）
 
-本文档面向想通过本项目学习 Vue 3 前端工程化的开发者。内容以当前代码版本为准，重点不是讲抽象概念，而是讲“这些知识点在项目里是怎么真的被用起来的”。
+本文档面向“想通过项目源码系统学习”的开发者。
 
-## 1. 推荐阅读路径
+这次版本不再只列基础点，而是把本项目里真实出现、并且足够常用的知识点尽量铺开。每个知识点都尽量回答四件事：
 
-建议按这个顺序读源码：
+1. 它是什么
+2. 怎么用
+3. 适合什么场景
+4. 本项目里可以看哪个例子
+
+不追求冷门覆盖，重点覆盖 Vue 3 项目里高频、能立刻迁移到其它业务项目的内容。
+
+---
+
+## 1. 如何阅读本项目（升级版路线）
+
+推荐按这个顺序读：
 
 1. `src/main.js`
 2. `src/router/index.js`
-3. `src/pages/Home.vue`
-4. 任一业务页面（Dashboard / Bookkeeping / Market / Investment）
-5. 对应 composable
-6. 对应 store
-7. `src/utils/api.js`
-8. `src/config/Config.js`
-9. `src/styles/style.css`
+3. `src/pages/Home.vue`（布局壳）
+4. 任一业务页（`Dashboard.vue` / `Market.vue` / `Investment.vue` / `Bookkeeping.vue`）
+5. 对应 `composable`（如果有）
+6. 对应 `store`
+7. 对应 `utils` API 层
+8. `src/utils/api.js`（全局请求与错误处理）
+9. `src/config/Config.js`（全局配置入口）
+10. `src/styles/style.css`（全局样式语义层）
 
-这样能形成：页面 -> 状态 -> 请求 -> 配置 -> 样式 的完整心智模型。
+这条路径能帮助你理解“页面 -> 状态 -> 请求 -> 配置 -> 样式”的完整闭环。
 
-## 2. JavaScript 知识点（项目实战版）
+---
 
-### 2.1 ESM 模块化
+## 2. 工程与构建层知识点
 
-项目全量使用 ESM：
+| 知识点            | 用法                                               | 使用场景                                      | 项目例子                                                                                               |
+| ----------------- | -------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| ESM 模块化        | 用 `import` / `export` 组织代码，按功能拆模块      | 前端工程化项目的基础模块系统                  | `src/main.js`、`src/utils/api.js`、`src/stores/*.js`                                                   |
+| 路径别名 `@`      | 用 `@/xxx` 指向 `src/xxx`，避免很多 `../../..`     | 项目目录变深后，提升导入可读性                | `vite.config.js` 里定义别名；全项目大量使用如 `@/stores/auth`                                          |
+| `import.meta.env` | 读取 Vite 环境变量                                 | 不同环境使用不同 API 地址、刷新频率、超时时间 | `src/config/Config.js`                                                                                 |
+| `loadEnv`         | 在 `vite.config.js` 里读取当前模式环境变量         | 开发服务器 host、port、代理地址需要随环境变化 | `vite.config.js`                                                                                       |
+| 配置集中管理      | 先把环境变量读进 `Config.js`，业务代码只读配置常量 | 避免在组件和 store 里散落 `import.meta.env`   | `src/config/Config.js`、`src/utils/api.js`、`src/stores/market.js`                                     |
+| `Object.freeze`   | 冻结配置对象，避免运行时被误改                     | 配置项、常量字典、模式映射                    | `AUTH_ENDPOINTS`、`STORE_REFRESH_CONFIG`、`TRANSACTION_HISTORY_MODE`                                   |
+| 路由懒加载        | `component: () => import("...")`                   | 首屏只加载必要页面，减少初始包体积            | `src/router/index.js`                                                                                  |
+| 动态 import       | 在函数内部按需加载模块                             | 某些模块只在特定流程里需要，减少耦合          | `src/stores/auth.js` 的 `loadAppStores()`、`src/stores/investment.js` 的 `refreshAccountsAfterTrade()` |
+| 开发代理          | Vite `server.proxy` 把 `/api` 转发到后端           | 本地开发时解决跨域，前端保持统一请求前缀      | `vite.config.js`                                                                                       |
+| 插件注册          | 在 Vite 中注册 Vue、Tailwind、devtools 等插件      | 编译 `.vue` 文件、启用 Tailwind、增强开发体验 | `vite.config.js`                                                                                       |
 
-- `import { useMarketStore } from "@/stores/market"`
-- `export const AUTO_REFRESH_ENABLED = ...`
+---
 
-重点：
-
-- 配置和工具函数多用命名导出
-- 共享实例多用默认导出
-
-典型文件：
-
-- `src/config/Config.js`
-- `src/utils/api.js`
-
-### 2.2 防御式取值
+## 2.2 可选链 + 空值合并 + 防御式取值
 
 项目里大量使用：
 
 - `obj?.a?.b`
 - `value ?? fallback`
 - `String(value ?? "").trim()`
-- `Number.isFinite(n)`
 
-这类写法主要用于处理后端字段不稳定、可空、类型漂移的问题。
+目的：后端字段不稳定时避免页面崩溃。
 
-典型文件：
+示例：
 
-- `src/stores/investment.js`
-- `src/components/cards/investmentCards/PositionCard.vue`
-- `src/utils/api.js`
+- `src/stores/investment.js`（持仓字段归一化）
+- `src/utils/api.js`（错误消息提取）
 
-### 2.3 Map / Set
+---
 
-#### Set 去重
+## 2.3 数据结构：Map / Set
 
-投资报价刷新前会按 `market + short_code` 去重，避免同一个标的被重复请求。
+### Set 去重
 
-#### Map 建索引
+在报价请求前做唯一键去重，避免重复请求：
 
-行情页搜索缓存、走势映射、市场顺序映射都使用 `Map` 提升查找效率。
+- 文件：`src/stores/investment.js`
+- 逻辑：`market + short_code` 组合键去重
 
-典型文件：
+### Map 建索引
 
-- `src/stores/investment.js`
-- `src/composables/useMarketPage.js`
+将快照/行情映射成哈希表，提升查找效率：
 
-### 2.4 Promise 并发与并发保护
+- 文件：`src/stores/investment.js`（`latestMap`）
+- 文件：`src/composables/useMarketPage.js`（市场排序映射）
 
-项目里高频用法：
+---
 
-- `Promise.all` / `Promise.allSettled`
-- Promise 缓存（防止重复请求）
-- `requestSeq`（防旧请求覆盖新结果）
+## 2.4 异步控制：async/await + Promise 并发
 
-典型文件：
+### 并发拉取
+
+`Promise.all` / `Promise.allSettled` 在初始化和刷新中高频出现：
+
+- `src/stores/auth.js` 登录后并发初始化多个 store
+- `src/pages/Investment.vue` 页面初始化并发取持仓和账户
+
+### finally 收尾
+
+确保 loading 状态总能回收：
+
+- `try { await ... } finally { loading.value = false }`
+
+示例：
+
+- `src/stores/transaction.js`
+- `src/stores/market.js`
+
+---
+
+## 2.5 并发防抖：Promise 缓存模式
+
+这是本项目很实用的模式：
+
+```js
+if (fetchPromise.value && !force) return fetchPromise.value;
+fetchPromise.value = (async () => { ... })();
+```
+
+价值：
+
+- 多个组件同时请求同一资源时，只发一次 HTTP
+- 其它调用复用同一 Promise 结果
+
+示例：
 
 - `src/stores/accounts.js`
 - `src/stores/market.js`
 - `src/stores/investment.js`
-- `src/composables/useMarketPage.js`
 
-### 2.5 参数清洗与归一化
+---
 
-这是项目里非常高频的一类工作：
-
-- 清洗 query 参数
-- 归一化后端字段命名
-- 格式化金额、日期、数量
-- 统一 payload 结构
-
-典型文件：
-
-- `src/stores/transaction.js`
-- `src/stores/investment.js`
-- `src/utils/formatters.js`
-
-## 3. Vue 3 知识点
-
-### 3.1 `ref / computed / watch`
-
-项目中的真实用法：
-
-- `ref`：loading、弹窗开关、DOM ref、搜索关键字
-- `computed`：派生标题、筛选标签、格式化金额、图表 option
-- `watch`：路由切换方向、搜索行为、主题状态、文本溢出重算
-
-典型文件：
-
-- `src/pages/Home.vue`
-- `src/composables/useMarketPage.js`
-- `src/components/cards/investmentCards/PositionCard.vue`
-
-### 3.2 生命周期
+## 2.6 参数清洗与归一化
 
 常见模式：
 
-- `onMounted` 初始化数据
-- `onUnmounted` 清理监听器与自动刷新调度器
+- 删除空 query 参数（`null/undefined/""`）
+- 接口字段统一命名（snake_case -> camelCase）
+- 数值校验（`Number.isFinite`）
 
-典型文件：
+示例：
+
+- `src/stores/transaction.js`（查询参数清洗）
+- `src/stores/investment.js`（持仓字段归一化）
+
+---
+
+## 2.7 错误处理分层（非常重要）
+
+分层理念：
+
+1. API 层：统一解析/提示错误
+2. Store 层：维护 `error` 状态并决定是否抛出
+3. 页面层：只关心“怎么反馈给用户”
+
+示例：
+
+- `src/utils/api.js`（401 刷新 token、错误提示节流去重）
+- `src/composables/useBookkeepingPage.js`（操作成功提示）
+
+---
+
+## 2.8 本地持久化（localStorage/sessionStorage）
+
+登录态与偏好项都使用了持久化：
+
+- token/user：`src/stores/auth.js`
+- 行情市场筛选：`src/stores/market.js`
+
+学习点：
+
+- “可记住登录”使用 localStorage
+- “会话登录”使用 sessionStorage
+- 切换存储介质时会清理影子存储，避免脏状态
+
+---
+
+## 3. Vue 3 知识点（Composition API）
+
+## 3.1 `ref` / `reactive` / `computed`
+
+### ref
+
+适合基础类型和 DOM 引用：
+
+- `const loading = ref(false)`
+- `const pageScrollRef = ref(null)`
+
+### reactive
+
+适合对象表单、筛选器：
+
+- `const filters = reactive({...})`
+
+### computed
+
+用于派生状态，避免模板里写复杂逻辑：
+
+- `selectedMarketLabel`
+- `investmentAccountId`
+- 各类格式化文本和 class
+
+示例：
+
+- `src/composables/useMarketPage.js`
+- `src/pages/Investment.vue`
+
+---
+
+## 3.2 `watch` 的真实用法
+
+本项目 watch 用得很实战：
+
+1. 监听路由切换方向，控制页面过渡动画
+
+- `src/pages/Home.vue`
+
+2. 监听账户刷新时间戳，触发仪表盘资产重算
+
+- `src/composables/useDashboardWorth.js`
+
+3. 监听输入变化，驱动搜索行为
+
+- `src/components/cards/investmentCards/AddPositionCard.vue`
+
+---
+
+## 3.3 生命周期：`onMounted` / `onUnmounted`
+
+常见用途：
+
+- 页面初始化拉数据
+- 启动/停止自动刷新调度器
+- 注册/注销全局事件监听
+
+示例：
 
 - `src/pages/Home.vue`
 - `src/components/cards/dashboardCards/TrendCard.vue`
 - `src/components/cards/investmentCards/PositionCard.vue`
 
-### 3.3 `<script setup>`
+---
 
-项目当前组件基本都采用 `<script setup>`。
+## 3.4 `<script setup>` 与 defineProps/defineEmits
 
-优点：
+本项目 SFC 统一使用 `<script setup>`。
 
-- 代码短
-- 依赖关系直接
+好处：
+
+- 语法更短
+- 类型和作用域更清晰
 - 模板直接访问脚本变量
 
-### 3.4 内置能力：Transition / Teleport / RouterView
+示例：
 
-- `Home.vue` 用 `RouterView v-slot` + `Transition` 实现页面切换动画
-- `AddTransaction.vue` 等弹窗使用 `Teleport to="body"`
-- 下拉菜单、弹层和交易面板都依赖过渡动画
+- `src/components/windows/AddTransaction.vue`
+- `src/components/cards/bookkeepingCards/TransactionsHistoryCard.vue`
 
-## 4. 项目里的第三方包
+---
 
-### 4.1 Pinia
+## 3.5 常见内置组件能力
 
-项目采用 setup store 写法，特点是：
+### RouterView + Transition
 
-- 业务逻辑集中在 store
-- 页面尽量只消费状态和触发 action
-- 登出时统一 `reset()`
+页面切换动画在布局层统一管理：
 
-### 4.2 Vue Router
+- `src/pages/Home.vue`
 
-当前项目路由特点：
+### Teleport
 
-- 子路由挂在 `Home.vue` 下形成统一布局
-- 业务页懒加载
-- 全局前置守卫控制未登录跳转
+弹窗挂载到 `body`，避免被父级 overflow 截断：
 
-### 4.3 Axios
+- `src/components/windows/AddTransaction.vue`
 
-项目请求统一通过 `src/utils/api.js`：
+### Slot
 
-- request 拦截器负责 token 注入
-- response 拦截器负责 401 刷新 token
-- 错误消息做节流和去重
+虽然本项目 slot 不重，但 `RouterView v-slot` 是关键：
 
-### 4.4 Element Plus
+- `src/pages/Home.vue`
 
-当前高频使用：
+---
 
-- `ElMessage`
-- `ElMessageBox.confirm`
+## 3.6 组合函数（composable）模式
 
-而不是大面积使用整套表单组件。项目更多是拿它做交互反馈层。
+典型职责：
 
-### 4.5 @vueuse/core
+- 收拢页面交互逻辑
+- 聚合多个 store
+- 降低页面 SFC 复杂度
 
-当前用得最频繁的函数：
+示例：
 
-- `useDebounceFn`
-- `useEventListener`
-- `onClickOutside`
-- `useResizeObserver`
+- `useBookkeepingPage`：记账页行为编排
+- `useMarketPage`：行情页搜索/筛选/增删逻辑
+- `useDashboardWorth`：账户估值聚合
 
-### 4.6 ECharts + vue-echarts
+---
 
-项目图表包括：
+## 4. 热点第三方包与项目用法
 
-- 仪表盘资金占比饼图
-- 仪表盘账户走势折线图
-- 投资持仓卡的微型走势折线图
+## 4.1 Pinia（状态管理）
 
-一个很实战的点：
+核心写法（setup store）：
 
-- 图表文字并不是 DOM 文本，而是 canvas 绘制文本
-- 因此字体、字号、颜色、主题切换都要在 option 里控制
-- 例如投资卡 X 轴时间字已经改成按主题切换黑/白
+- `defineStore("name", () => { state + actions + return })`
 
-### 4.7 dayjs
+项目特征：
 
-用于：
+- store 内含业务逻辑，不把请求散落到页面
+- 每个 store 提供 `reset()`，方便登出时统一清理
 
-- 交易录入默认时间
-- 时间字符串格式化
+关键文件：
 
-## 5. Tailwind CSS 与项目样式体系
+- `src/stores/*.js`
 
-### 5.1 工具类 + 语义类混合模式
+---
 
-项目不是纯 Tailwind 原子类，也不是纯手写 CSS，而是混合模式：
+## 4.2 Vue Router（路由管理）
 
-- 模板里用原子类快速布局
-- `src/styles/style.css` 里沉淀高频语义类
+实战点：
 
-这是当前项目最重要的样式组织方式。
+- 路由懒加载（`component: () => import(...)`）
+- 全局守卫鉴权
+- 登录态重定向
 
-### 5.2 当前高频语义类
+关键文件：
+
+- `src/router/index.js`
+
+---
+
+## 4.3 Axios（HTTP）
+
+项目使用了“单例 + 拦截器”模式：
+
+1. request 拦截：注入 token
+2. response 拦截：处理 401、token 刷新、重试
+3. 错误提示节流与去重，避免移动端恢复前台时刷屏
+
+关键文件：
+
+- `src/utils/api.js`
+
+---
+
+## 4.4 Element Plus（UI 反馈）
+
+高频用法：
+
+- `ElMessage`：成功/失败提示
+- `ElMessageBox.confirm`：危险操作二次确认
+
+示例：
+
+- `src/composables/useBookkeepingPage.js`
+- `src/components/cards/investmentCards/PositionCard.vue`
+
+---
+
+## 4.5 @vueuse/core（组合工具）
+
+高频函数：
+
+- `useDebounceFn`：搜索防抖
+- `useEventListener`：监听页面可见性变化
+- `onClickOutside`：下拉面板点击外部关闭
+- `useResizeObserver`：文本溢出重算
+
+示例：
+
+- `src/composables/useMarketPage.js`
+- `src/components/cards/bookkeepingCards/TransactionsHistoryCard.vue`
+- `src/components/cards/investmentCards/PositionCard.vue`
+
+---
+
+## 4.6 ECharts + vue-echarts（图表）
+
+项目图表覆盖：
+
+- 仪表盘折线图、饼图
+- 投资卡片微型折线图
+
+关键实践：
+
+- 只按需注册 chart/component（减体积）
+- 使用 computed 生成 option
+- 请求失败时显示替代状态文案
+
+示例：
+
+- `src/components/cards/dashboardCards/TrendCard.vue`
+- `src/components/cards/dashboardCards/FundProportionCard.vue`
+- `src/components/cards/investmentCards/PositionCard.vue`
+
+---
+
+## 4.7 dayjs（时间处理）
+
+用途：
+
+- 表单默认时间字符串格式化
+- 交易时间显示
+
+示例：
+
+- `src/components/windows/AddTransaction.vue`
+- `src/components/cards/bookkeepingCards/TransactionsHistoryCard.vue`
+
+---
+
+## 5. Tailwind CSS 与 CSS 样式体系
+
+## 5.1 Tailwind 使用策略（项目实践）
+
+项目采用“工具类 + 语义类”混合模式：
+
+1. 组件模板里使用 Tailwind 原子类快速布局
+2. 在 `src/styles/style.css` 抽取语义化公共类（如 `card-base`）
+
+这比“纯原子类”更易维护，也比“纯自定义 CSS”更灵活。
+
+---
+
+## 5.2 高频布局模式
+
+### Flex 与 Grid
+
+- `flex`：导航、工具栏、按钮区
+- `grid`：仪表盘、投资卡片墙、表单多列布局
+
+示例：
+
+- `src/pages/Dashboard.vue`（响应式 grid）
+- `src/pages/Investment.vue`（卡片瀑布式网格）
+
+---
+
+## 5.3 响应式写法
+
+项目高频断点：
+
+- `sm:`
+- `md:`
+- `xl:`
+- `2xl:`
+
+示例：
+
+- `src/pages/Dashboard.vue`
+- `src/components/cards/bookkeepingCards/TransactionsHistoryCard.vue`
+
+---
+
+## 5.4 深色模式写法
+
+项目统一使用 `dark:*` 变体，并在全局定义：
+
+- `@variant dark (&:where(.dark, .dark *));`
+
+示例：
+
+- `src/styles/style.css`
+- 各业务页面 class 中的 `dark:bg-*`、`dark:text-*`
+
+---
+
+## 5.5 项目内语义类（建议优先复用）
+
+在 `src/styles/style.css` 已定义：
 
 - `card-base`
 - `button-base`
 - `input-base`
 - `dropdown-trigger / dropdown-panel / dropdown-item`
-- `nav-item / nav-item-active`
 - `th-text / td-cell`
-- `status-base`
-- `surface-chip`
+- `nav-item / nav-item-active`
 
-注意：
+建议：
 
-- 之前项目里自定义过 `.text-base`，会和 Tailwind 的字号类冲突
-- 当前版本已经改成 `.status-base`
-- 这是一个非常典型的“语义类命名不要占用 Tailwind 官方类名”的教训
+- 新页面优先复用这些语义类，避免同样样式重复写 20 次。
 
-### 5.3 深色模式
+---
 
-当前黑夜模式的做法已经升级成 token 驱动：
+## 5.6 动画与交互样式
 
-- `--app-bg`
-- `--surface-*`
-- `--text-*`
-- `--border-*`
+项目常见动画场景：
 
-然后再配合：
+- 路由页面切换（Home）
+- 下拉面板过渡（dropdown）
+- 卡片 hover 阴影与轻微位移
+- 图表数据刷新动画
 
-- `.dark .card-base`
-- `.dark .button-base`
-- `.dark .dropdown-*`
-- `.dark .modal-content`
+示例：
 
-项目里还存在一个白名单类：`preserve-dark-white`
+- `src/pages/Home.vue`（page-slide-up/down）
+- `src/styles/style.css`（dropdown-drawer）
+- `src/components/cards/investmentCards/PositionCard.vue`
 
-用途：
+---
 
-- 当某些业务按钮必须保留真白文字时，不让全局暗色正文色覆盖它
+## 6. 配置与环境变量体系（务必掌握）
 
-### 5.4 响应式与移动端适配
+统一配置入口：
 
-当前项目已经做过一些很具体的移动端修正：
+- `src/config/Config.js`
 
-- `Home.vue` 使用 `100dvh`
-- 顶部栏处理 `safe-area-inset-top`
-- 页面滚动区处理 `safe-area-inset-bottom`
-- 手机端顶部标题变成页面下拉导航
-- 投资页提交区做了防遮挡处理
+环境变量文件：
 
-## 6. 当前配置体系
+- `.env.development`
 
-统一入口：`src/config/Config.js`
+典型可配置项：
 
-当前配置分区：
+- `VITE_REFRESH_MODE`（auto/manual）
+- API 超时、错误提示节流窗口
+- 各模块自动刷新间隔
+- 搜索防抖参数
 
-- App / API / 认证
-- 投资端点
-- 自动刷新总控
-- store 定时刷新配置
-- 汇率配置
-- Dashboard 配置
-- Investment 走势图配置
-- 搜索配置
+学习建议：
 
-使用原则：
-
-- 业务代码优先读 `Config.js`
+- 业务代码只读取 `Config.js`
 - 不在组件里直接散写 `import.meta.env`
 
-## 7. 读源码时的高价值关注点
+---
 
-1. 先看 store，理解状态和 action
-2. 再看页面怎么消费 store
-3. 再看 utils / API 层如何归一化数据
-4. 最后看样式基类和主题 token
+## 7. 阅读源码时的“高价值关注点”
 
-尤其注意这些模式：
+1. 先看 store 的状态和 action，再看页面怎么消费
+2. 查请求失败怎么处理（是否抛出、是否静默）
+3. 看是否有并发保护（Promise 缓存、requestSeq）
+4. 看是否有 reset（登录切换场景容易出 bug）
+5. 看样式是否复用语义类（避免重复 CSS）
 
-- Promise 缓存
-- requestSeq 防并发覆盖
-- MutationObserver 监听主题切换
-- visibilitychange 刷新
-- safe-area 适配
+---
 
-## 8. 当前文档配套关系
+## 8. 常见可扩展方向（基于现状）
 
-- `docs/frontend-overview.md`：建立全局心智模型
-- `docs/dashboard-implementation.md`：理解仪表盘
-- `docs/bookkeeping-implementation.md`：理解记账链路
-- `docs/market-implementation.md`：理解行情搜索/筛选/缓存
-- `docs/investment-implementation.md`：理解持仓、交易、图表
+1. 为 docs 增加“字段字典”章节（按后端返回结构整理）
+2. 对超大组件（如 `PositionCard.vue`）继续做子组件拆分
+3. 给关键 store 增加单元测试（参数清洗、并发保护、边界逻辑）
+4. 继续沉淀通用 composable（如请求状态机、分页控制器）
 
-建议读法：
+---
 
-1. 先看 `frontend-overview.md`
-2. 再挑一个模块顺着 页面 -> composable -> store -> utils 去读
-3. 最后回到本 `learn.md` 对照知识点复盘
+## 9. 对照文档索引
+
+建议配合以下文档一起看：
+
+- `docs/bookkeeping-implementation.md`
+- `docs/dashboard-implementation.md`
+- `docs/market-implementation.md`
+- `docs/investment-implementation.md`
+- `docs/frontend-overview.md`
+
+读法建议：
+
+- 先看 `frontend-overview.md` 建立全局心智模型
+- 再按业务模块逐个看实现文档
+- 最后回到本 `learn.md` 对照“知识点 -> 代码实例”复盘

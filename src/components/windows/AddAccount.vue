@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { onClickOutside } from "@vueuse/core";
+import { ElMessage } from "element-plus";
 import BaseIcon from '../ui/BaseIcon.vue'
 import { useAccountsStore } from '@/stores/accounts'
 
@@ -19,6 +20,7 @@ const account = ref({
 })
 const currencyOpen = ref(false);
 const currencyWrapRef = ref(null);
+const advancedMode = ref(false);
 
 const currencyOptions = [
     { value: "CNY", label: "人民币 (CNY)" },
@@ -35,6 +37,11 @@ const selectedCurrencyLabel = computed(() => {
 function pickCurrency(value) {
     account.value.currency = value;
     currencyOpen.value = false;
+}
+
+function onAdvancedChange() {
+    advancedMode.value = false;
+    ElMessage.info("该功能正在开发");
 }
 
 //添加账户
@@ -55,6 +62,7 @@ watch(() => props.isOpen, (newVal) => {
             type: ''
         }
         currencyOpen.value = false;
+        advancedMode.value = false;
     }
 })
 
@@ -71,7 +79,16 @@ onClickOutside(currencyWrapRef, () => {
             <div class="modal-content w-full max-w-xl rounded-4xl bg-white p-6  dark:bg-gray-800">
                 <div class="mb-10 grid grid-cols-[1fr_auto_1fr]">
                     <div></div>
-                    <div class="text-center text-2xl font-bold text-gray-900 dark:text-white">添加账户</div>
+                    <div class="flex items-center justify-center gap-2">
+                        <div class="text-center text-2xl font-bold text-gray-900 dark:text-white">添加账户</div>
+                        <label
+                            class="surface-chip inline-flex h-6 cursor-pointer select-none items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-2 text-[11px] font-semibold text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                            <input v-model="advancedMode" type="checkbox"
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-gray-500 dark:text-gray-300 focus:outline-none focus:ring-0 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-800"
+                                @change="onAdvancedChange" />
+                            <span>高级</span>
+                        </label>
+                    </div>
                     <div class="flex justify-end">
                         <button @click="emit('close')" class="p-2 button-base">
                             <BaseIcon name="closeIcon" class="h-5 w-5" />

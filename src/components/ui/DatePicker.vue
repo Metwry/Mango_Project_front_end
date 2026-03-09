@@ -33,7 +33,9 @@ const { floatingStyles } = useFloating(referenceRef, floatingRef, {
     ],
 });
 
-const YEAR_MIN = 1900, YEAR_MAX = 2100;
+const CURRENT_YEAR = dayjs().year();
+const YEAR_MAX = CURRENT_YEAR;
+const YEAR_MIN = CURRENT_YEAR - 20;
 const clampYear = (y) => Math.min(YEAR_MAX, Math.max(YEAR_MIN, (Number(y) | 0) || YEAR_MIN));
 
 const FULL = "YYYY-MM-DD HH:mm:ss.SSS Z";

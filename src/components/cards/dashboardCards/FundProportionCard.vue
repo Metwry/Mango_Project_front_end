@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useElementSize } from '@vueuse/core'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart } from 'echarts/charts'
@@ -22,7 +23,7 @@ const chartData = computed(() => {
             name: String(acc?.name ?? ''),
             value: Math.max(0, toSafeNumber(acc?.valueCny)),
             itemStyle: {
-                color: getAccountColorById(acc?.id),
+                color: getAccountColorById(acc?.name ?? acc?.id),
             },
         }))
         .filter(x => x.name && x.value > 0)
@@ -47,6 +48,24 @@ const animatedData = ref([])
 const hasPlayedEnterAnimation = ref(false)
 const lastDataSignature = ref('')
 let rafId = null
+const isDarkMode = ref(false)
+let themeObserver = null
+const chartWrapRef = ref(null)
+const { height: chartWrapHeight } = useElementSize(chartWrapRef)
+
+const pieRadius = computed(() => {
+    const h = Number(chartWrapHeight.value) || 0
+    if (h <= 260) return '56%'
+    if (h <= 340) return '62%'
+    return '67%'
+})
+
+const pieCenterY = computed(() => {
+    const h = Number(chartWrapHeight.value) || 0
+    if (h <= 260) return '36%'
+    if (h <= 340) return '39%'
+    return '42%'
+})
 
 const getDataSignature = (data) => {
     return data.map(item => `${item.name}:${Number(item.value).toFixed(4)}`).join('|')
@@ -98,11 +117,26 @@ onUnmounted(() => {
         cancelAnimationFrame(rafId)
         rafId = null
     }
+    if (themeObserver) {
+        themeObserver.disconnect()
+        themeObserver = null
+    }
+})
+
+onMounted(() => {
+    const root = document.documentElement
+    const syncDarkMode = () => {
+        isDarkMode.value = root.classList.contains('dark')
+    }
+
+    syncDarkMode()
+    themeObserver = new MutationObserver(syncDarkMode)
+    themeObserver.observe(root, { attributes: true, attributeFilter: ['class'] })
 })
 
 const option = computed(() => ({
     textStyle: {
-        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif"
+        fontFamily: "\"Times New Roman\", Times, \"PingFang SC\", \"Microsoft YaHei\", sans-serif"
     },
     tooltip: {
         trigger: 'item',
@@ -110,7 +144,7 @@ const option = computed(() => ({
     },
     legend: {
         orient: 'horizontal',
-        bottom: '0%',
+        bottom: 0,
         left: 'center',
         width: '90%',
         icon: 'circle',
@@ -118,8 +152,9 @@ const option = computed(() => ({
         itemHeight: 10,
         itemGap: 15,
         textStyle: {
-            color: '#6b7280',
+            color: isDarkMode.value ? '#b5bec9' : '#475569',
             fontSize: 12,
+            fontFamily: "\"Times New Roman\", Times, \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
             width: 70,
             overflow: 'truncate'
         },
@@ -129,12 +164,12 @@ const option = computed(() => ({
         {
             name: '资金占比',
             type: 'pie',
-            radius: '67%',
-            center: ['50%', '35%'],
+            radius: pieRadius.value,
+            center: ['50%', pieCenterY.value],
             avoidLabelOverlap: true,
             itemStyle: {
                 borderRadius: 6,
-                borderColor: '#fff',
+                borderColor: isDarkMode.value ? '#000000' : '#ffffff',
                 borderWidth: 2
             },
             label: {
@@ -170,7 +205,7 @@ const option = computed(() => ({
             暂无账户数据
         </div>
 
-        <div v-else class="h-[250px]">
+        <div v-else ref="chartWrapRef" class="flex-1 min-h-[14rem] min-w-0">
             <v-chart class="w-full h-full" :option="option" autoresize />
         </div>
     </div>

@@ -33,6 +33,7 @@ const menuItems = [
     { name: '记账', path: '/bookkeeping', icon: 'bookkeeping' },
     { name: '行情', path: '/market', icon: 'market' },
     { name: '投资', path: '/investment', icon: 'holdings' },
+    { name: '资讯', path: '/news', icon: 'news' },
     { name: '数据分析', path: '/analysis', icon: 'analysis' },
     { name: '工具箱', path: '/tools', icon: 'toolbox' },
 ]
@@ -104,7 +105,7 @@ onUnmounted(() => {
                     <RouterView v-slot="{ Component, route: currentRoute }">
                         <Transition :name="pageTransitionName" @after-enter="handlePageAfterEnter">
                             <div :key="currentRoute.fullPath" :class="['page-panel', pageLayoutClass]">
-                                <component :is="Component" :class="pageLayoutClass" />
+                                <component :is="Component" />
                             </div>
                         </Transition>
                     </RouterView>
@@ -222,4 +223,3 @@ onUnmounted(() => {
     }
 }
 </style>
-
