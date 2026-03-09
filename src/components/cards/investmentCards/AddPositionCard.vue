@@ -182,6 +182,7 @@ function pickSearchResult(item) {
 }
 
 function onAdvancedChange() {
+  advancedMode.value = false;
   ElMessage.info("该功能正在开发");
 }
 
