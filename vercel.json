@@ -1,4 +1,9 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.mangofinance.cc/api/:path*"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
