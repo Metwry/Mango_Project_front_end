@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { searchMarketInstruments } from "@/utils/markets";
-import { getPayload } from "@/utils/api";
+import { getResultsList } from "@/utils/api";
 import { filterNonInvestmentAccounts } from "@/utils/accounts";
 import { useInvestmentStore } from "@/stores/investment";
 import { SEARCH_CONFIG } from "@/config/Config";
@@ -74,6 +74,16 @@ function getSearchItemPrice(item) {
     item?.current_price,
   );
   return Number.isFinite(n) && n > 0 ? String(n) : "";
+}
+
+function getSearchItemSymbol(item) {
+  return String(item?.short_code ?? item?.symbol ?? item?.stock_code ?? "")
+    .trim()
+    .toUpperCase();
+}
+
+function getSearchItemName(item) {
+  return String(item?.name ?? item?.stock_name ?? item?.symbol_name ?? "").trim();
 }
 
 function pickFirstAccountId() {
@@ -154,8 +164,7 @@ async function executeSearch(query) {
   try {
     const res = await searchMarketInstruments(normalized);
     if (reqId !== searchRequestSeq) return;
-    const payload = getPayload(res, {});
-    searchResults.value = Array.isArray(payload?.results) ? payload.results : [];
+    searchResults.value = getResultsList(res, []);
   } catch {
     if (reqId !== searchRequestSeq) return;
     resetSearchResult();
@@ -176,7 +185,7 @@ function pickSearchResult(item) {
   }
 
   selectedInstrument.value = item;
-  keywordInput.value = String(item?.short_code ?? item?.symbol ?? "").trim().toUpperCase();
+  keywordInput.value = getSearchItemSymbol(item);
   form.price = getSearchItemPrice(item);
   showSearchDropdown.value = false;
 }
@@ -264,10 +273,10 @@ watch(
         <div v-if="showSearchDropdown"
           class="market-search-dropdown !left-1/2 !right-auto !w-[min(92vw,24rem)] -translate-x-1/2 sm:!left-0 sm:!right-0 sm:!w-auto sm:translate-x-0">
           <div
-            class="market-search-head !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 !px-2 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5 sm:!px-2">
+            class="market-search-head !grid-cols-[54px_minmax(0,1fr)_42px] !gap-x-0.5 !px-2 sm:!grid-cols-[72px_minmax(0,1fr)_52px] sm:!gap-x-1 sm:!px-2">
             <span class="truncate whitespace-nowrap">代码</span>
             <span class="truncate whitespace-nowrap">名称</span>
-            <span class="truncate whitespace-nowrap sm :text-right">市场</span>
+            <span class="truncate whitespace-nowrap text-right">市场</span>
           </div>
 
           <div class="max-h-[38vh] overflow-y-auto overscroll-contain sm:max-h-56">
@@ -277,16 +286,18 @@ watch(
             </div>
 
             <button v-for="item in searchResults"
-              :key="item.instrument_id ?? `${item.short_code}-${item.name}-${item.market}`" type="button"
+              :key="item.instrument_id ?? `${getSearchItemSymbol(item)}-${getSearchItemName(item)}-${item.market}`" type="button"
               class="market-search-item !px-2 sm:!px-2" @mousedown.prevent="pickSearchResult(item)">
               <div
-                class="market-search-grid !grid-cols-[62px_minmax(0,1fr)_46px] !gap-1 sm:!grid-cols-[84px_minmax(0,1fr)_56px] sm:!gap-1.5">
+                class="market-search-grid !grid-cols-[54px_minmax(0,1fr)_42px] !gap-x-0.5 sm:!grid-cols-[72px_minmax(0,1fr)_52px] sm:!gap-x-1">
                 <span
                   class="block min-w-0 truncate whitespace-nowrap font-mono text-[13px] font-semibold text-gray-800 dark:text-gray-100">
-                  {{ item.short_code }}
+                  {{ getSearchItemSymbol(item) || "--" }}
                 </span>
-                <span class="block min-w-0 truncate whitespace-nowrap text-[13px] text-gray-500 dark:text-gray-400">
-                  {{ item.name }}
+                <span
+                  class="block min-w-0 truncate whitespace-nowrap text-[13px] text-gray-500 dark:text-gray-400"
+                  :title="getSearchItemName(item)">
+                  {{ getSearchItemName(item) || "--" }}
                 </span>
                 <span class="text-right">
                   <span class="market-market-tag !px-1 !py-0 !text-[11px]">{{ getMarketLabel(item.market) }}</span>
