@@ -2,7 +2,8 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://preimaginary-upliftingly-sawyer.ngrok-free.dev/api/$1"
+      // "destination": "https://preimaginary-upliftingly-sawyer.ngrok-free.dev/api/$1"
+      "destination": "https://mangofinance.cc/api/$1"
     },
     {
       "source": "/(.*)",
