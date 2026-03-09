@@ -90,7 +90,7 @@ function todo() {
             class="user-menu-trigger flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors select-none">
 
             <div
-                class="user-menu-avatar w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold border border-primary-200 text-xs">
+                class="user-menu-avatar w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold border border-gray-200 text-xs dark:bg-primary-100 dark:text-primary-600 dark:border-primary-200">
                 {{ displayInitial }}
             </div>
 

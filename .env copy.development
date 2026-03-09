@@ -1,9 +1,9 @@
 # ===== App =====
-VITE_APP_VERSION=0.9.9
+VITE_APP_VERSION=0.9.9.5
 
 # ===== Refresh Mode =====
 # auto: 自动刷新; manual: 仅用户触发刷新
-VITE_REFRESH_MODE=manual
+VITE_REFRESH_MODE=auto
 
 # ===== Dev Server / Proxy =====
 VITE_DEV_HOST=127.0.0.1

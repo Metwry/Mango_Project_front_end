@@ -31,7 +31,6 @@ const props = defineProps({
 
 const RANGE_OPTIONS = DASHBOARD_TREND_CONFIG.rangeOptions;
 const ALL_ACCOUNTS_THEME_COLOR = DASHBOARD_TREND_CONFIG.allAccountsThemeColor;
-const MAX_RENDER_POINTS = DASHBOARD_TREND_CONFIG.maxRenderPoints;
 const TODAY_AUTO_REFRESH_INTERVAL_MINUTES = DASHBOARD_TREND_CONFIG.todayAutoRefresh.intervalMinutes;
 const TODAY_AUTO_REFRESH_SECOND = DASHBOARD_TREND_CONFIG.todayAutoRefresh.second;
 const TREND_FONT_FAMILY = "\"Times New Roman\", Times, serif";
@@ -51,6 +50,12 @@ const rangeMeta = computed(() => {
   return RANGE_OPTIONS.find((item) => item.key === activeRangeKey.value)
     ?? RANGE_OPTIONS.find((item) => item.key === "today")
     ?? RANGE_OPTIONS[0];
+});
+
+const activeRangeMaxRenderPoints = computed(() => {
+  const fromRange = Number(rangeMeta.value?.maxRenderPoints);
+  if (Number.isFinite(fromRange) && fromRange >= 2) return Math.trunc(fromRange);
+  return Math.max(2, Math.trunc(Number(DASHBOARD_TREND_CONFIG.maxRenderPoints) || 24));
 });
 
 const hasData = computed(() => chartSeries.value.length > 0);
@@ -111,9 +116,9 @@ function toSnapshotNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function limitSeriesPoints(points, maxPoints = MAX_RENDER_POINTS) {
+function limitSeriesPoints(points, maxPoints = DASHBOARD_TREND_CONFIG.maxRenderPoints) {
   const list = Array.isArray(points) ? points : [];
-  const safeMax = Math.max(2, Math.trunc(Number(maxPoints) || MAX_RENDER_POINTS));
+  const safeMax = Math.max(2, Math.trunc(Number(maxPoints) || DASHBOARD_TREND_CONFIG.maxRenderPoints));
   if (list.length <= safeMax) return list;
 
   const result = [];
@@ -281,7 +286,7 @@ const chartSeries = computed(() => {
       .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
 
     if (data.length === 0) return [];
-    const limitedData = limitSeriesPoints(data);
+    const limitedData = limitSeriesPoints(data, activeRangeMaxRenderPoints.value);
 
     const singlePoint = limitedData.length === 1;
     const summaryColor = ALL_ACCOUNTS_THEME_COLOR;
@@ -307,7 +312,7 @@ const chartSeries = computed(() => {
   }
 
   return snapshotSeries.value.map((entry) => {
-    const limitedData = limitSeriesPoints(entry.data);
+    const limitedData = limitSeriesPoints(entry.data, activeRangeMaxRenderPoints.value);
     const singlePoint = limitedData.length === 1;
     const seriesColor = getAccountColorById(entry.accountName ?? entry.accountId);
     return {
@@ -467,7 +472,8 @@ const chartOption = computed(() => ({
     right: 12,
     top: 28,
     bottom: 16,
-    containLabel: true,
+    outerBoundsMode: "same",
+    outerBoundsContain: "axisLabel",
   },
   tooltip: {
     trigger: "axis",
@@ -553,7 +559,7 @@ const chartOption = computed(() => ({
         <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
           <button v-for="item in RANGE_OPTIONS" :key="item.key" type="button"
             class="button-base !px-3 !py-1.5 !text-xs sm:!text-sm" :class="activeRangeKey === item.key
-              ? '!bg-primary-50 !text-primary-700 !border-primary-200 dark:!bg-[#2c3138] dark:!text-white dark:!border-[#343a42]'
+              ? '!bg-gray-100 !text-gray-900 !border-gray-300 dark:!bg-[#2c3138] dark:!text-white dark:!border-[#343a42]'
               : ''" @click="activeRangeKey = item.key">
             {{ item.label }}
           </button>

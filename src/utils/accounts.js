@@ -32,7 +32,7 @@ export function getAccountDetail(id) {
 }
 
 export function updateAccount(id, data) {
-  return api.put(`${BASE_URL}/${id}/`, data);
+  return api.patch(`${BASE_URL}/${id}/`, data);
 }
 
 export function deleteAccount(id) {

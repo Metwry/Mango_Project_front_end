@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { onClickOutside } from "@vueuse/core";
 import BaseIcon from '../ui/BaseIcon.vue'
 import { useAccountsStore } from '@/stores/accounts'
+import { isInvestmentAccount as checkInvestmentAccount } from "@/utils/accounts";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 
@@ -39,6 +40,13 @@ const currencyOptions = [
 const selectedCurrencyLabel = computed(() => {
     return currencyOptions.find((item) => item.value === account.value.currency)?.label ?? "请选择币种";
 });
+const isInvestment = computed(() => checkInvestmentAccount(props.data ?? account.value));
+
+function normalizeDisplayBalance(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    return Number(n.toFixed(2));
+}
 
 function pickCurrency(value) {
     account.value.currency = value;
@@ -53,11 +61,12 @@ watch(
     () => props.isOpen,
     (newVal) => {
         if (newVal && props.data) {
+            const investment = checkInvestmentAccount(props.data);
             account.value = {
                 id: props.data.id,
                 name: props.data.name,
                 currency: props.data.currency || 'CNY',
-                balance: props.data.balance ?? null,
+                balance: investment ? normalizeDisplayBalance(props.data.balance) : (props.data.balance ?? null),
                 type: props.data.type
             }
             currencyOpen.value = false;
@@ -70,7 +79,15 @@ watch(
 const UpdateAccount = async () => {
     try {
         if (!account.value.id) return
-        await accountsStore.updateAccount(account.value.id, account.value)
+        const payload = isInvestment.value
+            ? { currency: account.value.currency }
+            : {
+                name: account.value.name,
+                type: account.value.type,
+                balance: account.value.balance,
+                currency: account.value.currency,
+            };
+        await accountsStore.updateAccount(account.value.id, payload)
         emit('close')
     } catch {}
 }
@@ -108,7 +125,7 @@ onClickOutside(currencyWrapRef, () => {
                         <label
                             class="surface-chip inline-flex h-6 cursor-pointer select-none items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-2 text-[11px] font-semibold text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
                             <input v-model="advancedMode" type="checkbox"
-                                class="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:outline-none focus:ring-0 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-800"
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-gray-500 dark:text-gray-300 focus:outline-none focus:ring-0 focus:ring-offset-0 dark:border-gray-500 dark:bg-gray-800"
                                 @change="onAdvancedChange" />
                             <span>高级</span>
                         </label>
@@ -123,20 +140,27 @@ onClickOutside(currencyWrapRef, () => {
 
 
                 <div class="grid grid-cols-2 gap-5">
+                    <div v-if="isInvestment"
+                        class="col-span-2 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs font-medium text-amber-700 dark:border-amber-700/70 dark:bg-amber-900/20 dark:text-amber-200">
+                        投资账户仅支持修改币种，名称/类型/余额不可编辑。
+                    </div>
+
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">账户名称:</label>
-                        <input v-model="account.name" type="text" class="input-base w-full" placeholder="例如：招商银行" />
+                        <input v-model="account.name" type="text" class="input-base w-full" placeholder="例如：招商银行"
+                            :disabled="isInvestment" />
                     </div>
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">账户类型:</label>
-                        <input v-model="account.type" type="text" class="input-base w-full" placeholder="例如：储蓄卡、基金" />
+                        <input v-model="account.type" type="text" class="input-base w-full" placeholder="例如：储蓄卡、基金"
+                            :disabled="isInvestment" />
                     </div>
 
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">余额:</label>
                         <input v-model.number="account.balance" type="number" class="input-base w-full"
-                            placeholder="0.00" />
+                            placeholder="0.00" :disabled="isInvestment" />
                     </div>
 
                     <div class="space-y-2">

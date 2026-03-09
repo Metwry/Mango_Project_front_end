@@ -6,12 +6,14 @@ const DELETE_URL = `${BASE_URL}/delete/`;
 export const TRANSACTION_HISTORY_MODE = Object.freeze({
   ACTIVITY: "activity",
   ALL: "all",
+  TRANSFER: "transfer",
   REVERSED: "reversed",
 });
 
 const ACTIVITY_TYPE_BY_MODE = Object.freeze({
   [TRANSACTION_HISTORY_MODE.ACTIVITY]: "manual",
   [TRANSACTION_HISTORY_MODE.ALL]: "investment",
+  [TRANSACTION_HISTORY_MODE.TRANSFER]: "transfer",
   [TRANSACTION_HISTORY_MODE.REVERSED]: "reversed",
 });
 

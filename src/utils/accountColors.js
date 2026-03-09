@@ -1,7 +1,7 @@
 export const ACCOUNT_BRAND_PALETTE = Object.freeze([
   "#1677FF",
   "#0EA5E9",
-  "#6366F1",
+  "#FFB717",
   "#14B8A6",
   "#13C2C2",
   "#52C41A",

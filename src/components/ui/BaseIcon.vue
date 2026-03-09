@@ -12,6 +12,9 @@ const props = defineProps({
     // 可选：统一控制尺寸（默认继承父级 class 也行）
     size: { type: [Number, String], default: 20 },
 
+    // spinner 底圈透明度（0-1）
+    dimOpacity: { type: Number, default: 0.25 },
+
 });
 
 const isSpinner = computed(() => props.name === "spinner");
@@ -27,6 +30,11 @@ const currentPath = computed(() => {
 });
 
 const viewBox = computed(() => (props.solid ? "0 0 20 20" : "0 0 24 24"));
+const spinnerDimOpacity = computed(() => {
+    const value = Number(props.dimOpacity);
+    if (!Number.isFinite(value)) return 0.25;
+    return Math.min(1, Math.max(0, value));
+});
 </script>
 
 <template>
@@ -36,8 +44,7 @@ const viewBox = computed(() => (props.solid ? "0 0 20 20" : "0 0 24 24"));
         :style="{ width: `${size}px`, height: `${size}px` }" aria-hidden="true">
         <!-- spinner -->
         <template v-if="isSpinner">
-            <circle :class="`opacity-${Math.round(Number(dimOpacity) * 100)}`" class="opacity-25" cx="12" cy="12" r="10"
-                stroke="currentColor" stroke-width="4" />
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" :style="{ opacity: spinnerDimOpacity }" />
             <path class="opacity-75" fill="currentColor"
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </template>

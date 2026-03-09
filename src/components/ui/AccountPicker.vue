@@ -134,7 +134,11 @@ onUnmounted(() => {
                             </div>
 
                             <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ formatCurrencyAmount(a.balance, a.currency, { invalidText: '' }) }}
+                                {{ formatCurrencyAmount(a.balance, a.currency, {
+                                    invalidText: '',
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                }) }}
                             </div>
                         </button>
 

@@ -1,5 +1,6 @@
 import { onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useAccountsStore } from "@/stores/accounts";
 import { useTransactionsStore } from "@/stores/transaction";
@@ -10,6 +11,7 @@ function isCancelAction(error) {
 }
 
 export function useBookkeepingPage() {
+  const route = useRoute();
   const accountsStore = useAccountsStore();
   const transactionsStore = useTransactionsStore();
 
@@ -26,9 +28,18 @@ export function useBookkeepingPage() {
   const deletingId = ref(null);
   const clearingAll = ref(false);
 
+  function normalizeHistoryMode(raw) {
+    const mode = String(raw ?? "").trim().toLowerCase();
+    if (mode === TRANSACTION_HISTORY_MODE.ALL) return TRANSACTION_HISTORY_MODE.ALL;
+    if (mode === TRANSACTION_HISTORY_MODE.TRANSFER) return TRANSACTION_HISTORY_MODE.TRANSFER;
+    if (mode === TRANSACTION_HISTORY_MODE.REVERSED) return TRANSACTION_HISTORY_MODE.REVERSED;
+    return TRANSACTION_HISTORY_MODE.ACTIVITY;
+  }
+
   function currentModeLabel() {
     const mode = txFilters.value?.history_mode;
     if (mode === TRANSACTION_HISTORY_MODE.ALL) return "交易记录";
+    if (mode === TRANSACTION_HISTORY_MODE.TRANSFER) return "转账记录";
     if (mode === TRANSACTION_HISTORY_MODE.REVERSED) return "已撤销记录";
     return "活动记录";
   }
@@ -136,7 +147,19 @@ export function useBookkeepingPage() {
     }
   }
 
-  onMounted(() => Promise.all([accountsStore.fetchAccounts(), onSearchReset()]));
+  onMounted(() => {
+    const modeFromRoute = normalizeHistoryMode(route.query?.history_mode ?? route.query?.mode);
+    const currentPageSize = Number(txFilters.value?.page_size) || 10;
+    transactionsStore.resetFilters();
+    return Promise.all([
+      accountsStore.fetchAccounts(),
+      updateAndFetch({
+        page: 1,
+        page_size: currentPageSize,
+        history_mode: modeFromRoute,
+      }),
+    ]);
+  });
 
   return {
     accounts,
