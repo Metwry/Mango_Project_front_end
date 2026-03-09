@@ -225,7 +225,7 @@ onClickOutside(marketDropdownWrapRef, () => {
               <td
                 class="py-3 px-2.5 text-center bg-white dark:bg-gray-800 border-y border-r border-gray-100 dark:border-gray-700 rounded-r-xl whitespace-nowrap">
                 <button type="button"
-                  class="button-base !justify-center !px-3 !py-1.5 !rounded-xl !text-xs !text-red-600 !bg-red-50  hover:!bg-red-100 dark:!text-red-300 dark:!bg-red-900/20 dark:!border-red-800 dark:hover:!bg-red-900/40"
+                  class="button-base !justify-center !px-3 !py-1.5 !rounded-xl !text-xs !text-red-600 !bg-red-50 !border-transparent hover:!bg-red-100 dark:!text-red-300 dark:!bg-red-900/20 dark:!border-transparent dark:hover:!bg-red-900/40"
                   @click="onDeleteClick(quote)">
                   删除
                 </button>

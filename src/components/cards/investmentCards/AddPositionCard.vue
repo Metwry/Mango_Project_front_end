@@ -256,10 +256,6 @@ watch(
           <span>高级</span>
         </label>
       </div>
-      <span
-        class="justify-self-end inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
-        +
-      </span>
     </header>
 
     <div class="space-y-2.5">
@@ -286,16 +282,15 @@ watch(
             </div>
 
             <button v-for="item in searchResults"
-              :key="item.instrument_id ?? `${getSearchItemSymbol(item)}-${getSearchItemName(item)}-${item.market}`" type="button"
-              class="market-search-item !px-2 sm:!px-2" @mousedown.prevent="pickSearchResult(item)">
+              :key="item.instrument_id ?? `${getSearchItemSymbol(item)}-${getSearchItemName(item)}-${item.market}`"
+              type="button" class="market-search-item !px-2 sm:!px-2" @mousedown.prevent="pickSearchResult(item)">
               <div
                 class="market-search-grid !grid-cols-[54px_minmax(0,1fr)_42px] !gap-x-0.5 sm:!grid-cols-[72px_minmax(0,1fr)_52px] sm:!gap-x-1">
                 <span
                   class="block min-w-0 truncate whitespace-nowrap font-mono text-[13px] font-semibold text-gray-800 dark:text-gray-100">
                   {{ getSearchItemSymbol(item) || "--" }}
                 </span>
-                <span
-                  class="block min-w-0 truncate whitespace-nowrap text-[13px] text-gray-500 dark:text-gray-400"
+                <span class="block min-w-0 truncate whitespace-nowrap text-[13px] text-gray-500 dark:text-gray-400"
                   :title="getSearchItemName(item)">
                   {{ getSearchItemName(item) || "--" }}
                 </span>
@@ -329,7 +324,7 @@ watch(
 
     <div class="add-position-submit-bar mt-auto">
       <button type="button"
-        class="button-base mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-[#0f3a2c] dark:!text-[#8ff0c9] dark:!border-[#0c6a4a] dark:hover:!bg-[#124735]"
+        class="button-base mx-auto w-full max-w-[16.75rem] !justify-center !rounded-xl !py-2 !text-sm !font-semibold !bg-emerald-50 !text-emerald-700 !border-transparent hover:!bg-emerald-100 dark:!bg-[#0f3a2c] dark:!text-[#8ff0c9] dark:!border-transparent dark:hover:!bg-[#124735]"
         :disabled="!canSubmit" @click="onSubmit">
         {{ trading ? "提交中..." : "确定买入" }}
       </button>
@@ -354,4 +349,3 @@ watch(
   }
 }
 </style>
-

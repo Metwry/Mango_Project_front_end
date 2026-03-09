@@ -269,8 +269,8 @@ onClickOutside(panelRef, (event) => {
     <button type="button"
       class="button-base mt-3 w-full !justify-center !rounded-xl !py-2.5 !text-sm !font-semibold"
       :class="isBuy
-        ? '!bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-emerald-800 dark:hover:!bg-emerald-900/50'
-        : '!bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-red-900/30 dark:!text-red-200 dark:!border-red-800 dark:hover:!bg-red-900/50'" :disabled="!canSubmit" @click="submit">
+        ? '!bg-emerald-50 !text-emerald-700 !border-transparent hover:!bg-emerald-100 dark:!bg-emerald-900/30 dark:!text-emerald-200 dark:!border-transparent dark:hover:!bg-emerald-900/50'
+        : '!bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-red-900/30 dark:!text-red-200 dark:!border-transparent dark:hover:!bg-red-900/50'" :disabled="!canSubmit" @click="submit">
       {{ submitLabel }}
     </button>
   </div>

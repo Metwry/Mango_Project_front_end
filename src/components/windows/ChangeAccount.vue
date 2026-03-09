@@ -196,7 +196,7 @@ onClickOutside(currencyWrapRef, () => {
 
                 <div class="mt-10 flex items-center justify-between">
                     <button @click="DeleteAccount"
-                        class="button-base !rounded-xl !font-semibold !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]"
+                        class="button-base !rounded-xl !font-semibold !bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-transparent dark:hover:!bg-[#482126]"
                         :disabled="accountsStore.saving">
                         删除账户
                     </button>

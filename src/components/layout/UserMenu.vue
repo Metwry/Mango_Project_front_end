@@ -15,7 +15,6 @@ const userMenuRef = ref(null)
 const isOpenSetting = ref(false)
 const isOpenUserProfile = ref(false)
 const displayName = computed(() => String(authStore.user?.username ?? "User").trim() || "User")
-const displayInitial = computed(() => displayName.value.slice(0, 1).toUpperCase())
 // 逻辑：退出登录
 const handleLogout = async () => {
     await authStore.logout()
@@ -58,28 +57,24 @@ function todo() {
         <Transition name="dropdown-drawer">
             <div v-if="showUserMenu"
                 class="dropdown-panel absolute top-full right-0 mt-2 w-56 py-2 transform transition-all origin-top-right">
-                <button @click="triggerUserProfile"
-                    class="dropdown-menu-item">
+                <button @click="triggerUserProfile" class="dropdown-menu-item">
                     <BaseIcon name="settings" class="w-4 h-4" />
                     用户设置
                 </button>
 
-                <button @click="triggerSettings"
-                    class="dropdown-menu-item">
+                <button @click="triggerSettings" class="dropdown-menu-item">
                     <BaseIcon name="settings" class="w-4 h-4" />
                     系统设置
                 </button>
 
-                <button @click="todo()"
-                    class="dropdown-menu-item">
+                <button @click="todo()" class="dropdown-menu-item">
                     <BaseIcon name="export" class="w-4 h-4" />
                     导出数据
                 </button>
 
                 <div class="dropdown-divider h-px bg-gray-100 my-1"></div>
 
-                <button @click="handleLogout"
-                    class="dropdown-menu-item dropdown-menu-item-danger">
+                <button @click="handleLogout" class="dropdown-menu-item dropdown-menu-item-danger">
                     <BaseIcon name="logout" class="w-4 h-4" />
                     退出登录
                 </button>
@@ -89,10 +84,7 @@ function todo() {
         <div @click="showUserMenu = !showUserMenu"
             class="user-menu-trigger flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors select-none">
 
-            <div
-                class="user-menu-avatar w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold border border-gray-200 text-xs dark:bg-primary-100 dark:text-primary-600 dark:border-primary-200">
-                {{ displayInitial }}
-            </div>
+
 
             <div class="hidden sm:block">
                 <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ displayName }}</p>

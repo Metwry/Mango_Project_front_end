@@ -772,17 +772,17 @@ onUnmounted(() => {
 
       <footer class="grid grid-cols-3 gap-2">
         <button type="button" data-trade-trigger="true"
-          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-emerald-50 !text-emerald-700 !border-emerald-100 hover:!bg-emerald-100 dark:!bg-[#123128] dark:!text-emerald-200 dark:!border-emerald-700 dark:hover:!bg-[#174236]"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-emerald-50 !text-emerald-700 !border-transparent hover:!bg-emerald-100 dark:!bg-[#123128] dark:!text-emerald-200 dark:!border-transparent dark:hover:!bg-[#174236]"
           :disabled="trading" @click="openTradePanel('buy')">
           买入
         </button>
         <button type="button" data-trade-trigger="true"
-          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-transparent dark:hover:!bg-[#482126]"
           :disabled="trading" @click="openTradePanel('sell')">
           卖出
         </button>
         <button type="button"
-          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold"
+          class="button-base !justify-center !rounded-xl !py-2 !text-xs !font-semibold !border-transparent dark:!border-transparent"
           @click="onDetailClick">
           详情
         </button>

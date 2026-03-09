@@ -147,9 +147,9 @@ function amountDotClass(amount) {
 
 function categoryTagClass(tx) {
     const raw = String(tx?.category_name ?? tx?.category ?? "").toLowerCase();
-    const buyTone = "bg-emerald-50/80 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/70";
-    const sellTone = "bg-rose-50/80 text-rose-600 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800/70";
-    const transferTone = "bg-sky-50/80 text-sky-600 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-800/70";
+    const buyTone = "bg-emerald-50/80 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300";
+    const sellTone = "bg-rose-50/80 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300";
+    const transferTone = "bg-sky-50/80 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300";
 
     if (/买|buy|充值|入金|转入|收入|profit|refund|返现/.test(raw)) {
         return buyTone;
@@ -164,7 +164,7 @@ function categoryTagClass(tx) {
     const sign = amountSign(tx?.amount);
     if (sign > 0) return buyTone;
     if (sign < 0) return sellTone;
-    return "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700/60 dark:text-gray-200 dark:border-gray-600";
+    return "bg-gray-100 text-gray-700 dark:bg-gray-700/60 dark:text-gray-200";
 }
 
 function resolveCurrency(tx) {
@@ -272,7 +272,7 @@ onClickOutside(historyModeWrapRef, () => {
                 记账
             </button>
             <button v-if="!isTransferHistoryMode"
-                class="button-base !rounded-xl !font-semibold px-3 py-1.5 text-xs sm:text-sm !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]"
+                class="button-base !rounded-xl !font-semibold px-3 py-1.5 text-xs sm:text-sm !bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-transparent dark:hover:!bg-[#482126]"
                 :disabled="loading || clearingAll || transactions.length === 0" @click="onDeleteAllClick">
                 {{ clearingAll ? "删除中..." : "全部删除" }}
             </button>
@@ -419,7 +419,7 @@ onClickOutside(historyModeWrapRef, () => {
                         </td>
                         <td class="td-cell">
                             <span :class="[
-                                'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold whitespace-nowrap',
+                                'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap',
                                 categoryTagClass(tx)
                             ]">
                                 {{ tx?.category_name ?? tx?.category ?? "-" }}
@@ -439,7 +439,7 @@ onClickOutside(historyModeWrapRef, () => {
                         <td class="td-cell text-center" @click.stop>
                             <div v-if="isTransferHistoryMode" class="inline-flex items-center justify-center gap-2">
                                 <button :class="[
-                                    'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]',
+                                    'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-transparent dark:hover:!bg-[#482126]',
                                     (!tx?.id || clearingAll) && '!cursor-not-allowed !opacity-60'
                                 ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
                                     {{ deletingId === tx?.id ? "删除中..." : "删除" }}
@@ -455,7 +455,7 @@ onClickOutside(historyModeWrapRef, () => {
                                     {{ reversingId === tx?.id ? "处理中..." : reverseLabel(tx) }}
                                 </button>
                                 <button :class="[
-                                    'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-red-100 hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-red-700 dark:hover:!bg-[#482126]',
+                                    'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-transparent dark:hover:!bg-[#482126]',
                                     (!tx?.id || clearingAll) && '!cursor-not-allowed !opacity-60'
                                 ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
                                     {{ deletingId === tx?.id ? "删除中..." : "删除" }}
