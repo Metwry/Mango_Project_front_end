@@ -14,7 +14,7 @@ export function toSafeNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function currencySymbol(code) {
+export function getCurrencySymbol(code) {
   return CURRENCY_SYMBOL_MAP[String(code || "").toUpperCase()] ?? "";
 }
 
@@ -35,7 +35,7 @@ export function formatCurrencyAmount(
 
   const c = String(currency || "CNY").toUpperCase();
   if (symbolOnly) {
-    const symbol = currencySymbol(c);
+    const symbol = getCurrencySymbol(c);
     const absText = new Intl.NumberFormat(locale, {
       minimumFractionDigits,
       maximumFractionDigits,
@@ -59,7 +59,7 @@ export function formatCurrencyAmount(
       return `${c} ${n.toFixed(maximumFractionDigits)}`;
     }
 
-    const symbol = currencySymbol(c);
+    const symbol = getCurrencySymbol(c);
     return `${symbol}${n.toFixed(maximumFractionDigits)}`;
   }
 }

@@ -6,6 +6,7 @@ import { LineChart } from "echarts/charts";
 import { GridComponent, LegendComponent, TooltipComponent } from "echarts/components";
 import VChart from "vue-echarts";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
+import { useDashboardDisplayCurrency } from "@/composables/useDashboardDisplayCurrency";
 import { getPayload } from "@/utils/api";
 import { getAccountColorById } from "@/utils/accountColors";
 import { formatCurrencyAmount } from "@/utils/formatters";
@@ -15,7 +16,6 @@ import {
   DEFAULT_USD_PER_CURRENCY_RATES,
   ensureUsdPerCurrencyRates,
   getCachedUsdPerCurrencyRates,
-  getUsdPerCnyRate,
   resolveUsdPerCurrencyRate,
 } from "@/utils/fxRates";
 import { buildSnapshotTimeline, getAccountSnapshots } from "@/utils/snapshot";
@@ -40,11 +40,12 @@ const activeRangeKey = ref("today");
 const loading = ref(false);
 const queryError = ref(null);
 const snapshotSeries = ref([]);
-const usdPerCnyRate = ref(DEFAULT_USD_PER_CURRENCY_RATES.CNY);
+const usdPerCurrencyRates = ref({ ...DEFAULT_USD_PER_CURRENCY_RATES });
 const axisStartMs = ref(0);
 const axisIntervalMs = ref(0);
 let requestSeq = 0;
 let todayAutoRefreshScheduler = null;
+const { displayCurrency } = useDashboardDisplayCurrency();
 
 const rangeMeta = computed(() => {
   return RANGE_OPTIONS.find((item) => item.key === activeRangeKey.value)
@@ -152,7 +153,7 @@ async function fetchTrendData() {
   const reqId = ++requestSeq;
 
   try {
-    const [res, usdPerCurrencyRates] = await Promise.all([
+    const [res, nextUsdPerCurrencyRates] = await Promise.all([
       getAccountSnapshots(params),
       ensureUsdPerCurrencyRates().catch(() => getCachedUsdPerCurrencyRates()),
     ]);
@@ -160,7 +161,11 @@ async function fetchTrendData() {
     if (reqId !== requestSeq) return;
 
     const payload = getPayload(res, {});
-    usdPerCnyRate.value = getUsdPerCnyRate(usdPerCurrencyRates);
+    usdPerCurrencyRates.value = {
+      ...DEFAULT_USD_PER_CURRENCY_RATES,
+      ...(nextUsdPerCurrencyRates || {}),
+      USD: 1,
+    };
 
     const timeline = buildSnapshotTimeline(payload?.meta);
     const axisStart = new Date(String(payload?.meta?.axis_start_time ?? "")).getTime();
@@ -175,38 +180,29 @@ async function fetchTrendData() {
         const id = toPositiveInt(seriesItem?.account_id);
         if (!id) return null;
 
-        const accountCurrency = normalizeCurrency(seriesItem?.account_currency);
-        const account = accountById.value.get(id) ?? { currency: accountCurrency };
-        const usdPerCurrencyRate = resolveUsdPerCurrencyRate(account, usdPerCurrencyRates);
         const balancesUsd = Array.isArray(seriesItem?.balance_usd) ? seriesItem.balance_usd : [];
         let firstValidIndex = -1;
         let lastValidIndex = -1;
-        const data = [];
         const usdData = [];
 
         timeline.forEach((ts, index) => {
           const usdValue = toSnapshotNumber(balancesUsd[index]);
           if (usdValue === null) return;
 
-          const amount = usdValue / usdPerCurrencyRate;
-          if (!Number.isFinite(amount)) return;
-
           if (firstValidIndex < 0) firstValidIndex = index;
           lastValidIndex = index;
-          data.push([ts, amount]);
           usdData.push([ts, usdValue]);
         });
 
-        if (data.length === 0) return null;
+        if (usdData.length === 0) return null;
 
         return {
           accountId: id,
-          accountName: resolveAccountName(seriesItem),
-          accountCurrency,
+          snapshotAccountName: resolveAccountName(seriesItem),
+          snapshotCurrency: normalizeCurrency(seriesItem?.account_currency),
           firstValidIndex,
           lastValidIndex,
           usdData,
-          data,
         };
       })
       .filter(Boolean);
@@ -214,7 +210,7 @@ async function fetchTrendData() {
     if (reqId !== requestSeq) return;
     queryError.value = e;
     snapshotSeries.value = [];
-    usdPerCnyRate.value = DEFAULT_USD_PER_CURRENCY_RATES.CNY;
+    usdPerCurrencyRates.value = { ...DEFAULT_USD_PER_CURRENCY_RATES };
     axisStartMs.value = 0;
     axisIntervalMs.value = 0;
   } finally {
@@ -260,6 +256,30 @@ onUnmounted(() => {
   stopTodayAutoRefresh();
 });
 
+function resolveSeriesAccount(entry) {
+  const account = accountById.value.get(entry?.accountId);
+  if (account) return account;
+
+  return {
+    name: entry?.snapshotAccountName,
+    currency: entry?.snapshotCurrency,
+  };
+}
+
+function buildAccountSeriesData(entry) {
+  const account = resolveSeriesAccount(entry);
+  const usdPerCurrencyRate = resolveUsdPerCurrencyRate(account, usdPerCurrencyRates.value);
+  if (!Number.isFinite(usdPerCurrencyRate) || usdPerCurrencyRate <= 0) return [];
+
+  return (entry?.usdData || [])
+    .map(([ts, usdValue]) => {
+      const amount = Number(usdValue) / usdPerCurrencyRate;
+      if (!Number.isFinite(amount)) return null;
+      return [ts, amount];
+    })
+    .filter(Boolean);
+}
+
 const chartSeries = computed(() => {
   if (!snapshotSeries.value.length) return [];
 
@@ -273,12 +293,12 @@ const chartSeries = computed(() => {
       });
     });
 
-    const cnyRate = Number(usdPerCnyRate.value);
-    if (!Number.isFinite(cnyRate) || cnyRate <= 0) return [];
+    const displayUsdRate = resolveUsdPerCurrencyRate(displayCurrency.value, usdPerCurrencyRates.value);
+    if (!Number.isFinite(displayUsdRate) || displayUsdRate <= 0) return [];
 
     const data = Array.from(usdTotalsByTs.entries())
       .map(([ts, totalUsd]) => {
-        const value = Number(totalUsd) / cnyRate;
+        const value = Number(totalUsd) / displayUsdRate;
         if (!Number.isFinite(value)) return null;
         return [ts, value];
       })
@@ -291,10 +311,10 @@ const chartSeries = computed(() => {
     const singlePoint = limitedData.length === 1;
     const summaryColor = ALL_ACCOUNTS_THEME_COLOR;
     return [{
-      id: "account-all-cny",
+      id: `account-all-${displayCurrency.value.toLowerCase()}`,
       name: "全部账户",
       accountId: "all_accounts",
-      accountCurrency: "CNY",
+      accountCurrency: displayCurrency.value,
       type: "line",
       smooth: true,
       showSymbol: singlePoint,
@@ -312,14 +332,17 @@ const chartSeries = computed(() => {
   }
 
   return snapshotSeries.value.map((entry) => {
-    const limitedData = limitSeriesPoints(entry.data, activeRangeMaxRenderPoints.value);
+    const account = resolveSeriesAccount(entry);
+    const limitedData = limitSeriesPoints(buildAccountSeriesData(entry), activeRangeMaxRenderPoints.value);
+    const accountCurrency = normalizeCurrency(account?.currency || entry.snapshotCurrency);
+    const accountName = String(account?.name ?? "").trim() || entry.snapshotAccountName;
     const singlePoint = limitedData.length === 1;
-    const seriesColor = getAccountColorById(entry.accountName ?? entry.accountId);
+    const seriesColor = getAccountColorById(accountName || entry.accountId);
     return {
       id: `account-${entry.accountId}`,
-      name: entry.accountName,
+      name: accountName,
       accountId: entry.accountId,
-      accountCurrency: entry.accountCurrency,
+      accountCurrency,
       type: "line",
       smooth: true,
       showSymbol: singlePoint,
@@ -346,12 +369,15 @@ const chartSeriesById = computed(() => {
 });
 
 const yAxisCurrency = computed(() => {
-  if (!selectedAccountId.value) return "CNY";
+  if (!selectedAccountId.value) return displayCurrency.value;
 
-  const values = snapshotSeries.value
-    .map((item) => item.accountCurrency)
-    .filter(Boolean);
-  return new Set(values).size === 1 ? values[0] : "";
+  const selectedAccount = accountById.value.get(selectedAccountId.value);
+  if (selectedAccount?.currency) return normalizeCurrency(selectedAccount.currency);
+
+  const selectedSeries = snapshotSeries.value.find((item) => item.accountId === selectedAccountId.value);
+  if (selectedSeries?.snapshotCurrency) return selectedSeries.snapshotCurrency;
+
+  return "";
 });
 
 const xAxisBounds = computed(() => {
@@ -587,4 +613,3 @@ const chartOption = computed(() => ({
     </div>
   </div>
 </template>
-

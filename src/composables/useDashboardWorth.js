@@ -1,23 +1,38 @@
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useAccountsStore } from "@/stores/accounts";
 import {
   buildAccountsValuation,
   ensureUsdPerCurrencyRates,
   getCachedUsdPerCurrencyRates,
+  resolveUsdPerCurrencyRate,
 } from "@/utils/fxRates";
+import { useDashboardDisplayCurrency } from "@/composables/useDashboardDisplayCurrency";
 
 const sharedValuedAccounts = ref([]);
 const sharedTotalWorthCny = ref(0);
+const sharedTotalWorthUsd = ref(0);
 const sharedWorthReady = ref(false);
+const sharedUsdPerCurrencyRates = ref(getCachedUsdPerCurrencyRates());
 
 export function useDashboardWorth() {
   const accountsStore = useAccountsStore();
   const { accounts, fetched, lastFetchedAt } = storeToRefs(accountsStore);
+  const { displayCurrency } = useDashboardDisplayCurrency();
 
   const valuedAccounts = sharedValuedAccounts;
   const totalWorthCny = sharedTotalWorthCny;
+  const totalWorthUsd = sharedTotalWorthUsd;
   const worthReady = sharedWorthReady;
+  const usdPerCurrencyRates = sharedUsdPerCurrencyRates;
+  const totalWorthDisplayAmount = computed(() => {
+    const usdRate = resolveUsdPerCurrencyRate(
+      displayCurrency.value,
+      usdPerCurrencyRates.value,
+    );
+    if (!Number.isFinite(usdRate) || usdRate <= 0) return 0;
+    return Number(totalWorthUsd.value) / usdRate;
+  });
 
   let syncToken = 0;
 
@@ -25,6 +40,8 @@ export function useDashboardWorth() {
     const result = buildAccountsValuation(accounts.value, rates);
     valuedAccounts.value = result.valuedAccounts;
     totalWorthCny.value = result.totalValueCny;
+    totalWorthUsd.value = result.totalValueUsd;
+    usdPerCurrencyRates.value = rates;
     worthReady.value = true;
   };
 
@@ -68,6 +85,10 @@ export function useDashboardWorth() {
     accounts,
     valuedAccounts,
     totalWorthCny,
+    totalWorthUsd,
+    totalWorthDisplayAmount,
+    displayCurrency,
+    usdPerCurrencyRates,
     worthReady,
   };
 }

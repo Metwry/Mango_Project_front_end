@@ -25,7 +25,7 @@ function joinBasePath(base, path) {
   return `${baseText}${pathText.startsWith("/") ? pathText : `/${pathText}`}`;
 }
 
-const DEFAULT_APP_VERSION = "0.9.9";
+const DEFAULT_APP_VERSION = "1.0.0";
 const DEFAULT_API_BASE_URL = "/api";
 const DEFAULT_API_TIMEOUT_MS = 10000;
 const DEFAULT_ERROR_TOAST_MIN_INTERVAL_MS = 1800;
@@ -163,6 +163,17 @@ export const DASHBOARD_WORTH_CONFIG = Object.freeze({
     "CNY",
   ).toUpperCase(),
   displayLocale: readTextEnv("VITE_DASHBOARD_DISPLAY_LOCALE", "zh-CN"),
+  displayCurrencyStorageKey: readTextEnv(
+    "VITE_DASHBOARD_DISPLAY_CURRENCY_STORAGE_KEY",
+    "dashboard_display_currency",
+  ),
+  displayCurrencyOptions: Object.freeze([
+    Object.freeze({ value: "CNY", label: "人民币" }),
+    Object.freeze({ value: "USD", label: "美元" }),
+    Object.freeze({ value: "HKD", label: "港币" }),
+    Object.freeze({ value: "EUR", label: "欧元" }),
+    Object.freeze({ value: "JPY", label: "日元" }),
+  ]),
 });
 
 export const FUND_PROPORTION_CONFIG = Object.freeze({
