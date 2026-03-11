@@ -190,7 +190,7 @@ export const DASHBOARD_TREND_CONFIG = Object.freeze({
   rangeOptions: Object.freeze([
     Object.freeze({
       key: "today",
-      label: "今天",
+      label: "过去24小时",
       level: "M15",
       days: 0,
       maxRenderPoints: readIntEnv(

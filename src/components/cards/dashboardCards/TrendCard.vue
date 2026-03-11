@@ -102,13 +102,7 @@ function toIsoWindow(days) {
 }
 
 function toTodayIsoWindow() {
-  const end = new Date();
-  const start = new Date(end);
-  start.setHours(0, 0, 0, 0);
-  return {
-    start: start.toISOString(),
-    end: end.toISOString(),
-  };
+  return toIsoWindow(1);
 }
 
 function toSnapshotNumber(value) {
