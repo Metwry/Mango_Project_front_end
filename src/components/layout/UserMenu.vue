@@ -6,7 +6,7 @@ import { onClickOutside } from '@vueuse/core'
 import BaseIcon from '../ui/BaseIcon.vue'
 import SettingsModal from '../windows/SettingsModal.vue'
 import UserProfileModal from '../windows/UserProfileModal.vue'
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 
 const router = useRouter()
 const authStore = useAuthStore()

@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref } from "vue";
 import { useIntervalFn } from "@vueuse/core";
 import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import { useAuthStore } from "@/stores/auth";
 import {
   registerByEmail,

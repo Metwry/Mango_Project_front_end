@@ -7,7 +7,7 @@ import {
   AUTH_ENDPOINTS,
 } from "@/config/Config";
 import { useAuthStore } from "@/stores/auth";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import router from "@/router";
 
 const NGROK_SKIP_HEADER = "ngrok-skip-browser-warning";

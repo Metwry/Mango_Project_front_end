@@ -26,6 +26,33 @@ export default defineConfig(({ mode }) => {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+
+            if (id.includes("echarts") || id.includes("zrender") || id.includes("vue-echarts")) {
+              return "charts";
+            }
+
+            if (id.includes("element-plus") || id.includes("@floating-ui")) {
+              return "ui";
+            }
+
+            if (id.includes("vue") || id.includes("pinia") || id.includes("vue-router")) {
+              return "vue-vendor";
+            }
+
+            if (id.includes("axios") || id.includes("dayjs") || id.includes("date-fns")) {
+              return "data-vendor";
+            }
+
+            return "vendor";
+          },
+        },
+      },
+    },
     server: {
       proxy: {
         "/api": {

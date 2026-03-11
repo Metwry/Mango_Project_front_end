@@ -7,7 +7,7 @@ import { GridComponent, TooltipComponent } from "echarts/components";
 import VChart from "vue-echarts";
 import { useResizeObserver } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import TradePositionPanel from "@/components/windows/TradePositionPanel.vue";
 import { getPayload } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";

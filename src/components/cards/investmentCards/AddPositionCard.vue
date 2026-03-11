@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { searchMarketInstruments } from "@/utils/markets";
 import { getResultsList } from "@/utils/api";

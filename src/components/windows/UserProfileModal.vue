@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { useIntervalFn } from "@vueuse/core";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import { useAuthStore } from "@/stores/auth";
 import { getPayload } from "@/utils/api";

@@ -1,7 +1,7 @@
 import { onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage, ElMessageBox } from "@/utils/element";
 import { useAccountsStore } from "@/stores/accounts";
 import { useTransactionsStore } from "@/stores/transaction";
 import { TRANSACTION_HISTORY_MODE } from "@/utils/transaction.js";
@@ -78,7 +78,11 @@ export function useBookkeepingPage() {
 
   async function confirmDanger(message) {
     try {
-      await ElMessageBox.confirm(message, "提示", { type: "warning" });
+      await ElMessageBox.confirm(message, "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      });
       return true;
     } catch (e) {
       if (isCancelAction(e)) return false;

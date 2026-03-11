@@ -4,7 +4,7 @@ import { onClickOutside } from "@vueuse/core";
 import BaseIcon from '../ui/BaseIcon.vue'
 import { useAccountsStore } from '@/stores/accounts'
 import { isInvestmentAccount as checkInvestmentAccount } from "@/utils/accounts";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage, ElMessageBox } from "@/utils/element";
 
 
 const emit = defineEmits(['close'])
@@ -97,7 +97,11 @@ const DeleteAccount = async () => {
     const id = account.value.id
     if (!id) return
     try {
-        await ElMessageBox.confirm('确定删除？删除后无法恢复。')
+        await ElMessageBox.confirm('确定删除？删除后无法恢复。', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning',
+        })
         await accountsStore.deleteAccount(id)
         emit('close')
         ElMessage.success("删除成功")

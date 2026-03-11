@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { onClickOutside } from "@vueuse/core";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import BaseIcon from '../ui/BaseIcon.vue'
 import { useAccountsStore } from '@/stores/accounts'
 

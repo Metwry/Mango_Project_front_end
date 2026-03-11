@@ -1,7 +1,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useDebounceFn, useEventListener } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import { searchMarketInstruments } from "@/utils/markets";
 import { getResultsList } from "@/utils/api";
 import { useMarketStore } from "@/stores/market";

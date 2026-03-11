@@ -4,7 +4,7 @@ import ChangeAccount from '@/components/windows/ChangeAccount.vue'
 import TransferFunds from '@/components/windows/TransferFunds.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import { computed, ref } from 'vue'
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import { useAccountsStore } from "@/stores/accounts";
 import { getAccountColorById } from '@/utils/accountColors'
 import { formatCurrencyAmount, toSafeNumber } from '@/utils/formatters'

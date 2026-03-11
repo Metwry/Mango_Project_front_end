@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import dayjs from "dayjs";
-import { ElMessage } from "element-plus";
+import { ElMessage } from "@/utils/element";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import DatePicker from "@/components/ui/DatePicker.vue";
 import AccountPicker from "@/components/ui/AccountPicker.vue";
