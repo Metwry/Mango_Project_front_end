@@ -1,23 +1,8 @@
 import api from "@/utils/api.js";
 
 const BASE_URL = "/user/accounts";
-const INVESTMENT_TYPE_VALUES = new Set([
-  "investment",
-  "invest",
-  "investment_account",
-  "investmentaccount",
-  "portfolio",
-  "投资",
-  "投资账户",
-]);
-
-function normalizeText(value) {
-  return String(value ?? "").trim().toLowerCase();
-}
-
-function isTrueFlag(value) {
-  return value === true || value === 1 || value === "1";
-}
+const INVESTMENT_ACCOUNT_NAME = "投资账户";
+const INVESTMENT_ACCOUNT_TYPE = "investment";
 
 export function getAccounts() {
   return api.get(`${BASE_URL}/`);
@@ -41,21 +26,7 @@ export function deleteAccount(id) {
 
 export function isInvestmentAccount(account) {
   if (!account || typeof account !== "object") return false;
-
-  if (
-    isTrueFlag(account?.is_investment) ||
-    isTrueFlag(account?.isInvestment) ||
-    isTrueFlag(account?.is_investment_account) ||
-    isTrueFlag(account?.isInvestmentAccount)
-  ) {
-    return true;
-  }
-
-  const typeText = normalizeText(account?.type ?? account?.account_type ?? account?.accountType);
-  if (typeText && INVESTMENT_TYPE_VALUES.has(typeText)) return true;
-
-  const nameText = normalizeText(account?.name);
-  return nameText.includes("投资账户") || nameText.includes("investment account");
+  return account.name === INVESTMENT_ACCOUNT_NAME && account.type === INVESTMENT_ACCOUNT_TYPE;
 }
 
 export function filterNonInvestmentAccounts(accounts) {

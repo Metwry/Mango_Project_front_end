@@ -30,12 +30,12 @@ const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.acco
 
 const isBuy = computed(() => props.mode === "buy");
 const safeSymbol = computed(() =>
-  String(props.position?.shortCode ?? props.position?.symbol ?? "")
+  String(props.position?.shortCode ?? "")
     .trim()
     .toUpperCase(),
 );
 const safeInstrumentId = computed(() => {
-  const n = Number(props.position?.instrumentId ?? props.position?.instrument_id);
+  const n = Number(props.position?.instrumentId);
   if (!Number.isFinite(n)) return null;
   const id = Math.trunc(n);
   return id > 0 ? id : null;
@@ -172,7 +172,7 @@ watch(
 );
 
 watch(
-  () => [props.mode, props.position?.symbol, props.position?.marketType, props.position?.currentPrice],
+  () => [props.mode, props.position?.shortCode, props.position?.marketType, props.position?.currentPrice],
   async () => {
     if (!props.visible) return;
     resetForm();

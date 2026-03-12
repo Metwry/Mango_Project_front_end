@@ -146,20 +146,8 @@ function amountDotClass(amount) {
 }
 
 function categoryTagClass(tx) {
-    const raw = String(tx?.category_name ?? tx?.category ?? "").toLowerCase();
     const buyTone = "bg-emerald-50/80 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300";
     const sellTone = "bg-rose-50/80 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300";
-    const transferTone = "bg-sky-50/80 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300";
-
-    if (/买|buy|充值|入金|转入|收入|profit|refund|返现/.test(raw)) {
-        return buyTone;
-    }
-    if (/卖|sell|支出|转出|提现|fee|tax|手续费|亏损/.test(raw)) {
-        return sellTone;
-    }
-    if (/转账|transfer|调仓|换仓/.test(raw)) {
-        return transferTone;
-    }
 
     const sign = amountSign(tx?.amount);
     if (sign > 0) return buyTone;

@@ -1,6 +1,5 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { onClickOutside } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ElMessage } from "@/utils/element";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
@@ -30,9 +29,7 @@ const transactionDirectionOptions = [
 
 const now = () => dayjs().format("YYYY-MM-DD HH:mm:ss.SSS Z");
 const isDateManuallyModified = ref(false);
-const transactionDirection = ref(TRANSACTION_DIRECTION.INCOME);
-const transactionDirectionOpen = ref(false);
-const transactionDirectionWrapRef = ref(null);
+const transactionDirection = ref(TRANSACTION_DIRECTION.EXPENSE);
 
 const form = reactive({
     account_id: null,
@@ -56,9 +53,7 @@ const normalizedRemark = computed(() => {
     const text = String(form.category_name ?? "").trim();
     return text || "无";
 });
-const currentTransactionDirectionLabel = computed(() => {
-    return transactionDirectionOptions.find((item) => item.value === transactionDirection.value)?.label ?? "收入";
-});
+const isTransactionDirectionChecked = (value) => transactionDirection.value === value;
 
 const canSubmit = computed(() => !props.submitting && form.account_id && normalizedAmount.value !== null);
 
@@ -77,13 +72,8 @@ function onAmountInput() {
     }
 }
 
-function toggleTransactionDirectionOpen() {
-    transactionDirectionOpen.value = !transactionDirectionOpen.value;
-}
-
 function pickTransactionDirection(value) {
     transactionDirection.value = value;
-    transactionDirectionOpen.value = false;
 }
 
 function resetForm() {
@@ -94,14 +84,12 @@ function resetForm() {
         amount: null,
         add_date: now(),
     });
-    transactionDirection.value = TRANSACTION_DIRECTION.INCOME;
-    transactionDirectionOpen.value = false;
+    transactionDirection.value = TRANSACTION_DIRECTION.EXPENSE;
     advancedMode.value = false;
     isDateManuallyModified.value = false;
 }
 
 function closeModal() {
-    transactionDirectionOpen.value = false;
     emit("close");
 }
 
@@ -129,10 +117,6 @@ watch(
         if (opened) resetForm();
     },
 );
-
-onClickOutside(transactionDirectionWrapRef, () => {
-    transactionDirectionOpen.value = false;
-});
 </script>
 
 <template>
@@ -170,30 +154,21 @@ onClickOutside(transactionDirectionWrapRef, () => {
 
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">收支类型:</label>
-                            <div ref="transactionDirectionWrapRef" class="relative">
-                                <button type="button" class="dropdown-trigger !h-10"
-                                    @click="toggleTransactionDirectionOpen">
-                                    <span class="truncate text-sm font-medium text-gray-700 dark:text-gray-200">
-                                        {{ currentTransactionDirectionLabel }}
+                            <div class="grid grid-cols-2 gap-3">
+                                <button v-for="option in transactionDirectionOptions" :key="option.value"
+                                    type="button"
+                                    class="transaction-direction-option"
+                                    :class="isTransactionDirectionChecked(option.value) ? 'transaction-direction-option-active' : ''"
+                                    @click="pickTransactionDirection(option.value)">
+                                    <span class="transaction-direction-checkbox" aria-hidden="true">
+                                        <BaseIcon v-if="isTransactionDirectionChecked(option.value)"
+                                            name="check"
+                                            :class="option.value === TRANSACTION_DIRECTION.INCOME
+                                                ? 'h-3.5 w-3.5 text-green-600 dark:text-green-400'
+                                                : 'h-3.5 w-3.5 text-red-600 dark:text-red-400'" />
                                     </span>
-                                    <BaseIcon name="arrow" :size="14"
-                                        :class="['dropdown-arrow', transactionDirectionOpen && 'rotate-180']" />
+                                    <span>{{ option.label }}</span>
                                 </button>
-
-                                <Transition name="dropdown-drawer">
-                                    <div v-if="transactionDirectionOpen"
-                                        class="dropdown-panel absolute left-0 top-[calc(100%+8px)] w-full">
-                                        <div class="dropdown-list !max-h-56">
-                                            <button v-for="option in transactionDirectionOptions" :key="option.value"
-                                                type="button" class="dropdown-item" :class="transactionDirection === option.value
-                                                    ? 'dropdown-item-active'
-                                                    : 'dropdown-item-idle'"
-                                                @click="pickTransactionDirection(option.value)">
-                                                {{ option.label }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </Transition>
                             </div>
                         </div>
 
@@ -239,3 +214,61 @@ onClickOutside(transactionDirectionWrapRef, () => {
 </template>
 
 <style scoped src="@/styles/modal.css"></style>
+<style scoped>
+.transaction-direction-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    height: 2.5rem;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 1rem;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(75 85 99);
+    background-color: rgb(255 255 255);
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.transaction-direction-option:hover {
+    background-color: rgb(255 255 255);
+}
+
+.transaction-direction-option-active {
+    border-color: rgb(229 231 235);
+    background-color: rgb(255 255 255);
+}
+
+.transaction-direction-checkbox {
+    display: inline-flex;
+    height: 1.125rem;
+    width: 1.125rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    background-color: rgb(243 244 246);
+}
+
+.dark .transaction-direction-option {
+    color: rgb(209 213 219);
+    border-color: var(--border-subtle);
+    background-color: var(--surface-2);
+}
+
+.dark .transaction-direction-option:hover {
+    background-color: rgba(31, 41, 55, 0.65);
+}
+
+.dark .transaction-direction-option-active {
+    border-color: var(--border-subtle);
+    background-color: var(--surface-2);
+}
+
+.dark .transaction-direction-checkbox {
+    background-color: rgba(75, 85, 99, 0.7);
+}
+</style>

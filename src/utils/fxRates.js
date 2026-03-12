@@ -24,79 +24,6 @@ function isFinitePositive(value) {
   return Number.isFinite(n) && n > 0;
 }
 
-function pickRatesSource(payload) {
-  const resolveRatesQuoteMode = (rates, base) => {
-    const baseCode = toCode(base);
-    if (baseCode === "USD") return "currency_per_usd";
-    if (baseCode) return "usd_per_currency";
-
-    const usd = Number(rates?.USD);
-    const cny = Number(rates?.CNY);
-    if (usd === 1 && Number.isFinite(cny) && cny > 1) {
-      return "currency_per_usd";
-    }
-    return "usd_per_currency";
-  };
-
-  if (payload?.usd_rates) {
-    return { source: payload.usd_rates, quoteMode: "usd_per_currency" };
-  }
-  if (payload?.exchange_rates) {
-    return { source: payload.exchange_rates, quoteMode: "usd_per_currency" };
-  }
-  if (payload?.rates) {
-    return {
-      source: payload.rates,
-      quoteMode: resolveRatesQuoteMode(payload.rates, payload?.base),
-    };
-  }
-
-  if (payload?.data?.usd_rates) {
-    return { source: payload.data.usd_rates, quoteMode: "usd_per_currency" };
-  }
-  if (payload?.data?.exchange_rates) {
-    return { source: payload.data.exchange_rates, quoteMode: "usd_per_currency" };
-  }
-  if (payload?.data?.rates) {
-    return {
-      source: payload.data.rates,
-      quoteMode: resolveRatesQuoteMode(payload.data.rates, payload?.data?.base),
-    };
-  }
-
-  if (payload?.results) {
-    return { source: payload.results, quoteMode: "usd_per_currency" };
-  }
-  if (payload?.data?.results) {
-    return { source: payload.data.results, quoteMode: "usd_per_currency" };
-  }
-
-  return { source: payload, quoteMode: "usd_per_currency" };
-}
-
-function readRateValue(raw) {
-  if (raw && typeof raw === "object") {
-    if (isFinitePositive(raw?.usd_rate)) {
-      return Number(raw.usd_rate);
-    }
-    if (isFinitePositive(raw?.usdRate)) {
-      return Number(raw.usdRate);
-    }
-
-    const candidate = Number(raw?.rate ?? raw?.value);
-    if (Number.isFinite(candidate) && candidate > 0) {
-      return candidate;
-    }
-    return null;
-  }
-
-  const direct = Number(raw);
-  if (Number.isFinite(direct) && direct > 0) {
-    return direct;
-  }
-  return null;
-}
-
 export function getUsdPerCnyRate(usdPerCurrencyRates) {
   const candidate = Number(
     usdPerCurrencyRates?.CNY ?? DEFAULT_USD_PER_CURRENCY_RATES.CNY,
@@ -107,40 +34,18 @@ export function getUsdPerCnyRate(usdPerCurrencyRates) {
 }
 
 export function normalizeUsdPerCurrencyRates(payload) {
-  const { source, quoteMode } = pickRatesSource(payload);
   const normalized = { USD: 1 };
-
-  if (Array.isArray(source)) {
-    source.forEach((item) => {
-      const code = toCode(item?.currency ?? item?.code ?? item?.symbol);
-      const rawRate = readRateValue(item);
-      if (!code || !rawRate) return;
-
-      const usdPerCurrency =
-        quoteMode === "currency_per_usd" && code !== "USD"
-          ? 1 / rawRate
-          : rawRate;
-
-      if (isFinitePositive(usdPerCurrency)) {
-        normalized[code] = usdPerCurrency;
-      }
-    });
+  const rates = payload?.rates;
+  if (!rates || typeof rates !== "object") {
     return normalized;
   }
 
-  if (!source || typeof source !== "object") {
-    return normalized;
-  }
-
-  Object.entries(source).forEach(([rawCode, rawValue]) => {
+  Object.entries(rates).forEach(([rawCode, rawValue]) => {
     const code = toCode(rawCode);
-    const rawRate = readRateValue(rawValue);
+    const rawRate = Number(rawValue);
     if (!code || !rawRate) return;
 
-    const usdPerCurrency =
-      quoteMode === "currency_per_usd" && code !== "USD"
-        ? 1 / rawRate
-        : rawRate;
+    const usdPerCurrency = code === "USD" ? 1 : 1 / rawRate;
 
     if (isFinitePositive(usdPerCurrency)) {
       normalized[code] = usdPerCurrency;
@@ -151,9 +56,6 @@ export function normalizeUsdPerCurrencyRates(payload) {
 }
 
 export function resolveUsdPerCurrencyRate(target, usdPerCurrencyRates) {
-  const customRate = Number(target?.usd_rate ?? target?.usdRate);
-  if (isFinitePositive(customRate)) return customRate;
-
   const currency = toCode(
     typeof target === "string" ? target : (target?.currency || "USD"),
   );

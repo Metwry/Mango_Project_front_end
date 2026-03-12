@@ -33,19 +33,19 @@ const props = defineProps({
 });
 
 const safeName = computed(() => props.position?.name ?? "未命名股票");
-const safeSymbol = computed(() => String(props.position?.symbol ?? "").trim().toUpperCase());
+const safeSymbol = computed(() => String(props.position?.shortCode ?? "").trim().toUpperCase());
 const safeMarketType = computed(() => String(props.position?.marketType ?? "").trim().toUpperCase());
 const investmentStore = useInvestmentStore();
 const { trading } = storeToRefs(investmentStore);
 
 const TRADE_PANEL_OPEN_EVENT = "investment:trade-panel-open";
 const tradePanelKey = computed(() => {
-  const instrumentId = Number(props.position?.instrumentId ?? props.position?.instrument_id);
+  const instrumentId = Number(props.position?.instrumentId);
   if (Number.isFinite(instrumentId) && instrumentId > 0) {
     return `instrument:${Math.trunc(instrumentId)}`;
   }
 
-  const symbol = String(props.position?.symbol ?? props.position?.shortCode ?? "")
+  const symbol = String(props.position?.shortCode ?? "")
     .trim()
     .toUpperCase();
   return symbol ? `symbol:${symbol}` : `uid:${getCurrentInstance()?.uid ?? "0"}`;
@@ -185,12 +185,10 @@ function limitSeriesPoints(points, maxPoints = POSITION_TREND_CONFIG.maxRenderPo
 }
 
 const instrumentId = computed(() => toPositiveInt(
-  props.position?.instrumentId ?? props.position?.instrument_id,
+  props.position?.instrumentId,
 ));
 const snapshotAccountId = computed(() => toPositiveInt(
-  props.position?.accountId ??
-  props.position?.account_id ??
-  props.investmentAccountId,
+  props.position?.accountId ?? props.investmentAccountId,
 ));
 
 const tone = computed(() => {

@@ -46,7 +46,7 @@ const openEditModal = (item) => {
 }
 
 const getAccountBadgeStyle = (account) => {
-    const accountKey = account?.name ?? account?.id ?? account?.accountId ?? account?.account_id ?? ''
+    const accountKey = account?.name ?? account?.id ?? ''
     const color = getAccountColorById(accountKey)
     return {
         borderColor: color,
@@ -55,7 +55,7 @@ const getAccountBadgeStyle = (account) => {
 }
 
 const getAccountThemeColor = (account) => {
-    const accountKey = account?.name ?? account?.id ?? account?.accountId ?? account?.account_id ?? ''
+    const accountKey = account?.name ?? account?.id ?? ''
     return getAccountColorById(accountKey)
 }
 

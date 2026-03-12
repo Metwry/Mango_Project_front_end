@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { ElMessage } from "@/utils/element";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { searchMarketInstruments } from "@/utils/markets";
-import { getResultsList } from "@/utils/api";
+import { getPayload } from "@/utils/api";
 import { filterNonInvestmentAccounts } from "@/utils/accounts";
 import { useInvestmentStore } from "@/stores/investment";
 import { SEARCH_CONFIG } from "@/config/Config";
@@ -61,29 +61,22 @@ function getMarketLabel(code) {
 }
 
 function getInstrumentId(item) {
-  const raw = item?.instrument_id ?? item?.instrumentId;
-  const n = Number(raw);
+  const n = Number(item?.instrument_id);
   return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
 }
 
 function getSearchItemPrice(item) {
-  const n = Number(
-    item?.latest_price ??
-    item?.price ??
-    item?.last_price ??
-    item?.current_price,
-  );
-  return Number.isFinite(n) && n > 0 ? String(n) : "";
+  return "";
 }
 
 function getSearchItemSymbol(item) {
-  return String(item?.short_code ?? item?.symbol ?? item?.stock_code ?? "")
+  return String(item?.short_code ?? "")
     .trim()
     .toUpperCase();
 }
 
 function getSearchItemName(item) {
-  return String(item?.name ?? item?.stock_name ?? item?.symbol_name ?? "").trim();
+  return String(item?.name ?? "").trim();
 }
 
 function pickFirstAccountId() {
@@ -164,7 +157,7 @@ async function executeSearch(query) {
   try {
     const res = await searchMarketInstruments(normalized);
     if (reqId !== searchRequestSeq) return;
-    searchResults.value = getResultsList(res, []);
+    searchResults.value = getPayload(res, { results: [] }).results;
   } catch {
     if (reqId !== searchRequestSeq) return;
     resetSearchResult();
@@ -282,7 +275,7 @@ watch(
             </div>
 
             <button v-for="item in searchResults"
-              :key="item.instrument_id ?? `${getSearchItemSymbol(item)}-${getSearchItemName(item)}-${item.market}`"
+              :key="item.instrument_id"
               type="button" class="market-search-item !px-2 sm:!px-2" @mousedown.prevent="pickSearchResult(item)">
               <div
                 class="market-search-grid !grid-cols-[54px_minmax(0,1fr)_42px] !gap-x-0.5 sm:!grid-cols-[72px_minmax(0,1fr)_52px] sm:!gap-x-1">

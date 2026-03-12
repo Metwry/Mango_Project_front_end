@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { getPayload, getResultsList } from "@/utils/api";
+import { getPayload } from "@/utils/api";
 import {
   buyInvestmentPosition as apiBuyInvestmentPosition,
   getInvestmentPositions,
@@ -25,12 +25,12 @@ function toPositiveDecimalString(value) {
 }
 
 function normalizeLogoUrl(raw) {
-  const url = String(raw?.logo_url ?? raw?.logoUrl ?? "").trim();
+  const url = String(raw?.logo_url ?? "").trim();
   return url || "";
 }
 
 function normalizeLogoColor(raw) {
-  const color = String(raw?.logo_color ?? raw?.logoColor ?? "").trim().toUpperCase();
+  const color = String(raw?.logo_color ?? "").trim().toUpperCase();
 
   if (/^#[0-9A-F]{6}$/.test(color)) return color;
   if (/^#[0-9A-F]{3}$/.test(color)) {
@@ -47,10 +47,10 @@ function normalizeQuoteRows(payload) {
 }
 
 function normalizePosition(raw) {
-  const instrumentId = toFiniteNumber(raw?.instrument_id ?? raw?.id);
-  const accountId = toFiniteNumber(raw?.account_id ?? raw?.investment_account_id ?? raw?.accountId);
-  const shortCode = String(raw?.short_code ?? raw?.stock_code ?? "").trim().toUpperCase();
-  const stockName = String(raw?.name ?? raw?.stock_name ?? "").trim();
+  const instrumentId = toFiniteNumber(raw?.instrument_id);
+  const accountId = toFiniteNumber(raw?.account_id);
+  const shortCode = String(raw?.short_code ?? "").trim().toUpperCase();
+  const stockName = String(raw?.name ?? "").trim();
   const marketType = String(raw?.market_type ?? "").trim().toUpperCase();
   const costPrice = toFiniteNumber(raw?.current_cost_price);
   const quantity = toFiniteNumber(raw?.current_quantity);
@@ -83,7 +83,7 @@ function buildQuoteItems(rows) {
 
   rows.forEach((row) => {
     const market = String(row?.marketType ?? "").trim().toUpperCase();
-    const shortCode = String(row?.shortCode ?? row?.symbol ?? "").trim().toUpperCase();
+    const shortCode = String(row?.shortCode ?? "").trim().toUpperCase();
     if (!market || !shortCode) return;
 
     const key = `${market}__${shortCode}`;
@@ -111,7 +111,7 @@ function applyLatestQuotes(rows, quotes) {
 
   return rows.map((row) => {
     const quantity = Number(row?.quantity);
-    const key = `${String(row?.marketType ?? "").toUpperCase()}__${String(row?.shortCode ?? row?.symbol ?? "").toUpperCase()}`;
+    const key = `${String(row?.marketType ?? "").toUpperCase()}__${String(row?.shortCode ?? "").toUpperCase()}`;
     const quote = latestMap.get(key) ?? null;
     const price = quote?.latestPrice;
     return {
@@ -153,15 +153,10 @@ export const useInvestmentStore = defineStore("investment", () => {
   });
 
   function normalizeTradePayload(raw) {
-    const instrumentId = Number(raw?.instrument_id ?? raw?.instrumentId);
+    const instrumentId = Number(raw?.instrument_id);
     const quantity = toPositiveDecimalString(raw?.quantity);
     const price = toPositiveDecimalString(raw?.price);
-    const cashAccountId = Number(
-      raw?.cash_account_id ??
-      raw?.cashAccountId ??
-      raw?.account_id ??
-      raw?.accountId,
-    );
+    const cashAccountId = Number(raw?.cash_account_id);
 
     return {
       instrument_id: Number.isFinite(instrumentId) ? Math.trunc(instrumentId) : null,
@@ -232,7 +227,7 @@ export const useInvestmentStore = defineStore("investment", () => {
     const p = (async () => {
       try {
         const res = await getInvestmentPositions();
-        const rows = getResultsList(res, []);
+        const rows = getPayload(res, []);
         positions.value = rows.map((item) => normalizePosition(item));
 
         fetched.value = true;

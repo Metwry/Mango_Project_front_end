@@ -7,7 +7,7 @@ import {
   deleteAccount as apiDeleteAccount,
   getAccountDetail,
 } from "@/utils/accounts";
-import { getPayload, getResultsList } from "@/utils/api";
+import { getPayload } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 import { AUTO_REFRESH_ENABLED, STORE_REFRESH_CONFIG } from "@/config/Config";
 
@@ -64,8 +64,7 @@ export const useAccountsStore = defineStore("accounts", () => {
     const p = (async () => {
       try {
         const res = await getAccounts();
-        const list = getResultsList(res);
-        accounts.value = list;
+        accounts.value = getPayload(res, []);
 
         fetched.value = true;
         lastFetchedAt.value = Date.now();
@@ -109,9 +108,22 @@ export const useAccountsStore = defineStore("accounts", () => {
     try {
       const res = await apiUpdateAccount(id, payload);
       const data = getPayload(res);
-      if (data) detailMap[id] = data;
+      if (data) {
+        const index = accounts.value.findIndex((item) => item.id === id);
+        if (index !== -1) {
+          accounts.value[index] = {
+            ...accounts.value[index],
+            ...data,
+          };
+        }
+        detailMap[id] = {
+          ...(detailMap[id] || {}),
+          ...data,
+        };
+        fetched.value = true;
+        lastFetchedAt.value = Date.now();
+      }
 
-      await refreshAccounts();
       return data;
     } catch (e) {
       actionError.value = e;

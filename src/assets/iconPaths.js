@@ -62,4 +62,5 @@ export const iconPaths = {
   switchHorizontal: "M4 7h11m0 0l-3-3m3 3l-3 3M20 17H9m0 0l3-3m-3 3l3 3",
   // 日历
   date: "M6 2a1 1 0 012 0v1h4V2a1 1 0 112 0v1h1a2 2 0 012 2v2H3V5a2 2 0 012-2h1V2zm13 7H3v7a2 2 0 002 2h12a2 2 0 002-2V9z",
+  check: "M5 12.5l4 4 10-10",
 };

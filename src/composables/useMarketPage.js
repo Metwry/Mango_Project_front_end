@@ -3,7 +3,7 @@ import { useDebounceFn, useEventListener } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "@/utils/element";
 import { searchMarketInstruments } from "@/utils/markets";
-import { getResultsList } from "@/utils/api";
+import { getPayload } from "@/utils/api";
 import { useMarketStore } from "@/stores/market";
 import { AUTO_REFRESH_ENABLED, SEARCH_CONFIG } from "@/config/Config";
 
@@ -33,9 +33,7 @@ function getMarketOrderIndex(market) {
 
 function buildQuoteRowKey(market, quote) {
   const shortCode = String(quote?.short_code ?? "").trim().toUpperCase();
-  const symbol = String(quote?.symbol ?? "").trim().toUpperCase();
-  const name = String(quote?.name ?? "").trim().toUpperCase();
-  return `${market}-${shortCode || symbol || name || "UNKNOWN"}`;
+  return `${market}-${shortCode || "UNKNOWN"}`;
 }
 
 export function useMarketPage() {
@@ -178,7 +176,7 @@ export function useMarketPage() {
       const res = await searchMarketInstruments(query);
       if (reqId !== searchRequestSeq) return;
 
-      const rows = getResultsList(res, []);
+      const rows = getPayload(res, { results: [] }).results;
       searchResults.value = rows;
       setSearchCache(query, rows);
       lastSearchedQuery = query;
@@ -247,7 +245,7 @@ export function useMarketPage() {
   }
 
   async function pickSearchResult(item) {
-    const symbol = String(item?.symbol ?? item?.short_code ?? "").trim().toUpperCase();
+    const symbol = String(item?.symbol ?? "").trim().toUpperCase();
     if (!symbol) {
       ElMessage.error("标的代码无效，无法添加");
       return;

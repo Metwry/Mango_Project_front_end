@@ -338,6 +338,19 @@
   border-color: var(--border-subtle);
 }
 
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  .input-base,
+  .dropdown-trigger {
+    font-size: 16px !important;
+  }
+}
+
 .dark .market-market-tag {
   background-color: var(--surface-selected);
 }

@@ -77,7 +77,7 @@ function isValidEmail(value) {
 
 function extractErrorMessage(error) {
   const payload = error?.response?.data;
-  const raw = payload?.message ?? payload?.massage;
+  const raw = payload?.message;
 
   if (typeof raw === "string") return raw.trim() || "登录失败";
   if (Array.isArray(raw)) {

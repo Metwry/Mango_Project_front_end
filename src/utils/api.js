@@ -61,7 +61,7 @@ function notifyError(message, { key = String(message ?? "") } = {}) {
 }
 
 function extractBackendErrorMessage(payload) {
-  const raw = payload?.massage ?? payload?.message;
+  const raw = payload?.message;
   if (typeof raw === "string") {
     const text = raw.trim();
     return text || "";

@@ -92,13 +92,11 @@ async function submitUsernameUpdate() {
   try {
     const res = await updateUsername(username);
     const payload = getPayload(res, {});
-    const userPayload = payload?.user ?? {};
     authStore.setUser({
       ...authStore.user,
-      ...userPayload,
-      username: String(userPayload?.username ?? username).trim(),
+      ...payload.user,
     });
-    ElMessage.success(payload?.message || "用户名修改成功");
+    ElMessage.success(payload.message || "用户名修改成功");
     closeModal();
   } finally {
     submitting.value = false;
@@ -139,7 +137,7 @@ async function submitPasswordUpdate() {
   try {
     const res = await resetPasswordByEmail({ email, code, password });
     const payload = getPayload(res, {});
-    ElMessage.success(payload?.message || "密码重置成功");
+    ElMessage.success(payload.message || "密码重置成功");
     passwordForm.value.code = "";
     passwordForm.value.password = "";
     backToMenu();
