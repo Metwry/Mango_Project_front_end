@@ -11,6 +11,7 @@ const investmentStore = useInvestmentStore();
 const accountsStore = useAccountsStore();
 const { loading, error, positions } = storeToRefs(investmentStore);
 const { accounts } = storeToRefs(accountsStore);
+// 计算投资账户的账户 ID，供交易和展示逻辑复用。
 const investmentAccountId = computed(() => {
   const investmentAccount = (accounts.value || []).find((item) => isInvestmentAccount(item));
   const n = Number(investmentAccount?.id);

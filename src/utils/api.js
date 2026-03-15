@@ -28,14 +28,17 @@ const AUTH_FREE_PATHS = ["/login/", "/token/refresh/"];
 let lastErrorToastAt = 0;
 let lastErrorToastKey = "";
 
+// 判断当前请求是否属于无需鉴权的接口。
 function isAuthFreeRequest(url = "") {
   return AUTH_FREE_PATHS.some((path) => String(url).includes(path));
 }
 
+// 判断当前页面是否处于后台隐藏状态。
 function isPageHidden() {
   return typeof document !== "undefined" && document.hidden;
 }
 
+// 根据时间间隔和去重规则判断是否应抑制错误提示。
 function shouldSuppressErrorToast(key = "", now = Date.now()) {
   if (isPageHidden()) return true;
 
@@ -48,6 +51,7 @@ function shouldSuppressErrorToast(key = "", now = Date.now()) {
   return false;
 }
 
+// 统一弹出错误提示，并按节流规则避免频繁打扰用户。
 function notifyError(message, { key = String(message ?? "") } = {}) {
   const text = String(message ?? "").trim();
   if (!text) return;
@@ -60,6 +64,7 @@ function notifyError(message, { key = String(message ?? "") } = {}) {
   ElMessage.error(text);
 }
 
+// 从后端响应体中提取可直接展示的错误信息。
 function extractBackendErrorMessage(payload) {
   const raw = payload?.message;
   if (typeof raw === "string") {
@@ -99,19 +104,31 @@ api.interceptors.request.use(
   },
 );
 
-let isRefreshing = false;
-let requestsQueue = [];
+let refreshPromise = null;
 
-const processQueue = (error, token = null) => {
-  requestsQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  requestsQueue = [];
-};
+// 刷新访问令牌，并在并发 401 场景下复用同一个刷新请求。
+function refreshAccessToken(auth) {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = axios
+    .post(AUTH_ENDPOINTS.tokenRefreshUrl, {
+      refresh: auth.refreshToken,
+    })
+    .then(({ data }) => {
+      const newToken = String(data?.access ?? "").trim();
+      if (!newToken) {
+        throw new Error("Token refresh response missing access token");
+      }
+
+      auth.setAccessToken(newToken);
+      return newToken;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
 
 api.interceptors.response.use(
   (response) => response,
@@ -142,47 +159,20 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          requestsQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers = originalRequest.headers || {};
-            originalRequest.headers["Authorization"] = `Bearer ${token}`;
-            return api(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        const { data: resData } = await axios.post(AUTH_ENDPOINTS.tokenRefreshUrl, {
-          refresh: auth.refreshToken,
-        });
-
-        if (resData.access) {
-          const newToken = resData.access;
-          auth.setAccessToken(newToken);
-
-          api.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
-          originalRequest.headers = originalRequest.headers || {};
-          originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-          processQueue(null, newToken);
-
-          return api(originalRequest);
-        }
+        const newToken = await refreshAccessToken(auth);
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+        return api(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
         await auth.logout();
         router.replace("/login");
         if (!suppressErrorToast) {
           notifyError("登录已过期，请重新登录", { key: "401_refresh_failed" });
         }
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 
@@ -194,34 +184,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
-
-export function getPayload(response, fallback = null) {
-  return response?.data ?? response ?? fallback;
-}
-
-export function getResultsList(response, fallback = []) {
-  const payload = getPayload(response, null);
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.results)) return payload.results;
-  return fallback;
-}
-
-export function getPagedList(response) {
-  const payload = getPayload(response, null);
-  if (payload && Array.isArray(payload.results)) {
-    return {
-      list: payload.results,
-      total: payload.count ?? payload.results.length,
-    };
-  }
-  if (Array.isArray(payload)) {
-    return {
-      list: payload,
-      total: payload.length,
-    };
-  }
-  return { list: [], total: 0 };
-}
 
 export default api;
 

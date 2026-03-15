@@ -5,8 +5,8 @@ import { storeToRefs } from "pinia";
 import { ElMessage } from "@/utils/element";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { searchMarketInstruments } from "@/utils/markets";
-import { getPayload } from "@/utils/api";
 import { filterNonInvestmentAccounts } from "@/utils/accounts";
+import { getMarketLabel } from "@/utils/marketMeta";
 import { useInvestmentStore } from "@/stores/investment";
 import { SEARCH_CONFIG } from "@/config/Config";
 
@@ -39,34 +39,13 @@ const SEARCH_DEBOUNCE_MS = SEARCH_CONFIG.addPosition.debounceMs;
 const SEARCH_DROPDOWN_HIDE_DELAY_MS = SEARCH_CONFIG.addPosition.dropdownHideDelayMs;
 let searchRequestSeq = 0;
 
-const MARKET_LABEL_MAP = {
-  CN: "A股",
-  HK: "港股",
-  US: "美股",
-  FX: "外汇",
-  CRYPTO: "加密货币",
-};
-
 function normalizeQuery(value) {
   return String(value ?? "").trim().replace(/\s+/g, " ");
-}
-
-function normalizeMarketCode(value) {
-  return String(value ?? "").trim().toUpperCase();
-}
-
-function getMarketLabel(code) {
-  const normalized = normalizeMarketCode(code);
-  return MARKET_LABEL_MAP[normalized] || normalized || "未知";
 }
 
 function getInstrumentId(item) {
   const n = Number(item?.instrument_id);
   return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
-}
-
-function getSearchItemPrice(item) {
-  return "";
 }
 
 function getSearchItemSymbol(item) {
@@ -157,7 +136,7 @@ async function executeSearch(query) {
   try {
     const res = await searchMarketInstruments(normalized);
     if (reqId !== searchRequestSeq) return;
-    searchResults.value = getPayload(res, { results: [] }).results;
+    searchResults.value = Array.isArray(res.data?.results) ? res.data.results : [];
   } catch {
     if (reqId !== searchRequestSeq) return;
     resetSearchResult();
@@ -179,7 +158,7 @@ function pickSearchResult(item) {
 
   selectedInstrument.value = item;
   keywordInput.value = getSearchItemSymbol(item);
-  form.price = getSearchItemPrice(item);
+  form.price = "";
   showSearchDropdown.value = false;
 }
 
@@ -288,7 +267,7 @@ watch(
                   {{ getSearchItemName(item) || "--" }}
                 </span>
                 <span class="text-right">
-                  <span class="market-market-tag !px-1 !py-0 !text-[11px]">{{ getMarketLabel(item.market) }}</span>
+                  <span class="market-market-tag !px-1 !py-0 !text-[11px]">{{ getMarketLabel(item.market, "未知") }}</span>
                 </span>
               </div>
             </button>

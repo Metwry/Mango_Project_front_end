@@ -4,7 +4,6 @@ import { useIntervalFn } from "@vueuse/core";
 import { ElMessage } from "@/utils/element";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import { useAuthStore } from "@/stores/auth";
-import { getPayload } from "@/utils/api";
 import {
   resetPasswordByEmail,
   sendPasswordResetEmailCode,
@@ -91,7 +90,7 @@ async function submitUsernameUpdate() {
   submitting.value = true;
   try {
     const res = await updateUsername(username);
-    const payload = getPayload(res, {});
+    const payload = res.data ?? {};
     authStore.setUser({
       ...authStore.user,
       ...payload.user,
@@ -136,7 +135,7 @@ async function submitPasswordUpdate() {
   submitting.value = true;
   try {
     const res = await resetPasswordByEmail({ email, code, password });
-    const payload = getPayload(res, {});
+    const payload = res.data ?? {};
     ElMessage.success(payload.message || "密码重置成功");
     passwordForm.value.code = "";
     passwordForm.value.password = "";

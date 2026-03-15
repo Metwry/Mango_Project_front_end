@@ -1,3 +1,4 @@
+// 计算距离下一个分钟对齐刷新时间点还需要等待的毫秒数。
 export function getMsToNextMinuteTick({
   intervalMinutes = 10,
   second = 0,
@@ -19,6 +20,7 @@ export function getMsToNextMinuteTick({
   return Math.max(minDelayMs, next.getTime() - current.getTime());
 }
 
+// 创建一个按固定分钟间隔对齐执行的定时调度器。
 export function createMinuteAlignedScheduler({
   intervalMinutes = 10,
   second = 0,
@@ -34,12 +36,14 @@ export function createMinuteAlignedScheduler({
   let timer = null;
   let started = false;
 
+  // 清理当前已注册的定时器。
   function clearTimer() {
     if (!timer) return;
     clearTimeout(timer);
     timer = null;
   }
 
+  // 安排下一次定时执行任务，并在执行完成后继续递归调度。
   function scheduleNext() {
     if (!started) return;
 
@@ -69,12 +73,14 @@ export function createMinuteAlignedScheduler({
     }));
   }
 
+  // 启动调度器。
   function start() {
     if (started) return;
     started = true;
     scheduleNext();
   }
 
+  // 停止调度器并清理定时器。
   function stop() {
     started = false;
     clearTimer();
@@ -84,23 +90,4 @@ export function createMinuteAlignedScheduler({
     start,
     stop,
   };
-}
-
-export function getMsToNextHourlyTick({
-  minute = 0,
-  second = 0,
-  now = new Date(),
-  minDelayMs = 1000,
-} = {}) {
-  const safeMinute = Math.min(59, Math.max(0, Math.floor(Number(minute) || 0)));
-  const safeSecond = Math.min(59, Math.max(0, Math.floor(Number(second) || 0)));
-  const current = now instanceof Date ? now : new Date(now);
-  const next = new Date(current);
-
-  next.setMinutes(safeMinute, safeSecond, 0);
-  if (next.getTime() <= current.getTime()) {
-    next.setHours(next.getHours() + 1);
-  }
-
-  return Math.max(minDelayMs, next.getTime() - current.getTime());
 }

@@ -37,20 +37,18 @@ const {
 const marketDropdownOpen = ref(false);
 const marketDropdownWrapRef = ref(null);
 
+// 生成市场下拉列表选项，并补上“全部”选项。
 const marketOptions = computed(() => [
   { market: "ALL", label: "全部", count: allQuotes.value.length },
   ...marketButtons.value,
 ]);
 
-const currentMarketCount = computed(() => {
-  if (selectedMarket.value === "ALL") return allQuotes.value.length;
-  return marketButtons.value.find((item) => item.market === selectedMarket.value)?.count ?? 0;
-});
-
+// 切换市场下拉面板的展开状态。
 function toggleMarketDropdown() {
   marketDropdownOpen.value = !marketDropdownOpen.value;
 }
 
+// 选择一个市场并关闭下拉面板。
 function onPickMarket(market) {
   chooseMarket(market);
   marketDropdownOpen.value = false;
@@ -70,7 +68,7 @@ onClickOutside(marketDropdownWrapRef, () => {
             <div ref="marketDropdownWrapRef" class="relative w-full shrink-0 sm:w-[220px]">
               <button type="button" class="dropdown-trigger" @click="toggleMarketDropdown">
                 <span class="truncate text-sm text-gray-700 dark:text-gray-200">
-                  自选：{{ selectedMarketLabel }}（{{ currentMarketCount }}）
+                  自选：{{ selectedMarketLabel }}（{{ visibleQuotes.length }}）
                 </span>
                 <BaseIcon name="arrow" class="dropdown-arrow" :class="marketDropdownOpen ? 'rotate-180' : ''" />
               </button>

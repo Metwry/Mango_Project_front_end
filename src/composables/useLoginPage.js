@@ -36,12 +36,14 @@ const modeOptions = Object.entries(MODE_META).map(([key, meta]) => ({
   label: meta.label,
 }));
 
+// 仅保留字符串中的数字字符，并限制最大长度。
 function toDigits(value, maxLength = Infinity) {
   return String(value ?? "")
     .replace(/\D+/g, "")
     .slice(0, maxLength);
 }
 
+// 管理验证码倒计时状态，并提供开始和停止方法。
 function useCountdown() {
   const seconds = ref(0);
   const { pause, resume } = useIntervalFn(() => {
@@ -53,11 +55,13 @@ function useCountdown() {
     seconds.value -= 1;
   }, 1000, { immediate: false });
 
+  // 启动倒计时并设置剩余秒数。
   const start = (duration = 60) => {
     seconds.value = Math.max(0, Number(duration) || 0);
     if (seconds.value > 0) resume();
   };
 
+  // 停止倒计时并重置为零。
   const stop = () => {
     seconds.value = 0;
     pause();
@@ -70,11 +74,13 @@ function useCountdown() {
   };
 }
 
+// 校验邮箱格式是否满足基础要求。
 function isValidEmail(value) {
   const email = String(value ?? "").trim();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// 从接口错误对象中提取适合展示的错误文案。
 function extractErrorMessage(error) {
   const payload = error?.response?.data;
   const raw = payload?.message;
@@ -88,6 +94,7 @@ function extractErrorMessage(error) {
   return "登录失败，请检查账号和密码";
 }
 
+// 提供登录页的模式切换、表单提交和验证码发送逻辑。
 export function useLoginPage() {
   const auth = useAuthStore();
   const router = useRouter();
@@ -121,18 +128,24 @@ export function useLoginPage() {
   const previousModeIndex = ref(0);
   const slideDirection = ref("next");
 
+  // 计算当前登录模式在切换列表中的位置。
   const modeIndex = computed(() => {
     return modeOptions.findIndex((mode) => mode.key === activeMode.value);
   });
 
+  // 根据切换方向返回页面切换动画名称。
   const transitionName = computed(() => {
     return slideDirection.value === "next" ? "mode-slide-next" : "mode-slide-prev";
   });
 
+  // 返回当前模式的标题文案。
   const modeTitle = computed(() => MODE_META[activeMode.value]?.title ?? "");
+  // 返回当前模式的副标题文案。
   const modeSubtitle = computed(() => MODE_META[activeMode.value]?.subtitle ?? "");
+  // 返回当前模式的提交按钮文案。
   const submitLabel = computed(() => MODE_META[activeMode.value]?.submitLabel ?? "");
 
+  // 切换登录模式，并同步更新过渡动画方向。
   const switchMode = (mode) => {
     if (mode === activeMode.value) return;
     const nextIndex = modeOptions.findIndex((item) => item.key === mode);
@@ -141,6 +154,7 @@ export function useLoginPage() {
     activeMode.value = mode;
   };
 
+  // 发送注册邮箱验证码，并启动倒计时。
   const sendRegisterEmailCodeAction = async () => {
     if (registerCountdown.seconds.value > 0 || registerCodeSending.value) return;
 
@@ -160,6 +174,7 @@ export function useLoginPage() {
     }
   };
 
+  // 发送重置密码验证码，并启动倒计时。
   const sendResetEmailCodeAction = async () => {
     if (resetCountdown.seconds.value > 0 || resetCodeSending.value) return;
 
@@ -179,6 +194,7 @@ export function useLoginPage() {
     }
   };
 
+  // 提交邮箱登录表单，并在成功后跳转首页。
   const submitEmailLogin = async () => {
     const email = String(emailLoginForm.value.email ?? "").trim();
     const password = String(emailLoginForm.value.password ?? "");
@@ -198,6 +214,7 @@ export function useLoginPage() {
     }
   };
 
+  // 提交邮箱注册表单，并在成功后切回登录模式。
   const submitEmailRegister = async () => {
     const email = String(emailRegisterForm.value.email ?? "").trim().toLowerCase();
     const code = toDigits(emailRegisterForm.value.code, 6);
@@ -220,6 +237,7 @@ export function useLoginPage() {
     }
   };
 
+  // 提交邮箱重置密码表单，并在成功后回到登录模式。
   const submitEmailReset = async () => {
     const email = String(emailResetForm.value.email ?? "").trim().toLowerCase();
     const code = toDigits(emailResetForm.value.code, 6);
@@ -247,6 +265,7 @@ export function useLoginPage() {
     }
   };
 
+  // 根据当前模式分发到对应的提交处理函数。
   const handleSubmit = async () => {
     const submitterMap = {
       emailLogin: submitEmailLogin,

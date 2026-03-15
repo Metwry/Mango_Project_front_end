@@ -9,7 +9,6 @@ import { useResizeObserver } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "@/utils/element";
 import TradePositionPanel from "@/components/windows/TradePositionPanel.vue";
-import { getPayload } from "@/utils/api";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 import { buildSnapshotTimeline, getPositionSnapshots } from "@/utils/snapshot";
 import { useInvestmentStore } from "@/stores/investment";
@@ -495,7 +494,7 @@ async function fetchPositionTrend() {
     const res = await getPositionSnapshots(params);
     if (reqId !== trendRequestSeq) return;
 
-    const payload = getPayload(res, {});
+    const payload = res.data ?? {};
     const timeline = buildSnapshotTimeline(payload?.meta);
     const axisStart = new Date(String(payload?.meta?.axis_start_time ?? "")).getTime();
     trendAxisStartMs.value = Number.isFinite(axisStart) ? axisStart : 0;

@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed } from "vue";
 import { useFloating, offset, flip, shift, size, autoUpdate } from "@floating-ui/vue";
+import { onClickOutside } from "@vueuse/core";
 import BaseIcon from "./BaseIcon.vue";
 import { formatCurrencyAmount } from "@/utils/formatters";
 
@@ -76,23 +77,7 @@ function isSelected(id) {
     return selectedAccountId.value === String(id ?? "");
 }
 
-/** 点击外部关闭 */
-function onDocClick(e) {
-    if (!open.value) return;
-    const target = e.target;
-    // 如果点击的是按钮本身或下拉框内部，不关闭
-    if (referenceRef.value?.contains(target)) return;
-    if (floatingRef.value?.contains(target)) return;
-    close();
-}
-
-onMounted(() => {
-    document.addEventListener("mousedown", onDocClick);
-});
-
-onUnmounted(() => {
-    document.removeEventListener("mousedown", onDocClick);
-});
+onClickOutside(referenceRef, close, { ignore: [floatingRef] });
 </script>
 
 <template>

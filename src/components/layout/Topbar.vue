@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { onClickOutside } from '@vueuse/core';
 import BaseIcon from '../ui/BaseIcon.vue';
 import UserMenu from './UserMenu.vue';
+import { normalizeRoutePath } from '@/utils/router';
 
 const props = defineProps({
     title: { type: String, },
@@ -16,23 +17,19 @@ const router = useRouter();
 const mobileNavRef = ref(null);
 const showMobileNavMenu = ref(false);
 
-function normalizePath(path = '') {
-    return String(path).replace(/\/+$/, '') || '/';
-}
-
 const currentMenuItem = computed(() => {
-    const currentPath = normalizePath(route.path);
-    return props.menuItems.find((item) => normalizePath(item?.path) === currentPath) || null;
+    const currentPath = normalizeRoutePath(route.path);
+    return props.menuItems.find((item) => normalizeRoutePath(item?.path) === currentPath) || null;
 });
 
 const mobileTitle = computed(() => currentMenuItem.value?.name || props.title || '');
 const mobileIcon = computed(() => currentMenuItem.value?.icon || props.icon || '');
 
 function navigateTo(path) {
-    const targetPath = normalizePath(path);
+    const targetPath = normalizeRoutePath(path);
     if (!targetPath) return;
     showMobileNavMenu.value = false;
-    if (targetPath === normalizePath(route.path)) return;
+    if (targetPath === normalizeRoutePath(route.path)) return;
     router.push(targetPath);
 }
 
@@ -71,7 +68,7 @@ watch(
                         class="dropdown-panel absolute left-0 top-full mt-2 w-44 rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
                         <button v-for="item in menuItems" :key="item.path" type="button"
                             class="dropdown-menu-item"
-                            :class="normalizePath(item.path) === normalizePath(route.path)
+                            :class="normalizeRoutePath(item.path) === normalizeRoutePath(route.path)
                                 ? 'dropdown-item-active'
                                 : ''"
                             @click="navigateTo(item.path)">

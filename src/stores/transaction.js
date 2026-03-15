@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { reactive, ref } from "vue";
-import { getPagedList, getPayload } from "@/utils/api";
 import {
   createTransaction,
   deleteAllTransactionsByActivity,
@@ -11,6 +10,7 @@ import {
   TRANSACTION_HISTORY_MODE,
 } from "@/utils/transaction.js";
 
+// 创建交易列表的默认筛选条件。
 function createDefaultFilters() {
   return {
     account_id: null,
@@ -25,6 +25,7 @@ function createDefaultFilters() {
   };
 }
 
+// 清理查询参数中的空值，避免无效参数传给接口。
 function sanitizeParams(params) {
   const next = { ...params };
   Object.keys(next).forEach((key) => {
@@ -36,6 +37,7 @@ function sanitizeParams(params) {
   return next;
 }
 
+// 管理交易列表、筛选条件以及增删改查操作。
 export const useTransactionsStore = defineStore("transactions", () => {
   const items = ref([]);
   const total = ref(0);
@@ -43,27 +45,25 @@ export const useTransactionsStore = defineStore("transactions", () => {
   const error = ref(null);
   const filters = reactive(createDefaultFilters());
 
-  function setFilters(patch = {}) {
-    Object.assign(filters, patch);
-  }
-
+  // 将筛选条件恢复为默认值。
   function resetFilters() {
     Object.assign(filters, createDefaultFilters());
   }
 
-  async function fetchList(extraParams = {}) {
+  // 按当前筛选条件拉取交易列表。
+  async function fetchList(patch = {}) {
     loading.value = true;
     error.value = null;
 
     try {
-      const params = sanitizeParams({ ...filters, ...extraParams });
+      Object.assign(filters, patch);
+      const params = sanitizeParams({ ...filters });
       const historyMode = params.history_mode || TRANSACTION_HISTORY_MODE.ACTIVITY;
       delete params.history_mode;
 
       const res = await getTransactionsByMode(historyMode, params);
-      const normalized = getPagedList(res);
-      items.value = normalized.list;
-      total.value = normalized.total;
+      items.value = Array.isArray(res.data?.results) ? res.data.results : [];
+      total.value = Number(res.data?.count ?? items.value.length) || 0;
       return items.value;
     } catch (e) {
       error.value = e;
@@ -73,17 +73,19 @@ export const useTransactionsStore = defineStore("transactions", () => {
     }
   }
 
+  // 创建一条新的交易记录。
   async function createOne(payload) {
     error.value = null;
     try {
       const res = await createTransaction(payload);
-      return getPayload(res);
+      return res.data;
     } catch (e) {
       error.value = e;
       throw e;
     }
   }
 
+  // 删除单条交易记录，并在必要时回退到上一页。
   async function removeOne(id) {
     error.value = null;
     try {
@@ -109,6 +111,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     }
   }
 
+  // 删除当前模式下的全部交易记录。
   async function removeAllByCurrentMode() {
     error.value = null;
     try {
@@ -125,11 +128,12 @@ export const useTransactionsStore = defineStore("transactions", () => {
     }
   }
 
+  // 撤销一条交易记录并刷新当前列表。
   async function reverseOne(id) {
     error.value = null;
     try {
       const res = await reverseTransaction(id);
-      const data = getPayload(res);
+      const data = res.data;
       await fetchList({
         page: filters.page,
         page_size: filters.page_size,
@@ -142,6 +146,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
     }
   }
 
+  // 重置交易 store 的全部状态。
   function reset() {
     items.value = [];
     total.value = 0;
@@ -156,7 +161,6 @@ export const useTransactionsStore = defineStore("transactions", () => {
     loading,
     error,
     filters,
-    setFilters,
     resetFilters,
     fetchList,
     createOne,

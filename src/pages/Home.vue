@@ -7,6 +7,7 @@ import { useAccountsStore } from '@/stores/accounts'
 import { useInvestmentStore } from '@/stores/investment'
 import { useMarketStore } from '@/stores/market'
 import { AUTO_REFRESH_ENABLED } from '@/config/Config'
+import { normalizeRoutePath } from '@/utils/router'
 
 const route = useRoute()
 const pageScrollRef = ref(null)
@@ -14,16 +15,19 @@ const accountsStore = useAccountsStore()
 const investmentStore = useInvestmentStore()
 const marketStore = useMarketStore()
 
+// 根据当前路由计算顶部栏标题。
 const currentTitle = computed(() => {
     return route.meta.title || ''
 })
 
+// 根据当前路由计算顶部栏图标。
 const icon = computed(() => {
     return route.meta.icon || ''
 })
 
+// 根据页面类型返回对应的布局样式类名。
 const pageLayoutClass = computed(() => {
-    return normalizePath(route.path) === '/dashboard'
+    return normalizeRoutePath(route.path) === '/dashboard'
         ? 'min-h-full xl:h-full xl:min-h-0'
         : 'min-h-full md:h-full md:min-h-0'
 })
@@ -45,14 +49,12 @@ const navOrderMap = menuItems.reduce((acc, item, index) => {
     return acc
 }, {})
 
-const normalizePath = (path = '') => {
-    return path.replace(/\/+$/, '') || '/'
-}
-
+// 获取路由在导航列表中的顺序索引。
 const getNavIndex = (path) => {
-    return navOrderMap[normalizePath(path)] ?? -1
+    return navOrderMap[normalizeRoutePath(path)] ?? -1
 }
 
+// 页面切换动画完成后重置滚动位置。
 const handlePageAfterEnter = () => {
     if (!pageScrollRef.value) {
         return

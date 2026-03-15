@@ -29,6 +29,7 @@ const {
 
 const showAddTransaction = ref(false);
 
+// 提交新增交易后关闭弹窗。
 async function handleSubmitTransaction(payload) {
     await onSubmitTransaction(payload);
     showAddTransaction.value = false;

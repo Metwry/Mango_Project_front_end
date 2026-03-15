@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
+// 创建应用路由实例，并注册页面路由配置。
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -64,6 +65,7 @@ const router = createRouter({
   ],
 });
 
+// 在路由切换前校验登录状态，并处理重定向。
 router.beforeEach((to) => {
   const auth = useAuthStore();
   const requiresAuth = to.matched.some((record) => record.meta.requireAuth);

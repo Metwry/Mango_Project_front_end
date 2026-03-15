@@ -7,7 +7,6 @@ import { GridComponent, LegendComponent, TooltipComponent } from "echarts/compon
 import VChart from "vue-echarts";
 import SmallAccountPicker from "@/components/ui/SmallAccountPicker.vue";
 import { useDashboardDisplayCurrency } from "@/composables/useDashboardDisplayCurrency";
-import { getPayload } from "@/utils/api";
 import { getAccountColorById } from "@/utils/accountColors";
 import { formatCurrencyAmount } from "@/utils/formatters";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
@@ -154,7 +153,7 @@ async function fetchTrendData() {
 
     if (reqId !== requestSeq) return;
 
-    const payload = getPayload(res, {});
+    const payload = res.data ?? {};
     usdPerCurrencyRates.value = {
       ...DEFAULT_USD_PER_CURRENCY_RATES,
       ...(nextUsdPerCurrencyRates || {}),

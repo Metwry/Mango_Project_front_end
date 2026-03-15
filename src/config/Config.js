@@ -1,8 +1,10 @@
+// 读取文本环境变量，并在为空时回退到默认值。
 function readTextEnv(name, fallback) {
   const text = String(import.meta.env[name] ?? "").trim();
   return text || fallback;
 }
 
+// 读取整数环境变量，并限制结果落在指定范围内。
 function readIntEnv(
   name,
   fallback,
@@ -15,6 +17,7 @@ function readIntEnv(
   return n;
 }
 
+// 拼接基础路径和子路径，避免出现重复或缺失的斜杠。
 function joinBasePath(base, path) {
   const baseText = String(base ?? "")
     .trim()
@@ -290,10 +293,6 @@ export const SEARCH_CONFIG = Object.freeze({
     debounceMs: readIntEnv("VITE_SEARCH_MARKET_DEBOUNCE_MS", 250, {
       min: 50,
       max: 5000,
-    }),
-    cacheLimit: readIntEnv("VITE_SEARCH_MARKET_CACHE_LIMIT", 50, {
-      min: 10,
-      max: 500,
     }),
   }),
   addPosition: Object.freeze({

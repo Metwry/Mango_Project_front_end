@@ -6,10 +6,12 @@ import { useAccountsStore } from "@/stores/accounts";
 import { useTransactionsStore } from "@/stores/transaction";
 import { TRANSACTION_HISTORY_MODE } from "@/utils/transaction.js";
 
+// 判断弹窗关闭结果是否属于用户主动取消。
 function isCancelAction(error) {
   return error === "cancel" || error === "close";
 }
 
+// 提供记账页面所需的列表查询、提交和删除等交互逻辑。
 export function useBookkeepingPage() {
   const route = useRoute();
   const accountsStore = useAccountsStore();
@@ -28,6 +30,7 @@ export function useBookkeepingPage() {
   const deletingId = ref(null);
   const clearingAll = ref(false);
 
+  // 规范化历史记录模式参数，避免无效值影响查询。
   function normalizeHistoryMode(raw) {
     const mode = String(raw ?? "").trim().toLowerCase();
     if (mode === TRANSACTION_HISTORY_MODE.ALL) return TRANSACTION_HISTORY_MODE.ALL;
@@ -36,6 +39,7 @@ export function useBookkeepingPage() {
     return TRANSACTION_HISTORY_MODE.ACTIVITY;
   }
 
+  // 根据当前历史记录模式返回对应的中文名称。
   function currentModeLabel() {
     const mode = txFilters.value?.history_mode;
     if (mode === TRANSACTION_HISTORY_MODE.ALL) return "交易记录";
@@ -44,38 +48,39 @@ export function useBookkeepingPage() {
     return "活动记录";
   }
 
-  function updateAndFetch(patch = {}) {
-    transactionsStore.setFilters(patch);
-    return transactionsStore.fetchList(patch);
-  }
-
+  // 切换分页页码并刷新列表。
   function onPageChange(page) {
-    return updateAndFetch({ page });
+    return transactionsStore.fetchList({ page });
   }
 
+  // 切换每页条数并回到第一页重新查询。
   function onPageSizeChange(page_size) {
-    return updateAndFetch({ page: 1, page_size });
+    return transactionsStore.fetchList({ page: 1, page_size });
   }
 
+  // 根据新的搜索条件刷新列表，并重置到第一页。
   function onSearchChange(filters) {
-    return updateAndFetch({ page: 1, ...filters });
+    return transactionsStore.fetchList({ page: 1, ...filters });
   }
 
+  // 重置搜索条件，同时保留当前分页大小和历史模式。
   function onSearchReset() {
     const currentPageSize = Number(txFilters.value?.page_size) || 10;
     const currentMode = txFilters.value?.history_mode || TRANSACTION_HISTORY_MODE.ACTIVITY;
     transactionsStore.resetFilters();
-    return updateAndFetch({
+    return transactionsStore.fetchList({
       page: 1,
       page_size: currentPageSize,
       history_mode: currentMode,
     });
   }
 
+  // 切换历史记录模式并刷新列表。
   function onModeChange(history_mode) {
-    return updateAndFetch({ page: 1, history_mode });
+    return transactionsStore.fetchList({ page: 1, history_mode });
   }
 
+  // 显示危险操作确认弹窗，并返回用户是否确认。
   async function confirmDanger(message) {
     try {
       await ElMessageBox.confirm(message, "提示", {
@@ -90,6 +95,7 @@ export function useBookkeepingPage() {
     }
   }
 
+  // 在提交态包裹异步任务，统一维护 submitting 状态。
   async function withSubmitting(task) {
     submitting.value = true;
     try {
@@ -99,6 +105,7 @@ export function useBookkeepingPage() {
     }
   }
 
+  // 撤销一条交易记录，并同步刷新账户数据。
   async function onReverseTransaction(id) {
     const confirmed = await confirmDanger("确定撤销该记录？将自动生成已撤销记录。");
     if (!confirmed) return;
@@ -110,16 +117,18 @@ export function useBookkeepingPage() {
     });
   }
 
+  // 提交一条新的交易记录，并刷新账户和列表数据。
   async function onSubmitTransaction(payload) {
     return withSubmitting(async () => {
       await transactionsStore.createOne(payload);
       await Promise.all([
         accountsStore.fetchAccounts({ force: true }),
-        updateAndFetch({ page: 1 }),
+        transactionsStore.fetchList({ page: 1 }),
       ]);
     });
   }
 
+  // 删除单条记录，并在完成后刷新账户数据。
   async function onDeleteOne(id) {
     if (!id) return;
 
@@ -136,6 +145,7 @@ export function useBookkeepingPage() {
     }
   }
 
+  // 删除当前模式下的全部记录，并在完成后刷新账户数据。
   async function onDeleteAll() {
     const modeText = currentModeLabel();
     const confirmed = await confirmDanger(`确定删除全部${modeText}？该操作不可恢复。`);
@@ -157,7 +167,7 @@ export function useBookkeepingPage() {
     transactionsStore.resetFilters();
     return Promise.all([
       accountsStore.fetchAccounts(),
-      updateAndFetch({
+      transactionsStore.fetchList({
         page: 1,
         page_size: currentPageSize,
         history_mode: modeFromRoute,

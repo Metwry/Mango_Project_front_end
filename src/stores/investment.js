@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { getPayload } from "@/utils/api";
 import {
   buyInvestmentPosition as apiBuyInvestmentPosition,
   getInvestmentPositions,
@@ -13,22 +12,26 @@ import { AUTO_REFRESH_ENABLED, STORE_REFRESH_CONFIG } from "@/config/Config";
 const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.investmentQuotes.intervalMinutes;
 const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.investmentQuotes.second;
 
+// 将输入值转换成有限数字，失败时返回 null。
 function toFiniteNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
 
+// 将数量或价格规范化为正数的小数字符串。
 function toPositiveDecimalString(value) {
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return "";
   return n.toFixed(6);
 }
 
+// 规范化标的 Logo 地址字段。
 function normalizeLogoUrl(raw) {
   const url = String(raw?.logo_url ?? "").trim();
   return url || "";
 }
 
+// 规范化标的 Logo 主色，并兼容三位和六位十六进制格式。
 function normalizeLogoColor(raw) {
   const color = String(raw?.logo_color ?? "").trim().toUpperCase();
 
@@ -42,10 +45,7 @@ function normalizeLogoColor(raw) {
   return "";
 }
 
-function normalizeQuoteRows(payload) {
-  return Array.isArray(payload?.quotes) ? payload.quotes : [];
-}
-
+// 将持仓原始数据标准化为前端统一使用的结构。
 function normalizePosition(raw) {
   const instrumentId = toFiniteNumber(raw?.instrument_id);
   const accountId = toFiniteNumber(raw?.account_id);
@@ -77,6 +77,7 @@ function normalizePosition(raw) {
   };
 }
 
+// 从持仓列表中提取请求最新行情所需的标的集合。
 function buildQuoteItems(rows) {
   const dedup = new Set();
   const items = [];
@@ -95,6 +96,7 @@ function buildQuoteItems(rows) {
   return items;
 }
 
+// 将最新行情价格合并回当前持仓列表。
 function applyLatestQuotes(rows, quotes) {
   const latestMap = new Map();
 
@@ -127,16 +129,14 @@ function applyLatestQuotes(rows, quotes) {
   });
 }
 
+// 管理投资持仓、最新行情和买卖交易逻辑。
 export const useInvestmentStore = defineStore("investment", () => {
   const positions = ref([]);
   const loading = ref(false);
   const error = ref(null);
   const trading = ref(false);
-  const tradeError = ref(null);
 
   const fetched = ref(false);
-  const lastFetchedAt = ref(null);
-  const lastQuotesFetchedAt = ref(null);
 
   const fetchPromise = ref(null);
   const quotePromise = ref(null);
@@ -152,6 +152,7 @@ export const useInvestmentStore = defineStore("investment", () => {
     },
   });
 
+  // 规范化买卖交易的提交参数。
   function normalizeTradePayload(raw) {
     const instrumentId = Number(raw?.instrument_id);
     const quantity = toPositiveDecimalString(raw?.quantity);
@@ -166,6 +167,7 @@ export const useInvestmentStore = defineStore("investment", () => {
     };
   }
 
+  // 在交易完成后尝试刷新账户余额数据。
   async function refreshAccountsAfterTrade() {
     try {
       const { useAccountsStore } = await import("@/stores/accounts");
@@ -175,15 +177,18 @@ export const useInvestmentStore = defineStore("investment", () => {
     }
   }
 
+  // 启动持仓行情自动刷新调度器。
   function startInvestmentAutoRefresh() {
     if (!AUTO_REFRESH_ENABLED) return;
     autoRefreshScheduler.start();
   }
 
+  // 停止持仓行情自动刷新调度器。
   function stopInvestmentAutoRefresh() {
     autoRefreshScheduler.stop();
   }
 
+  // 拉取当前持仓对应的最新行情并更新估值。
   async function refreshLatestQuotes({ silent = true } = {}) {
     const quoteItems = buildQuoteItems(positions.value);
     if (quoteItems.length === 0) return positions.value;
@@ -194,10 +199,9 @@ export const useInvestmentStore = defineStore("investment", () => {
     const p = (async () => {
       try {
         const quoteRes = await getLatestMarketQuotes({ items: quoteItems });
-        const quotePayload = getPayload(quoteRes, {});
-        const quoteRows = normalizeQuoteRows(quotePayload);
+        const quotePayload = quoteRes.data ?? {};
+        const quoteRows = Array.isArray(quotePayload?.quotes) ? quotePayload.quotes : [];
         positions.value = applyLatestQuotes(positions.value, quoteRows);
-        lastQuotesFetchedAt.value = Date.now();
         return positions.value;
       } catch (e) {
         if (!silent) error.value = e;
@@ -211,15 +215,10 @@ export const useInvestmentStore = defineStore("investment", () => {
     return p;
   }
 
+  // 拉取持仓列表，并在成功后补充最新行情数据。
   async function fetchPositions({ force = false, silent = false } = {}) {
+    if (fetchPromise.value) return fetchPromise.value;
     if (fetched.value && !force) return positions.value;
-    if (fetchPromise.value && !force) return fetchPromise.value;
-
-    if (fetchPromise.value && force) {
-      try {
-        await fetchPromise.value;
-      } catch {}
-    }
 
     if (!silent) loading.value = true;
     if (!silent) error.value = null;
@@ -227,11 +226,10 @@ export const useInvestmentStore = defineStore("investment", () => {
     const p = (async () => {
       try {
         const res = await getInvestmentPositions();
-        const rows = getPayload(res, []);
+        const rows = Array.isArray(res.data) ? res.data : [];
         positions.value = rows.map((item) => normalizePosition(item));
 
         fetched.value = true;
-        lastFetchedAt.value = Date.now();
 
         await refreshLatestQuotes({ silent: true });
 
@@ -249,10 +247,7 @@ export const useInvestmentStore = defineStore("investment", () => {
     return p;
   }
 
-  function refreshPositions() {
-    return fetchPositions({ force: true });
-  }
-
+  // 根据买卖模式提交交易，并在成功后刷新相关数据。
   async function submitTrade(mode, payload) {
     const apiFn = mode === "buy" ? apiBuyInvestmentPosition : apiSellInvestmentPosition;
     const normalized = normalizeTradePayload(payload);
@@ -265,33 +260,32 @@ export const useInvestmentStore = defineStore("investment", () => {
       normalized.cash_account_id > 0;
 
     trading.value = true;
-    tradeError.value = null;
     try {
       if (!isValidPayload) {
         throw new Error("交易参数不完整，请刷新后重试");
       }
       const res = await apiFn(normalized);
       await Promise.all([
-        refreshPositions(),
+        fetchPositions({ force: true }),
         refreshAccountsAfterTrade(),
       ]);
-      return getPayload(res, {});
-    } catch (e) {
-      tradeError.value = e;
-      throw e;
+      return res.data ?? {};
     } finally {
       trading.value = false;
     }
   }
 
+  // 提交一次买入交易。
   function buyPosition(payload) {
     return submitTrade("buy", payload);
   }
 
+  // 提交一次卖出交易。
   function sellPosition(payload) {
     return submitTrade("sell", payload);
   }
 
+  // 重置投资 store 的全部状态并停止自动刷新。
   function reset() {
     stopInvestmentAutoRefresh();
 
@@ -299,12 +293,8 @@ export const useInvestmentStore = defineStore("investment", () => {
     loading.value = false;
     error.value = null;
     trading.value = false;
-    tradeError.value = null;
 
     fetched.value = false;
-    lastFetchedAt.value = null;
-    lastQuotesFetchedAt.value = null;
-
     fetchPromise.value = null;
     quotePromise.value = null;
   }
@@ -316,7 +306,6 @@ export const useInvestmentStore = defineStore("investment", () => {
     trading,
 
     fetchPositions,
-    refreshPositions,
     refreshLatestQuotes,
     buyPosition,
     sellPosition,

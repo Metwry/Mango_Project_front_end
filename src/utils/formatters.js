@@ -9,15 +9,18 @@ const CURRENCY_SYMBOL_MAP = {
   CAD: "C$",
 };
 
+// 将输入值安全转换为数字，失败时返回兜底值。
 export function toSafeNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
+// 根据币种代码返回对应的货币符号。
 export function getCurrencySymbol(code) {
   return CURRENCY_SYMBOL_MAP[String(code || "").toUpperCase()] ?? "";
 }
 
+// 按指定币种和格式配置输出金额文本。
 export function formatCurrencyAmount(
   amount,
   currency,

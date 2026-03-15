@@ -5,7 +5,7 @@ import {
   deleteWatchlistInstrument as apiDeleteWatchlistInstrument,
   getUserMarkets,
 } from "@/utils/markets";
-import { getPayload } from "@/utils/api";
+import { normalizeMarketCode } from "@/utils/marketMeta";
 import { createMinuteAlignedScheduler } from "@/utils/refreshScheduler";
 import { AUTO_REFRESH_ENABLED, STORE_REFRESH_CONFIG } from "@/config/Config";
 
@@ -13,34 +13,28 @@ const AUTO_REFRESH_INTERVAL_MINUTES = STORE_REFRESH_CONFIG.market.intervalMinute
 const AUTO_REFRESH_SECOND = STORE_REFRESH_CONFIG.market.second;
 const SELECTED_MARKET_KEY = STORE_REFRESH_CONFIG.market.selectedMarketStorageKey;
 
-function normalizeDataMarketCode(value) {
-  return String(value ?? "").trim().toUpperCase();
-}
-
-function normalizeMarketCode(value) {
-  const normalized = normalizeDataMarketCode(value);
-  return normalized || "ALL";
-}
-
+// 从本地存储中读取初始选中的市场。
 function getInitialSelectedMarket() {
   try {
-    return normalizeMarketCode(localStorage.getItem(SELECTED_MARKET_KEY));
+    return normalizeMarketCode(localStorage.getItem(SELECTED_MARKET_KEY)) || "ALL";
   } catch {
     return "ALL";
   }
 }
 
+// 持久化当前选中的市场到本地存储。
 function persistSelectedMarket(market) {
   try {
-    localStorage.setItem(SELECTED_MARKET_KEY, normalizeMarketCode(market));
+    localStorage.setItem(SELECTED_MARKET_KEY, normalizeMarketCode(market) || "ALL");
   } catch {}
 }
 
+// 标准化市场接口返回的数据结构。
 function normalizeMarkets(payload) {
   const blocks = Array.isArray(payload?.markets) ? payload.markets : [];
   return blocks
     .map((block) => {
-      const market = normalizeDataMarketCode(block?.market);
+      const market = normalizeMarketCode(block?.market);
       if (!market) return null;
 
       const quotes = Array.isArray(block?.quotes) ? block.quotes : [];
@@ -58,10 +52,7 @@ function normalizeMarkets(payload) {
     .filter(Boolean);
 }
 
-function pickUpdatedAt(payload) {
-  return String(payload?.updated_at ?? "").trim();
-}
-
+// 管理行情列表、自选市场和自动刷新逻辑。
 export const useMarketStore = defineStore("market", () => {
   const markets = ref([]);
   const updatedAt = ref("");
@@ -70,7 +61,6 @@ export const useMarketStore = defineStore("market", () => {
   const error = ref(null);
 
   const fetched = ref(false);
-  const lastFetchedAt = ref(null);
   const fetchPromise = ref(null);
 
   const autoRefreshScheduler = createMinuteAlignedScheduler({
@@ -84,15 +74,10 @@ export const useMarketStore = defineStore("market", () => {
     },
   });
 
+  // 拉取市场行情数据，并支持静默刷新与请求复用。
   async function fetchMarkets({ force = false, silent = false } = {}) {
+    if (fetchPromise.value) return fetchPromise.value;
     if (fetched.value && !force) return markets.value;
-    if (fetchPromise.value && !force) return fetchPromise.value;
-
-    if (fetchPromise.value && force) {
-      try {
-        await fetchPromise.value;
-      } catch {}
-    }
 
     const shouldShowLoading = !silent || markets.value.length === 0;
     if (shouldShowLoading) loading.value = true;
@@ -101,13 +86,12 @@ export const useMarketStore = defineStore("market", () => {
     const p = (async () => {
       try {
         const res = await getUserMarkets();
-        const payload = getPayload(res, {});
+        const payload = res.data ?? {};
 
-        updatedAt.value = pickUpdatedAt(payload);
+        updatedAt.value = String(payload?.updated_at ?? "").trim();
         markets.value = normalizeMarkets(payload);
 
         fetched.value = true;
-        lastFetchedAt.value = Date.now();
         return markets.value;
       } catch (e) {
         if (!silent || markets.value.length === 0) {
@@ -125,36 +109,43 @@ export const useMarketStore = defineStore("market", () => {
     return p;
   }
 
+  // 强制刷新市场行情数据。
   function refreshMarkets({ silent = true } = {}) {
     return fetchMarkets({ force: true, silent });
   }
 
+  // 添加一个新的自选标的，并刷新行情列表。
   async function addWatchlistInstrument(symbol) {
     const res = await apiAddWatchlistInstrument(symbol);
     await refreshMarkets({ silent: true });
-    return getPayload(res, {});
+    return res.data ?? {};
   }
 
+  // 删除一个自选标的，并刷新行情列表。
   async function deleteWatchlistInstrument(payload) {
     await apiDeleteWatchlistInstrument(payload);
     await refreshMarkets({ silent: true });
   }
 
+  // 更新当前选中的市场并同步到本地存储。
   function setSelectedMarket(market) {
-    const next = normalizeMarketCode(market);
+    const next = normalizeMarketCode(market) || "ALL";
     selectedMarket.value = next;
     persistSelectedMarket(next);
   }
 
+  // 启动行情自动刷新调度器。
   function startMarketAutoRefresh() {
     if (!AUTO_REFRESH_ENABLED) return;
     autoRefreshScheduler.start();
   }
 
+  // 停止行情自动刷新调度器。
   function stopMarketAutoRefresh() {
     autoRefreshScheduler.stop();
   }
 
+  // 重置行情 store 的全部状态并停止自动刷新。
   function reset() {
     stopMarketAutoRefresh();
 
@@ -164,7 +155,6 @@ export const useMarketStore = defineStore("market", () => {
     error.value = null;
 
     fetched.value = false;
-    lastFetchedAt.value = null;
     fetchPromise.value = null;
   }
 
