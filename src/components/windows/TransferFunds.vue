@@ -16,7 +16,7 @@ const form = reactive({
     fromAccountId: null,
     toAccountId: null,
     amount: null,
-    note: "账户转账",
+    remark: "账户转账",
 });
 
 function isAccountActive(account) {
@@ -72,7 +72,7 @@ function resetForm() {
     form.fromAccountId = null;
     form.toAccountId = null;
     form.amount = null;
-    form.note = "账户转账";
+    form.remark = "账户转账";
 }
 
 function closeModal() {
@@ -83,10 +83,10 @@ function submit() {
     if (!canSubmit.value) return;
 
     emit("submit", {
-        from_account_id: Number(form.fromAccountId),
-        to_account_id: Number(form.toAccountId),
+        account: Number(form.fromAccountId),
+        transfer_account: Number(form.toAccountId),
         amount: String(normalizedAmount.value),
-        note: String(form.note ?? "").trim() || "账户转账",
+        remark: String(form.remark ?? "").trim() || "账户转账",
     });
 }
 
@@ -136,7 +136,7 @@ watch(
 
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">备注:</label>
-                            <input v-model="form.note" type="text" placeholder="输入备注（可选）" class="input-base w-full" />
+                            <input v-model="form.remark" type="text" placeholder="输入备注（可选）" class="input-base w-full" />
                         </div>
                     </div>
 

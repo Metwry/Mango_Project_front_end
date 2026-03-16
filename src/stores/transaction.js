@@ -2,9 +2,8 @@ import { defineStore } from "pinia";
 import { reactive, ref } from "vue";
 import {
   createTransaction,
-  deleteAllTransactionsByActivity,
-  deleteTransactionByMode,
-  getActivityTypeByMode,
+  deleteTransactions,
+  getSourceByMode,
   getTransactionsByMode,
   reverseTransaction,
   TRANSACTION_HISTORY_MODE,
@@ -14,6 +13,7 @@ import {
 function createDefaultFilters() {
   return {
     account_id: null,
+    transfer_account_id: null,
     counterparty: null,
     category: null,
     start: null,
@@ -89,7 +89,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
   async function removeOne(id) {
     error.value = null;
     try {
-      await deleteTransactionByMode(id);
+      await deleteTransactions({ id });
 
       const currentPage = Number(filters.page) || 1;
       await fetchList({
@@ -115,8 +115,7 @@ export const useTransactionsStore = defineStore("transactions", () => {
   async function removeAllByCurrentMode() {
     error.value = null;
     try {
-      const activityType = getActivityTypeByMode(filters.history_mode);
-      await deleteAllTransactionsByActivity(activityType);
+      await deleteTransactions({ source: getSourceByMode(filters.history_mode) });
       await fetchList({
         page: 1,
         page_size: filters.page_size,

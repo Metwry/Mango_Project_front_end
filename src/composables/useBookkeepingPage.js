@@ -42,7 +42,7 @@ export function useBookkeepingPage() {
   // 根据当前历史记录模式返回对应的中文名称。
   function currentModeLabel() {
     const mode = txFilters.value?.history_mode;
-    if (mode === TRANSACTION_HISTORY_MODE.ALL) return "交易记录";
+    if (mode === TRANSACTION_HISTORY_MODE.ALL) return "投资记录";
     if (mode === TRANSACTION_HISTORY_MODE.TRANSFER) return "转账记录";
     if (mode === TRANSACTION_HISTORY_MODE.REVERSED) return "已撤销记录";
     return "活动记录";
@@ -77,7 +77,12 @@ export function useBookkeepingPage() {
 
   // 切换历史记录模式并刷新列表。
   function onModeChange(history_mode) {
-    return transactionsStore.fetchList({ page: 1, history_mode });
+    return transactionsStore.fetchList({
+      page: 1,
+      history_mode,
+      counterparty: "",
+      transfer_account_id: "",
+    });
   }
 
   // 显示危险操作确认弹窗，并返回用户是否确认。
@@ -128,7 +133,7 @@ export function useBookkeepingPage() {
     });
   }
 
-  // 删除单条记录，并在完成后刷新账户数据。
+  // 删除单条记录，只刷新交易列表，不刷新账户数据。
   async function onDeleteOne(id) {
     if (!id) return;
 
@@ -138,14 +143,13 @@ export function useBookkeepingPage() {
     deletingId.value = id;
     try {
       await transactionsStore.removeOne(id);
-      await accountsStore.fetchAccounts({ force: true });
       ElMessage.success("删除成功");
     } finally {
       deletingId.value = null;
     }
   }
 
-  // 删除当前模式下的全部记录，并在完成后刷新账户数据。
+  // 删除当前模式下的全部记录，只刷新交易列表，不刷新账户数据。
   async function onDeleteAll() {
     const modeText = currentModeLabel();
     const confirmed = await confirmDanger(`确定删除全部${modeText}？该操作不可恢复。`);
@@ -154,7 +158,6 @@ export function useBookkeepingPage() {
     clearingAll.value = true;
     try {
       await transactionsStore.removeAllByCurrentMode();
-      await accountsStore.fetchAccounts({ force: true });
       ElMessage.success(`已删除全部${modeText}`);
     } finally {
       clearingAll.value = false;

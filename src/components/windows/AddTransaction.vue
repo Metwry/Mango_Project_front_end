@@ -40,6 +40,7 @@ const form = reactive({
 });
 const advancedMode = ref(false);
 const selectableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
+const trimmedCounterparty = computed(() => String(form.counterparty ?? "").trim());
 
 const normalizedAmount = computed(() => {
     const amount = Number(form.amount);
@@ -102,8 +103,7 @@ function submit() {
     if (!canSubmit.value) return;
 
     emit("submit", {
-        account_id: form.account_id,
-        counterparty: form.counterparty,
+        counterparty: trimmedCounterparty.value,
         category_name: normalizedRemark.value,
         amount: normalizedAmount.value,
         account: form.account_id,

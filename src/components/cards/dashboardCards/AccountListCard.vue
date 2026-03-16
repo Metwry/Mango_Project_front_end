@@ -8,7 +8,7 @@ import { ElMessage } from "@/utils/element";
 import { useAccountsStore } from "@/stores/accounts";
 import { getAccountColorById } from '@/utils/accountColors'
 import { formatCurrencyAmount, toSafeNumber } from '@/utils/formatters'
-import { createTransfer } from "@/utils/transfer";
+import { createTransaction } from "@/utils/transaction";
 
 const props = defineProps({
     accounts: { type: Array, default: () => [] }
@@ -72,7 +72,7 @@ const onTransferClick = () => {
 async function onTransferSubmit(payload) {
     transferSubmitting.value = true
     try {
-        await createTransfer(payload)
+        await createTransaction(payload)
         await accountsStore.fetchAccounts({ force: true })
         showTransferModal.value = false
         ElMessage.success("转账成功")

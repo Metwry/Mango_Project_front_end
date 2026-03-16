@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, reactive } from "vue";
+import { computed, ref, reactive, watch } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import dayjs from "dayjs";
 import DatePicker from "@/components/ui/DatePicker.vue";
@@ -43,26 +43,39 @@ const filtersOpen = ref(false);
 const pageSizeOptions = [10, 20, 50, 100];
 const historyModeOptions = [
     { value: TRANSACTION_HISTORY_MODE.ACTIVITY, label: "活动记录" },
-    { value: TRANSACTION_HISTORY_MODE.ALL, label: "交易记录" },
+    { value: TRANSACTION_HISTORY_MODE.ALL, label: "投资记录" },
     { value: TRANSACTION_HISTORY_MODE.TRANSFER, label: "转账记录" },
     { value: TRANSACTION_HISTORY_MODE.REVERSED, label: "已撤销记录" },
 ];
 
 const searchState = reactive({
     accountId: "",
+    transferAccountId: "",
     counterparty: "",
     category: "",
     start: "",
     end: "",
 });
 
-const hasSearch = computed(() => Object.values(searchState).some(Boolean));
-const activeSearchCount = computed(() => Object.values(searchState).filter(Boolean).length);
 const searchableAccounts = computed(() => filterNonInvestmentAccounts(props.accounts));
 const isReversedMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.REVERSED);
 const isInvestmentHistoryMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.ALL);
 const isTransferHistoryMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.TRANSFER);
 const isManualMode = computed(() => props.historyMode === TRANSACTION_HISTORY_MODE.ACTIVITY);
+const currentSearchEntries = computed(() => {
+    const sharedEntries = [
+        searchState.accountId,
+        searchState.category,
+        searchState.start,
+        searchState.end,
+    ];
+    if (isTransferHistoryMode.value) {
+        return [...sharedEntries, searchState.transferAccountId];
+    }
+    return [...sharedEntries, searchState.counterparty];
+});
+const hasSearch = computed(() => currentSearchEntries.value.some(Boolean));
+const activeSearchCount = computed(() => currentSearchEntries.value.filter(Boolean).length);
 const currentHistoryModeLabel = computed(() => {
     return historyModeOptions.find((item) => item.value === props.historyMode)?.label ?? "活动记录";
 });
@@ -81,6 +94,20 @@ function getAccount(tx) {
     if (tx?.account_name || tx?.currency) {
         return {
             name: tx?.account_name ?? "",
+            currency: tx?.currency ?? "",
+        };
+    }
+    return null;
+}
+
+function getTransferAccount(tx) {
+    const v = tx?.transfer_account;
+    if (v && typeof v === "object") return v;
+    const account = accountMap.value.get(v);
+    if (account) return account;
+    if (tx?.transfer_account_name) {
+        return {
+            name: tx.transfer_account_name,
             currency: tx?.currency ?? "",
         };
     }
@@ -107,7 +134,8 @@ function emitSearch() {
     filtersOpen.value = false;
     emit("search-change", {
         account_id: searchState.accountId || "",
-        counterparty: trimOrEmpty(searchState.counterparty),
+        transfer_account_id: isTransferHistoryMode.value ? searchState.transferAccountId || "" : "",
+        counterparty: isTransferHistoryMode.value ? "" : trimOrEmpty(searchState.counterparty),
         category: trimOrEmpty(searchState.category),
         start: searchState.start || "",
         end: searchState.end || "",
@@ -162,6 +190,7 @@ function resolveCurrency(tx) {
 function resetSearch() {
     Object.assign(searchState, {
         accountId: "",
+        transferAccountId: "",
         counterparty: "",
         category: "",
         start: "",
@@ -223,6 +252,17 @@ onClickOutside(pageSizeWrapRef, () => {
 onClickOutside(historyModeWrapRef, () => {
     historyModeOpen.value = false;
 });
+
+watch(
+    () => props.historyMode,
+    (mode) => {
+        if (mode === TRANSACTION_HISTORY_MODE.TRANSFER) {
+            searchState.counterparty = "";
+            return;
+        }
+        searchState.transferAccountId = "";
+    },
+);
 </script>
 
 <template>
@@ -259,7 +299,7 @@ onClickOutside(historyModeWrapRef, () => {
             <button class="button-base px-3 py-1.5 text-xs sm:text-sm" @click="emit('open-add-transaction')">
                 记账
             </button>
-            <button v-if="!isTransferHistoryMode"
+            <button
                 class="button-base !rounded-xl !font-semibold px-3 py-1.5 text-xs sm:text-sm !bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-transparent dark:hover:!bg-[#482126]"
                 :disabled="loading || clearingAll || transactions.length === 0" @click="onDeleteAllClick">
                 {{ clearingAll ? "删除中..." : "全部删除" }}
@@ -293,7 +333,9 @@ onClickOutside(historyModeWrapRef, () => {
                     <div v-if="filtersOpen" class="mobile-filter-panel mt-2.5">
                         <div class="grid grid-cols-2 gap-2">
                             <div class="col-span-2">
-                                <input v-model="searchState.counterparty" type="text" placeholder="交易方"
+                                <SmallAccountPicker v-if="isTransferHistoryMode" v-model="searchState.transferAccountId"
+                                    :accounts="searchableAccounts" placeholder="收款账户" />
+                                <input v-else v-model="searchState.counterparty" type="text" placeholder="交易方"
                                     class="input-base mobile-filter-input" @keydown.enter="emitSearch" />
                             </div>
 
@@ -334,7 +376,9 @@ onClickOutside(historyModeWrapRef, () => {
                 </div>
 
                 <div class="w-full sm:min-w-[150px] sm:flex-1">
-                    <input v-model="searchState.counterparty" type="text" placeholder="交易方" class="input-base"
+                    <SmallAccountPicker v-if="isTransferHistoryMode" v-model="searchState.transferAccountId"
+                        :accounts="searchableAccounts" placeholder="收款账户" />
+                    <input v-else v-model="searchState.counterparty" type="text" placeholder="交易方" class="input-base"
                         @keydown.enter="emitSearch" />
                 </div>
 
@@ -371,9 +415,20 @@ onClickOutside(historyModeWrapRef, () => {
 
         <div v-else
             class="flex-1 min-h-0 overflow-x-auto overflow-y-auto scrollbar-thin rounded-2xl border border-gray-100 dark:border-gray-700/70 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
-            <table class="history-table w-full min-w-[840px] text-left border-collapse table-auto">
+            <table :class="[
+                'history-table w-full text-left border-collapse table-auto',
+                isTransferHistoryMode ? 'min-w-[760px]' : 'min-w-[840px]'
+            ]">
                 <thead class="sticky top-0 z-10 backdrop-blur-md bg-gray-50/95 dark:bg-gray-900/95">
-                    <tr>
+                    <tr v-if="isTransferHistoryMode">
+                        <th class="th-text">转账账户</th>
+                        <th class="th-text text-right">转账金额</th>
+                        <th class="th-text">收款账户</th>
+                        <th class="th-text">备注</th>
+                        <th class="th-text text-right">日期</th>
+                        <th class="th-text text-center">操作</th>
+                    </tr>
+                    <tr v-else>
                         <th class="th-text">账户</th>
                         <th class="th-text">交易方</th>
                         <th class="th-text ">备注</th>
@@ -390,50 +445,80 @@ onClickOutside(historyModeWrapRef, () => {
                         idx % 2 === 1 && 'bg-gray-50/40 dark:bg-gray-800/80',
                         (tx?.reversal_of || tx?.reversed_at) && 'opacity-75'
                     ]">
-
-                        <td class="px-2 py-2">
-                            <div class="max-w-[180px]">
-                                <span
-                                    class="inline-flex text-xs px-2 py-1.5 font-medium rounded-xl bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 truncate">
-                                    {{ getAccount(tx)?.name ?? "-" }}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="td-cell">
-                            <div
-                                class="max-w-[290px] truncate text-[13px] sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                {{ tx?.counterparty ?? tx?.title ?? "-" }}
-                            </div>
-                        </td>
-                        <td class="td-cell">
-                            <span :class="[
-                                'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap',
-                                categoryTagClass(tx)
-                            ]">
-                                {{ tx?.category_name ?? tx?.category ?? "-" }}
-                            </span>
-                        </td>
-                        <td class="td-cell text-right tabular-nums font-semibold" :class="amountToneClass(tx?.amount)">
-                            <div class="inline-flex items-center gap-1.5">
-                                <span class="inline-block h-1.5 w-1.5 rounded-full"
-                                    :class="amountDotClass(tx?.amount)"></span>
-                                <span>{{ formatMoney(tx?.amount, resolveCurrency(tx)) }}</span>
-                            </div>
-                        </td>
-                        <td class="td-cell text-right tabular-nums">{{ getDisplayBalance(tx) }}</td>
-                        <td class="td-cell text-right whitespace-nowrap">
-                            <div class="font-medium">{{ formatDateTime(tx?.add_date ?? tx?.date) }}</div>
-                        </td>
-                        <td class="td-cell text-center" @click.stop>
-                            <div v-if="isTransferHistoryMode" class="inline-flex items-center justify-center gap-2">
+                        <template v-if="isTransferHistoryMode">
+                            <td class="px-2 py-2">
+                                <div class="max-w-[180px]">
+                                    <span
+                                        class="inline-flex text-xs px-2 py-1.5 font-medium rounded-xl bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 truncate">
+                                        {{ getAccount(tx)?.name ?? "-" }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="td-cell text-right tabular-nums font-semibold" :class="amountToneClass(tx?.amount)">
+                                <div class="inline-flex items-center gap-1.5">
+                                    <span class="inline-block h-1.5 w-1.5 rounded-full"
+                                        :class="amountDotClass(tx?.amount)"></span>
+                                    <span>{{ formatMoney(tx?.amount, resolveCurrency(tx)) }}</span>
+                                </div>
+                            </td>
+                            <td class="td-cell">
+                                <div
+                                    class="max-w-[240px] truncate text-[13px] sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    {{ getTransferAccount(tx)?.name ?? "-" }}
+                                </div>
+                            </td>
+                            <td class="td-cell">
+                                <div class="max-w-[280px] truncate text-[13px] sm:text-sm text-gray-700 dark:text-gray-300">
+                                    {{ tx?.remark ?? "-" }}
+                                </div>
+                            </td>
+                            <td class="td-cell text-right whitespace-nowrap">
+                                <div class="font-medium">{{ formatDateTime(tx?.add_date ?? tx?.date) }}</div>
+                            </td>
+                            <td class="td-cell text-center" @click.stop>
                                 <button :class="[
                                     'button-base ring-0 inline-flex !rounded-xl !font-semibold text-xs !px-2.5 !py-1.5 !bg-red-50 !text-red-700 !border-transparent hover:!bg-red-100 dark:!bg-[#34191d] dark:!text-red-200 dark:!border-transparent dark:hover:!bg-[#482126]',
                                     (!tx?.id || clearingAll) && '!cursor-not-allowed !opacity-60'
                                 ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
                                     {{ deletingId === tx?.id ? "删除中..." : "删除" }}
                                 </button>
-                            </div>
-                            <div v-else class="inline-flex items-center justify-center gap-2">
+                            </td>
+                        </template>
+                        <template v-else>
+                            <td class="px-2 py-2">
+                                <div class="max-w-[180px]">
+                                    <span
+                                        class="inline-flex text-xs px-2 py-1.5 font-medium rounded-xl bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 truncate">
+                                        {{ getAccount(tx)?.name ?? "-" }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="td-cell">
+                                <div
+                                    class="max-w-[290px] truncate text-[13px] sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    {{ tx?.counterparty ?? tx?.title ?? "-" }}
+                                </div>
+                            </td>
+                            <td class="td-cell">
+                                <span :class="[
+                                    'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap',
+                                    categoryTagClass(tx)
+                                ]">
+                                    {{ tx?.category_name ?? tx?.category ?? "-" }}
+                                </span>
+                            </td>
+                            <td class="td-cell text-right tabular-nums font-semibold" :class="amountToneClass(tx?.amount)">
+                                <div class="inline-flex items-center gap-1.5">
+                                    <span class="inline-block h-1.5 w-1.5 rounded-full"
+                                        :class="amountDotClass(tx?.amount)"></span>
+                                    <span>{{ formatMoney(tx?.amount, resolveCurrency(tx)) }}</span>
+                                </div>
+                            </td>
+                            <td class="td-cell text-right tabular-nums">{{ getDisplayBalance(tx) }}</td>
+                            <td class="td-cell text-right whitespace-nowrap">
+                                <div class="font-medium">{{ formatDateTime(tx?.add_date ?? tx?.date) }}</div>
+                            </td>
+                            <td class="td-cell text-center" @click.stop>
                                 <button v-if="isManualMode" :class="[
                                     'button-base ring-0 inline-flex text-xs !px-2.5 !py-1.5',
                                     canReverse(tx)
@@ -448,13 +533,13 @@ onClickOutside(historyModeWrapRef, () => {
                                 ]" :disabled="!tx?.id || clearingAll" @click="onDeleteOneClick(tx)">
                                     {{ deletingId === tx?.id ? "删除中..." : "删除" }}
                                 </button>
-                            </div>
-                        </td>
+                            </td>
+                        </template>
                     </tr>
 
                     <!-- 无交易记录 -->
                     <tr v-if="transactions.length === 0">
-                        <td colspan="7" class="px-6 py-16 text-center">
+                        <td :colspan="isTransferHistoryMode ? 6 : 7" class="px-6 py-16 text-center">
                             <span class=" text-gray-400 dark:text-gray-500">
                                 {{ isReversedMode ? "暂无已撤销记录" : isInvestmentHistoryMode ? "暂无投资交易记录" : isTransferHistoryMode ? "暂无转账记录" : "暂无交易记录" }}
                             </span>
