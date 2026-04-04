@@ -55,6 +55,12 @@ const router = createRouter({
           meta: { title: "数据分析", icon: "analysis" },
         },
         {
+          path: "ai",
+          name: "AI",
+          component: () => import("../pages/AI.vue"),
+          meta: { title: "助手", icon: "ai" },
+        },
+        {
           path: "tools",
           name: "Tools",
           component: () => import("../pages/Tools.vue"),

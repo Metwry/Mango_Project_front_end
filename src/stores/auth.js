@@ -40,11 +40,12 @@ const clearStorage = (storage) => {
 
 // 按需动态加载应用内依赖登录状态的各个 store。
 const loadAppStores = async () => {
-  const [accountsMod, transactionsMod, investmentMod, marketMod] = await Promise.all([
+  const [accountsMod, transactionsMod, investmentMod, marketMod, aiMod] = await Promise.all([
     import("@/stores/accounts"),
     import("@/stores/transaction"),
     import("@/stores/investment"),
     import("@/stores/market"),
+    import("@/stores/ai"),
   ]);
 
   return {
@@ -52,6 +53,7 @@ const loadAppStores = async () => {
     transactionsStore: transactionsMod.useTransactionsStore(),
     investmentStore: investmentMod.useInvestmentStore(),
     marketStore: marketMod.useMarketStore(),
+    aiStore: aiMod.useAiStore(),
   };
 };
 
@@ -70,24 +72,26 @@ export const useAuthStore = defineStore("auth", () => {
 
   // 重置所有依赖登录态的业务 store。
   async function resetAppStores() {
-    const { accountsStore, transactionsStore, investmentStore, marketStore } = await loadAppStores();
+    const { accountsStore, transactionsStore, investmentStore, marketStore, aiStore } = await loadAppStores();
 
     accountsStore.reset();
     transactionsStore.reset();
     investmentStore.reset();
     marketStore.reset();
+    aiStore.reset();
 
-    return { accountsStore, transactionsStore, investmentStore, marketStore };
+    return { accountsStore, transactionsStore, investmentStore, marketStore, aiStore };
   }
 
   // 登录成功后初始化各个业务 store 的基础数据。
   async function initializeAppStores() {
-    const { accountsStore, transactionsStore, investmentStore, marketStore } = await loadAppStores();
+    const { accountsStore, transactionsStore, investmentStore, marketStore, aiStore } = await loadAppStores();
     await Promise.allSettled([
       accountsStore.fetchAccounts(),
       transactionsStore.fetchList(),
       investmentStore.fetchPositions({ silent: true }),
       marketStore.fetchMarkets({ silent: true }),
+      aiStore.fetchSessions(),
     ]);
   }
 

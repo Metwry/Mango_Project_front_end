@@ -2,13 +2,16 @@
 import BaseIcon from '../ui/BaseIcon.vue';
 import { APP_VERSION_LABEL } from '@/config/Config';
 defineProps({
-    menuItems: { type: Array, default: () => [] }
+    menuItems: { type: Array, default: () => [] },
+    collapsed: { type: Boolean, default: false },
 })
 </script>
 
 <template>
     <aside
-        class="app-sidebar w-60 bg-white border-r border-gray-200 hidden md:flex flex-col z-20 transition-colors duration-300">
+        class="app-sidebar flex h-full w-60 flex-col border-r border-gray-200 bg-white transition-all duration-300"
+        :class="collapsed ? 'pointer-events-none -translate-x-full opacity-0' : 'translate-x-0 opacity-100'"
+    >
         <div class="app-sidebar-header h-15 gap-2 flex items-center px-8 border-b border-gray-100">
             <BaseIcon name="mango" class="app-sidebar-logo w-6 h-6" />
             <div class="min-w-0">

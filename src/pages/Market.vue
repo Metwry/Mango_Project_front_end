@@ -1,5 +1,5 @@
 ﻿<script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import BaseIcon from "@/components/ui/BaseIcon.vue";
 import { useMarketPage } from "@/composables/useMarketPage";
@@ -36,6 +36,8 @@ const {
 
 const marketDropdownOpen = ref(false);
 const marketDropdownWrapRef = ref(null);
+const isDarkMode = ref(false);
+let themeObserver = null;
 
 // 生成市场下拉列表选项，并补上“全部”选项。
 const marketOptions = computed(() => [
@@ -56,6 +58,49 @@ function onPickMarket(market) {
 
 onClickOutside(marketDropdownWrapRef, () => {
   marketDropdownOpen.value = false;
+});
+
+function getQuoteLogoUrl(quote) {
+  const rawUrl = String(quote?.logo_url ?? "").trim();
+  if (!rawUrl) return "";
+
+  try {
+    const url = new URL(rawUrl);
+    if (!/(\.|^)logo\.dev$/i.test(url.hostname)) return rawUrl;
+    url.searchParams.set("format", "png");
+    url.searchParams.set("theme", isDarkMode.value ? "dark" : "light");
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+function getQuoteLogoText(quote) {
+  const name = String(quote?.name ?? "").trim();
+  const shortCode = String(quote?.short_code ?? "").trim().toUpperCase();
+  return (name || shortCode || "?").slice(0, 2).toUpperCase();
+}
+
+function syncDarkMode() {
+  if (typeof document === "undefined") return;
+  isDarkMode.value = document.documentElement.classList.contains("dark");
+}
+
+onMounted(() => {
+  syncDarkMode();
+  if (typeof document === "undefined") return;
+
+  themeObserver = new MutationObserver(syncDarkMode);
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+});
+
+onUnmounted(() => {
+  if (!themeObserver) return;
+  themeObserver.disconnect();
+  themeObserver = null;
 });
 </script>
 
@@ -147,8 +192,9 @@ onClickOutside(marketDropdownWrapRef, () => {
       </div>
 
       <div v-else class="flex-1 min-h-0 overflow-auto pr-1">
-        <table class="market-table min-w-[1080px] w-full table-fixed text-sm border-separate [border-spacing:0_8px]">
+        <table class="market-table min-w-[1128px] w-full table-fixed text-sm border-separate [border-spacing:0_8px]">
           <colgroup>
+            <col class="w-[72px]" />
             <col class="w-[84px]" />
             <col class="w-[98px]" />
             <col class="w-[170px]" />
@@ -162,6 +208,7 @@ onClickOutside(marketDropdownWrapRef, () => {
           </colgroup>
           <thead class="bg-gray-100/80 dark:bg-gray-700/60">
             <tr class="text-gray-500 dark:text-gray-300 text-xs">
+              <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">图标</th>
               <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">市场</th>
               <th class="py-2 px-2.5 font-medium text-center whitespace-nowrap">代码</th>
               <th class="py-2 px-2.5 font-medium text-left whitespace-nowrap">名称</th>
@@ -178,7 +225,21 @@ onClickOutside(marketDropdownWrapRef, () => {
           <tbody>
             <tr v-for="quote in visibleQuotes" :key="quote._rowKey">
               <td
-                class="py-3 px-2.5 text-gray-800 dark:text-gray-100 font-medium text-center bg-white dark:bg-gray-800 border-y border-l border-gray-100 dark:border-gray-700 rounded-l-xl whitespace-nowrap">
+                class="py-3 px-2.5 text-center bg-white dark:bg-gray-800 border-y border-l border-gray-100 dark:border-gray-700 rounded-l-xl whitespace-nowrap">
+                <div
+                  class="mx-auto flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 text-xs font-semibold text-gray-700 dark:bg-[#16181d] dark:text-gray-200"
+                >
+                  <img
+                    v-if="getQuoteLogoUrl(quote)"
+                    :src="getQuoteLogoUrl(quote)"
+                    :alt="quote.name || quote.short_code || 'logo'"
+                    class="h-full w-full object-contain p-1"
+                  />
+                  <span v-else>{{ getQuoteLogoText(quote) }}</span>
+                </div>
+              </td>
+              <td
+                class="py-3 px-2.5 text-gray-800 dark:text-gray-100 font-medium text-center bg-white dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700 whitespace-nowrap">
                 {{ quote.marketLabel || "--" }}
               </td>
               <td

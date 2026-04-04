@@ -112,7 +112,20 @@ const logoText = computed(() => {
   if (safeSymbol.value) return safeSymbol.value.slice(0, 2);
   return "--";
 });
-const logoUrl = computed(() => String(props.position?.logoUrl ?? "").trim());
+const logoUrl = computed(() => {
+  const rawUrl = String(props.position?.logoUrl ?? "").trim();
+  if (!rawUrl) return "";
+
+  try {
+    const url = new URL(rawUrl);
+    if (!/(\.|^)logo\.dev$/i.test(url.hostname)) return rawUrl;
+    url.searchParams.set("format", "png");
+    url.searchParams.set("theme", isDarkMode.value ? "dark" : "light");
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+});
 const showLogoImage = computed(() => !!logoUrl.value && !logoLoadFailed.value);
 
 function normalizeHexColor(value) {
@@ -681,9 +694,9 @@ onUnmounted(() => {
     :style="cardThemeStyle">
     <header class="flex items-center gap-3 min-h-12">
       <div
-        class="h-12 w-12 rounded-xl grid place-items-center text-sm font-bold text-gray-700 border border-gray-200 bg-gray-50 dark:text-gray-100 dark:border-gray-700 dark:bg-gray-700/60">
+        class="h-12 w-12 rounded-xl grid place-items-center text-sm font-bold text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-[#16181d]">
         <img v-if="showLogoImage" :src="logoUrl" :alt="safeName" loading="lazy" decoding="async"
-          @error="logoLoadFailed = true" class="h-full w-full rounded-xl object-cover" />
+          @error="logoLoadFailed = true" class="h-full w-full rounded-xl object-contain p-1" />
         <span v-else>{{ logoText }}</span>
       </div>
 

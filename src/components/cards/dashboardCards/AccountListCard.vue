@@ -93,7 +93,7 @@ async function onTransferSubmit(payload) {
             </div>
 
 
-            <div class="min-h-0 flex-1 overflow-y-auto py-5 pr-1 space-y-4">
+            <div class="account-list-scroll min-h-0 flex-1 overflow-y-auto py-5 pr-1 space-y-4">
                 <div v-for="item in sortedAccounts" :key="item.id" class="center gap-3">
                     <div class="flex min-w-0 items-center gap-3">
                         <div
@@ -135,3 +135,16 @@ async function onTransferSubmit(payload) {
             @close="showTransferModal = false" @submit="onTransferSubmit" />
     </div>
 </template>
+
+<style scoped>
+.account-list-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.account-list-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+</style>

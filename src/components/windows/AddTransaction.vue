@@ -28,7 +28,6 @@ const transactionDirectionOptions = [
 ];
 
 const now = () => dayjs().format("YYYY-MM-DD HH:mm:ss.SSS Z");
-const isDateManuallyModified = ref(false);
 const transactionDirection = ref(TRANSACTION_DIRECTION.EXPENSE);
 
 const form = reactive({
@@ -60,7 +59,6 @@ const canSubmit = computed(() => !props.submitting && form.account_id && normali
 
 function onDateChange(val) {
     form.add_date = val;
-    isDateManuallyModified.value = true;
 }
 
 function onAmountInput() {
@@ -87,7 +85,6 @@ function resetForm() {
     });
     transactionDirection.value = TRANSACTION_DIRECTION.EXPENSE;
     advancedMode.value = false;
-    isDateManuallyModified.value = false;
 }
 
 function closeModal() {
@@ -107,7 +104,7 @@ function submit() {
         category_name: normalizedRemark.value,
         amount: normalizedAmount.value,
         account: form.account_id,
-        add_date: isDateManuallyModified.value ? form.add_date : now(),
+        add_date: form.add_date,
     });
 }
 
