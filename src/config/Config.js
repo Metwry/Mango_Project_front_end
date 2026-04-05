@@ -28,7 +28,7 @@ function joinBasePath(base, path) {
   return `${baseText}${pathText.startsWith("/") ? pathText : `/${pathText}`}`;
 }
 
-const DEFAULT_APP_VERSION = "1.0.0";
+const DEFAULT_APP_VERSION = "1.1.0";
 const DEFAULT_API_BASE_URL = "/api";
 const DEFAULT_API_TIMEOUT_MS = 10000;
 const DEFAULT_ERROR_TOAST_MIN_INTERVAL_MS = 1800;

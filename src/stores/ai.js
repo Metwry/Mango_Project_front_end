@@ -177,10 +177,10 @@ export const useAiStore = defineStore("ai", () => {
     });
   }
 
-  async function fetchSessionDetail(sessionId) {
+  async function fetchSessionDetail(sessionId, { force = false } = {}) {
     if (!sessionId || sessionId === TEMP_SESSION_ID) return null;
     const current = conversations.value.find((item) => item.id === sessionId);
-    if (current?.detailLoaded) return current;
+    if (!force && current?.detailLoaded) return current;
     if (detailPromises.has(sessionId)) return detailPromises.get(sessionId);
 
     const promise = api
@@ -316,7 +316,7 @@ export const useAiStore = defineStore("ai", () => {
 
   async function finalizeSession(sessionId) {
     if (!sessionId) return;
-    await fetchSessionDetail(sessionId);
+    await fetchSessionDetail(sessionId, { force: true });
     moveConversationToTop(sessionId);
   }
 

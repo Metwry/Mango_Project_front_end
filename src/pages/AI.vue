@@ -9,9 +9,9 @@ import { useAiStore } from "@/stores/ai";
 import { ElMessage, ElMessageBox } from "@/utils/element";
 
 const promptSuggestions = [
-  "帮我分析一下本月支出结构",
-  "根据当前持仓给我一个风险提示",
-  "整理一份今天适合关注的市场重点",
+  "总结一下最近我的投资状况",
+  "最近一个月我的账户变化趋势",
+  "整理一份最近的市场新闻重点",
 ];
 
 const aiStore = useAiStore();
@@ -199,7 +199,8 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="h-full min-h-0 w-full min-w-0">
-    <div v-if="!ready" class="ai-layout grid h-full min-h-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-4">
+    <div v-if="!ready"
+      class="ai-layout grid h-full min-h-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-4">
       <div class="card-base order-1 min-h-[32rem] lg:min-h-0">
         <div class="flex h-full min-h-[28rem] flex-col justify-between">
           <div>
@@ -243,7 +244,8 @@ onBeforeUnmount(() => {
           <div class="conversation-transition-stage flex h-full min-h-0 flex-col">
             <Transition :name="conversationTransitionName" @after-enter="scrollMessagesToBottom">
               <div :key="activeConversation.id" class="flex h-full min-h-0 flex-col">
-                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-1 pb-3 dark:border-gray-800">
+                <header
+                  class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-1 pb-3 dark:border-gray-800">
                   <div class="min-w-0">
                     <h2 class="truncate text-lg font-bold text-gray-800 dark:text-gray-100">
                       {{ activeConversation.title }}
@@ -251,41 +253,30 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div class="relative ml-auto lg:hidden">
-                    <button
-                      type="button"
-                      class="button-base !h-10 !justify-center !gap-2 !px-3 !py-2"
-                      @click="toggleMobileSessionMenu"
-                    >
+                    <button type="button" class="button-base !h-10 !justify-center !gap-2 !px-3 !py-2"
+                      @click="toggleMobileSessionMenu">
                       <span class="text-sm">会话</span>
                       <BaseIcon name="arrow" :size="14" :class="mobileSessionMenuOpen ? 'rotate-180' : ''" />
                     </button>
 
-                    <div
-                      v-if="mobileSessionMenuOpen"
-                      class="absolute right-0 top-[calc(100%+8px)] z-20 w-64 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                    >
-                      <button
-                        type="button"
-                        class="button-base mb-2 w-full !justify-center"
-                        @click="handleCreateConversation"
-                      >
+                    <div v-if="mobileSessionMenuOpen"
+                      class="absolute right-0 top-[calc(100%+8px)] z-20 w-64 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                      <button type="button" class="button-base mb-2 w-full !justify-center"
+                        @click="handleCreateConversation">
                         + 新建对话
                       </button>
 
                       <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
-                        <button
-                          v-for="item in filteredConversations"
-                          :key="`mobile-${item.id}`"
-                          type="button"
+                        <button v-for="item in filteredConversations" :key="`mobile-${item.id}`" type="button"
                           class="w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-colors duration-200"
                           :class="item.id === activeConversationId
                             ? 'border-gray-200 bg-gray-100 text-gray-900 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-selected)] dark:text-gray-100'
                             : 'border-transparent bg-gray-50/80 text-gray-700 hover:bg-gray-100 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:bg-gray-700/60'"
-                          @click="handleSelectConversation(item.id)"
-                        >
+                          @click="handleSelectConversation(item.id)">
                           <div class="flex items-start justify-between gap-3">
                             <p class="truncate text-sm font-semibold">{{ item.title }}</p>
-                            <span class="shrink-0 text-[11px] text-gray-400 dark:text-gray-500">{{ item.updatedAtLabel }}</span>
+                            <span class="shrink-0 text-[11px] text-gray-400 dark:text-gray-500">{{ item.updatedAtLabel
+                            }}</span>
                           </div>
                           <p class="mt-2 line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
                             {{ item.preview || "暂无内容" }}
@@ -296,43 +287,42 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
-                    <button type="button" class="button-base !px-3 !py-2 max-sm:!text-xs" :disabled="activeConversation.isTemporary" @click="handleRenameConversation">
+                    <button type="button" class="button-base !px-3 !py-2 max-sm:!text-xs"
+                      :disabled="activeConversation.isTemporary" @click="handleRenameConversation">
                       重命名
                     </button>
-                    <button type="button" class="button-base !px-3 !py-2 max-sm:!text-xs" @click="handleDeleteConversation">
+                    <button type="button" class="button-base !px-3 !py-2 max-sm:!text-xs"
+                      @click="handleDeleteConversation">
                       删除
                     </button>
                   </div>
                 </header>
 
-                <div ref="messageScrollRef" class="ai-message-scroll flex-1 space-y-4 overflow-y-auto px-1 py-5 mobile-message-scroll lg:flex-1">
+                <div ref="messageScrollRef"
+                  class="ai-message-scroll flex-1 space-y-4 overflow-y-auto px-1 py-5 mobile-message-scroll lg:flex-1">
                   <template v-if="activeConversation.messages.length">
-                    <div
-                      v-for="message in activeConversation.messages"
-                      :key="message.id"
-                      class="flex"
-                      :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
-                    >
-                      <div class="group relative flex max-w-[92%] flex-col gap-2 sm:max-w-[75%]" :class="message.role === 'user' ? 'items-end' : 'items-start'">
+                    <div v-for="message in activeConversation.messages" :key="message.id" class="flex"
+                      :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
+                      <div class="group relative flex max-w-[92%] flex-col gap-2 sm:max-w-[75%]"
+                        :class="message.role === 'user' ? 'items-end' : 'items-start'">
                         <div
-                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                        >
+                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                           <BaseIcon :name="message.role === 'user' ? 'user' : 'ai'" class="h-5 w-5" />
                         </div>
-                        <div
-                          class="select-text rounded-[1.4rem] border px-4 py-3 text-[13px] leading-6 shadow-sm"
+                        <div class="select-text rounded-[1.4rem] border px-4 py-3 text-[13px] leading-6 shadow-sm"
                           :class="message.role === 'user'
                             ? 'rounded-br-md border-gray-200 bg-gray-100 text-gray-900 dark:border-slate-800 dark:bg-slate-900 dark:text-gray-100'
-                            : 'rounded-bl-md border-gray-100 bg-white text-gray-700 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-200'"
-                        >
+                            : 'rounded-bl-md border-gray-100 bg-white text-gray-700 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-200'">
                           <div class="markdown-body select-text" v-html="renderMarkdown(message.content)"></div>
                         </div>
                       </div>
                     </div>
                   </template>
 
-                  <div v-else class="flex h-full min-h-[18rem] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 px-6 text-center dark:border-gray-700 dark:bg-gray-800/30">
-                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gray-700 shadow-sm dark:bg-gray-800 dark:text-gray-200">
+                  <div v-else
+                    class="flex h-full min-h-[18rem] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 px-6 text-center dark:border-gray-700 dark:bg-gray-800/30">
+                    <div
+                      class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gray-700 shadow-sm dark:bg-gray-800 dark:text-gray-200">
                       <BaseIcon name="ai" class="h-7 w-7" />
                     </div>
                     <h3 class="mt-4 text-xl font-bold text-gray-800 dark:text-gray-100">开始一段新对话</h3>
@@ -341,20 +331,17 @@ onBeforeUnmount(() => {
                     </p>
 
                     <div class="mt-5 grid w-full max-w-3xl grid-cols-1 gap-3 md:grid-cols-3">
-                      <button
-                        v-for="item in promptSuggestions"
-                        :key="item"
-                        type="button"
+                      <button v-for="item in promptSuggestions" :key="item" type="button"
                         class="rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left text-sm leading-6 text-gray-600 transition-colors duration-200 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300 dark:hover:bg-gray-700/60"
-                        @click="handleSuggestion(item)"
-                      >
+                        @click="handleSuggestion(item)">
                         {{ item }}
                       </button>
                     </div>
                   </div>
 
                   <div v-if="isThinking" class="flex justify-start">
-                    <div class="inline-flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-500 shadow-sm dark:border-gray-800 dark:bg-gray-900/40 dark:text-gray-400">
+                    <div
+                      class="inline-flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-500 shadow-sm dark:border-gray-800 dark:bg-gray-900/40 dark:text-gray-400">
                       <BaseIcon name="spinner" :spin="true" :size="16" />
                       <span>正在思考中...</span>
                     </div>
@@ -362,17 +349,17 @@ onBeforeUnmount(() => {
                 </div>
 
                 <footer class="pt-3 mobile-composer lg:pt-3">
-                  <div class="mobile-composer-panel flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-selected)]">
-                    <textarea
-                      v-model="draft"
-                      rows="1"
+                  <div
+                    class="mobile-composer-panel flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-2 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-selected)]">
+                    <textarea v-model="draft" rows="1"
                       class="mobile-composer-textarea w-full flex-1 resize-none border-0 bg-transparent text-[13px] leading-6 text-gray-700 outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 dark:text-gray-200 dark:placeholder:text-gray-500"
-                      placeholder="输入你的问题，按回车发送，Shift+回车换行"
-                      @keydown="handleComposerKeydown"
-                    />
-                    <div class="mt-3 flex flex-wrap items-center justify-between gap-3 max-sm:mt-2 max-sm:flex-nowrap max-sm:gap-2">
+                      placeholder="输入你的问题，按回车发送，Shift+回车换行" @keydown="handleComposerKeydown" />
+                    <div
+                      class="mt-3 flex flex-wrap items-center justify-between gap-3 max-sm:mt-2 max-sm:flex-nowrap max-sm:gap-2">
                       <p class="text-xs text-gray-400 dark:text-gray-500 max-sm:hidden">已接入 AI 会话接口</p>
-                      <button type="button" class="button-base !px-4 !py-2.5 max-sm:w-full max-sm:justify-center max-sm:!py-2" :disabled="isThinking || !draft.trim()" @click="handleSendMessage">
+                      <button type="button"
+                        class="button-base !px-4 !py-2.5 max-sm:w-full max-sm:justify-center max-sm:!py-2"
+                        :disabled="isThinking || !draft.trim()" @click="handleSendMessage">
                         发送
                       </button>
                     </div>
@@ -391,8 +378,7 @@ onBeforeUnmount(() => {
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">管理当前助手对话</p>
           </div>
           <button type="button" class="button-base !px-3 !py-2" @click="handleCreateConversation">
-            <span class="text-base leading-none">+</span>
-            <span>新建</span>
+            新建
           </button>
         </div>
 
@@ -402,20 +388,16 @@ onBeforeUnmount(() => {
         </label>
 
         <div class="flex-1 space-y-2 overflow-y-auto pr-1">
-          <div v-if="loading" class="flex min-h-24 items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+          <div v-if="loading"
+            class="flex min-h-24 items-center justify-center text-sm text-gray-400 dark:text-gray-500">
             正在加载会话...
           </div>
 
-          <button
-            v-for="item in filteredConversations"
-            :key="item.id"
-            type="button"
+          <button v-for="item in filteredConversations" :key="item.id" type="button"
             class="w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-colors duration-200"
             :class="item.id === activeConversationId
               ? 'border-gray-200 bg-gray-100 text-gray-900 dark:border-[var(--border-subtle)] dark:bg-[var(--surface-selected)] dark:text-gray-100'
-              : 'border-transparent bg-gray-50/80 text-gray-700 hover:bg-gray-100 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:bg-gray-700/60'"
-            @click="handleSelectConversation(item.id)"
-          >
+              : 'border-transparent bg-gray-50/80 text-gray-700 hover:bg-gray-100 dark:bg-gray-800/50 dark:text-gray-300 dark:hover:bg-gray-700/60'" @click="handleSelectConversation(item.id)">
             <div class="flex items-start justify-between gap-3">
               <p class="truncate text-sm font-semibold">{{ item.title }}</p>
               <span class="shrink-0 text-[11px] text-gray-400 dark:text-gray-500">{{ item.updatedAtLabel }}</span>
@@ -425,7 +407,8 @@ onBeforeUnmount(() => {
             </p>
           </button>
 
-          <div v-if="!loading && !filteredConversations.length" class="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-gray-200 text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
+          <div v-if="!loading && !filteredConversations.length"
+            class="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-gray-200 text-sm text-gray-400 dark:border-gray-700 dark:text-gray-500">
             没有匹配的会话
           </div>
         </div>
@@ -433,20 +416,13 @@ onBeforeUnmount(() => {
     </div>
 
     <Transition name="modal">
-      <div
-        v-if="renameModalOpen"
-        class="fixed inset-0 z-50 grid place-items-center bg-black/18 p-4"
-        @click.self="closeRenameModal"
-      >
+      <div v-if="renameModalOpen" class="fixed inset-0 z-50 grid place-items-center bg-black/18 p-4"
+        @click.self="closeRenameModal">
         <div class="modal-content w-full max-w-xl rounded-4xl bg-white p-6 dark:bg-gray-800">
           <header class="mb-5 flex items-center justify-between">
             <h3 class="card-title !p-0">重命名会话</h3>
-            <button
-              type="button"
-              class="button-base !h-8 !w-8 !justify-center !rounded-full !p-0"
-              :disabled="renaming"
-              @click="closeRenameModal"
-            >
+            <button type="button" class="button-base !h-8 !w-8 !justify-center !rounded-full !p-0" :disabled="renaming"
+              @click="closeRenameModal">
               <BaseIcon name="closeIcon" :size="14" />
             </button>
           </header>
@@ -454,21 +430,17 @@ onBeforeUnmount(() => {
           <section class="space-y-4">
             <div>
               <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">会话名称</label>
-              <input
-                v-model.trim="renameDraft"
-                type="text"
-                class="input-base px-4 py-3"
-                maxlength="60"
-                placeholder="请输入会话名称"
-                @keydown.enter.prevent="submitRenameConversation"
-              />
+              <input v-model.trim="renameDraft" type="text" class="input-base px-4 py-3" maxlength="60"
+                placeholder="请输入会话名称" @keydown.enter.prevent="submitRenameConversation" />
             </div>
 
             <div class="flex justify-end gap-3">
-              <button type="button" class="button-base !rounded-xl !px-5" :disabled="renaming" @click="closeRenameModal">
+              <button type="button" class="button-base !rounded-xl !px-5" :disabled="renaming"
+                @click="closeRenameModal">
                 取消
               </button>
-              <button type="button" class="button-base !rounded-xl !px-5" :disabled="renaming" @click="submitRenameConversation">
+              <button type="button" class="button-base !rounded-xl !px-5" :disabled="renaming"
+                @click="submitRenameConversation">
                 {{ renaming ? "保存中..." : "保存" }}
               </button>
             </div>
@@ -489,6 +461,12 @@ onBeforeUnmount(() => {
 .ai-message-scroll {
   scrollbar-gutter: stable;
   scrollbar-width: thin;
+}
+
+.ai-layout :deep(.button-base:focus),
+.ai-layout :deep(.button-base:focus-visible) {
+  outline: none;
+  box-shadow: none;
 }
 
 .ai-message-scroll::-webkit-scrollbar {
@@ -722,6 +700,7 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .page-slide-up-enter-active,
   .page-slide-up-leave-active,
   .page-slide-down-enter-active,
