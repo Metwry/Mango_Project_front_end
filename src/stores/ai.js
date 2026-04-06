@@ -5,6 +5,7 @@ import api from "@/utils/api";
 import { API_BASE_URL } from "@/config/Config";
 import { useAuthStore } from "@/stores/auth";
 import { ElMessage } from "@/utils/element";
+import { useAsyncState } from "@/composables/useAsyncState";
 
 const TEMP_SESSION_ID = "temp-new-session";
 
@@ -67,12 +68,11 @@ export const useAiStore = defineStore("ai", () => {
   const auth = useAuthStore();
   const conversations = ref([]);
   const activeConversationId = ref(null);
-  const loading = ref(false);
   const ready = ref(false);
   const isThinking = ref(false);
-  const fetched = ref(false);
-  const fetchPromise = ref(null);
   const detailPromises = new Map();
+
+  const { loading, fetched, run: runFetch, reset: resetAsync } = useAsyncState();
 
   const activeConversation = computed(
     () => conversations.value.find((item) => item.id === activeConversationId.value) ?? null,
@@ -203,13 +203,9 @@ export const useAiStore = defineStore("ai", () => {
   }
 
   async function fetchSessions({ force = false } = {}) {
-    if (fetchPromise.value) return fetchPromise.value;
-    if (fetched.value && !force) return conversations.value;
-
-    loading.value = true;
-    ready.value = false;
-
-    const promise = (async () => {
+    return runFetch({ force, silent: true, getCached: () => conversations.value }, async () => {
+      loading.value = true;
+      ready.value = false;
       try {
         const { data } = await api.get("/ai/chat/sessions/", {
           suppressErrorToast: true,
@@ -219,7 +215,6 @@ export const useAiStore = defineStore("ai", () => {
 
         if (!conversations.value.length) {
           ensureTemporaryConversation();
-          fetched.value = true;
           ready.value = true;
           return conversations.value;
         }
@@ -233,23 +228,17 @@ export const useAiStore = defineStore("ai", () => {
         persistActiveSessionId(preferredSession.id);
         await Promise.all(conversations.value.map((item) => fetchSessionDetail(item.id)));
 
-        fetched.value = true;
         ready.value = true;
         return conversations.value;
       } catch {
         conversations.value = [];
         ensureTemporaryConversation();
-        fetched.value = true;
         ready.value = true;
         return conversations.value;
       } finally {
         loading.value = false;
-        fetchPromise.value = null;
       }
-    })();
-
-    fetchPromise.value = promise;
-    return promise;
+    });
   }
 
   async function selectConversation(sessionId) {
@@ -299,10 +288,10 @@ export const useAiStore = defineStore("ai", () => {
       detailLoaded: true,
     });
 
-    const current = conversations.value.find((item) => item.id === sessionId);
-    if (!current) return;
+    if (!conversations.value.some((item) => item.id === sessionId)) return;
 
-    const messages = [...current.messages];
+    const conversation = conversations.value.find((item) => item.id === sessionId);
+    const messages = [...conversation.messages];
     const lastMessage = messages.at(-1);
     if (lastMessage?.id === "streaming-assistant" && lastMessage.role === "assistant") {
       lastMessage.content = content;
@@ -364,11 +353,11 @@ export const useAiStore = defineStore("ai", () => {
 
     const target = activeConversation.value ?? ensureTemporaryConversation();
     const requestSessionId = target.id === TEMP_SESSION_ID ? null : Number(target.id);
-    const title =
+    const finalTitle =
       target.isTemporary || target.title === "新对话" ? content.slice(0, 30) : target.title;
 
     patchConversation(target.id, {
-      title,
+      title: finalTitle,
       preview: toPlainPreview(content),
       updatedAt: new Date().toISOString(),
       updatedAtLabel: "刚刚",
@@ -398,13 +387,13 @@ export const useAiStore = defineStore("ai", () => {
       await consumeSseStream(response.body, async (eventName, payload) => {
         if (eventName === "start") {
           resolvedSessionId = Number(payload?.session_id ?? requestSessionId);
-          if (resolvedSessionId) applySessionStart(resolvedSessionId, title || "新对话");
+          if (resolvedSessionId) applySessionStart(resolvedSessionId, finalTitle);
           return;
         }
 
         if (eventName === "delta") {
           assistantContent += String(payload ?? "");
-          updateStreamingMessage(resolvedSessionId ?? target.id, assistantContent, title || "新对话");
+          updateStreamingMessage(resolvedSessionId ?? target.id, assistantContent, finalTitle);
           return;
         }
 
@@ -412,7 +401,7 @@ export const useAiStore = defineStore("ai", () => {
           const message =
             String(payload?.message ?? "").trim() || "当前请求处理失败，请稍后重试。";
           assistantContent = message;
-          updateStreamingMessage(resolvedSessionId ?? target.id, assistantContent, title || "新对话");
+          updateStreamingMessage(resolvedSessionId ?? target.id, assistantContent, finalTitle);
           throw new Error(message);
         }
 
@@ -425,7 +414,7 @@ export const useAiStore = defineStore("ai", () => {
     } catch (error) {
       const message = String(error?.message ?? "").trim() || "发送失败，请稍后重试";
       if (!assistantContent) {
-        updateStreamingMessage(resolvedSessionId ?? target.id, message, title || "新对话");
+        updateStreamingMessage(resolvedSessionId ?? target.id, message, finalTitle);
       }
       ElMessage.error(message);
     } finally {
@@ -469,11 +458,9 @@ export const useAiStore = defineStore("ai", () => {
   function reset() {
     conversations.value = [];
     activeConversationId.value = null;
-    loading.value = false;
     ready.value = false;
     isThinking.value = false;
-    fetched.value = false;
-    fetchPromise.value = null;
+    resetAsync();
     detailPromises.clear();
   }
 

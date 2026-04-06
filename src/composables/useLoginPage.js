@@ -9,6 +9,7 @@ import {
   sendEmailRegisterCode,
   sendPasswordResetEmailCode,
 } from "@/utils/auth";
+import { extractBackendErrorMessage } from "@/utils/api";
 
 const MODE_META = {
   emailLogin: {
@@ -78,20 +79,6 @@ function useCountdown() {
 function isValidEmail(value) {
   const email = String(value ?? "").trim();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-// 从接口错误对象中提取适合展示的错误文案。
-function extractErrorMessage(error) {
-  const payload = error?.response?.data;
-  const raw = payload?.message;
-
-  if (typeof raw === "string") return raw.trim() || "登录失败";
-  if (Array.isArray(raw)) {
-    const first = raw.find((item) => typeof item === "string" && item.trim());
-    if (first) return first.trim();
-  }
-
-  return "登录失败，请检查账号和密码";
 }
 
 // 提供登录页的模式切换、表单提交和验证码发送逻辑。
@@ -208,7 +195,7 @@ export function useLoginPage() {
       await auth.login(email, password, { remember: emailLoginForm.value.remember });
       router.replace("/dashboard");
     } catch (error) {
-      ElMessage.error(extractErrorMessage(error));
+      ElMessage.error(extractBackendErrorMessage(error?.response?.data) || "登录失败，请检查账号和密码");
     } finally {
       loading.value = false;
     }

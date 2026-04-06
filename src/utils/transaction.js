@@ -18,9 +18,7 @@ const SOURCE_BY_MODE = Object.freeze({
 
 // 根据历史记录模式返回接口所需的 source 参数。
 export function getSourceByMode(mode) {
-  return (
-    SOURCE_BY_MODE[mode] ?? SOURCE_BY_MODE[TRANSACTION_HISTORY_MODE.ACTIVITY]
-  );
+  return SOURCE_BY_MODE[mode];
 }
 
 // 按指定历史模式查询交易列表。

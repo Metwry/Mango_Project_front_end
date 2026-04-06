@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { onClickOutside } from '@vueuse/core';
 import BaseIcon from '../ui/BaseIcon.vue';
 import UserMenu from './UserMenu.vue';
-import { normalizeRoutePath } from '@/utils/router';
 
 const props = defineProps({
     title: { type: String, },
@@ -18,18 +17,17 @@ const mobileNavRef = ref(null);
 const showMobileNavMenu = ref(false);
 
 const currentMenuItem = computed(() => {
-    const currentPath = normalizeRoutePath(route.path);
-    return props.menuItems.find((item) => normalizeRoutePath(item?.path) === currentPath) || null;
+    return props.menuItems.find((item) => item?.path === route.path) || null;
 });
 
 const mobileTitle = computed(() => currentMenuItem.value?.name || props.title || '');
 const mobileIcon = computed(() => currentMenuItem.value?.icon || props.icon || '');
 
 function navigateTo(path) {
-    const targetPath = normalizeRoutePath(path);
+    const targetPath = String(path ?? '');
     if (!targetPath) return;
     showMobileNavMenu.value = false;
-    if (targetPath === normalizeRoutePath(route.path)) return;
+    if (targetPath === route.path) return;
     router.push(targetPath);
 }
 
@@ -68,7 +66,7 @@ watch(
                         class="dropdown-panel absolute left-0 top-full mt-2 w-44 rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
                         <button v-for="item in menuItems" :key="item.path" type="button"
                             class="dropdown-menu-item"
-                            :class="normalizeRoutePath(item.path) === normalizeRoutePath(route.path)
+                            :class="item.path === route.path
                                 ? 'dropdown-item-active'
                                 : ''"
                             @click="navigateTo(item.path)">

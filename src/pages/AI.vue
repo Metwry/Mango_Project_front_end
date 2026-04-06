@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
                           <div class="flex items-start justify-between gap-3">
                             <p class="truncate text-sm font-semibold">{{ item.title }}</p>
                             <span class="shrink-0 text-[11px] text-gray-400 dark:text-gray-500">{{ item.updatedAtLabel
-                            }}</span>
+                              }}</span>
                           </div>
                           <p class="mt-2 line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
                             {{ item.preview || "暂无内容" }}
@@ -305,15 +305,15 @@ onBeforeUnmount(() => {
                       :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
                       <div class="group relative flex max-w-[92%] flex-col gap-2 sm:max-w-[75%]"
                         :class="message.role === 'user' ? 'items-end' : 'items-start'">
-                        <div
-                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                          <BaseIcon :name="message.role === 'user' ? 'user' : 'ai'" class="h-5 w-5" />
-                        </div>
                         <div class="select-text rounded-[1.4rem] border px-4 py-3 text-[13px] leading-6 shadow-sm"
                           :class="message.role === 'user'
                             ? 'rounded-br-md border-gray-200 bg-gray-100 text-gray-900 dark:border-slate-800 dark:bg-slate-900 dark:text-gray-100'
                             : 'rounded-bl-md border-gray-100 bg-white text-gray-700 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-200'">
                           <div class="markdown-body select-text" v-html="renderMarkdown(message.content)"></div>
+                        </div>
+                        <div
+                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                          <BaseIcon :name="message.role === 'user' ? 'user' : 'ai'" class="h-5 w-5" />
                         </div>
                       </div>
                     </div>
@@ -356,7 +356,7 @@ onBeforeUnmount(() => {
                       placeholder="输入你的问题，按回车发送，Shift+回车换行" @keydown="handleComposerKeydown" />
                     <div
                       class="mt-3 flex flex-wrap items-center justify-between gap-3 max-sm:mt-2 max-sm:flex-nowrap max-sm:gap-2">
-                      <p class="text-xs text-gray-400 dark:text-gray-500 max-sm:hidden">已接入 AI 会话接口</p>
+                      <p></p>
                       <button type="button"
                         class="button-base !px-4 !py-2.5 max-sm:w-full max-sm:justify-center max-sm:!py-2"
                         :disabled="isThinking || !draft.trim()" @click="handleSendMessage">

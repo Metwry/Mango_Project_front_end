@@ -1,7 +1,7 @@
 <script setup>
-import AddAccount from '@/components/windows/AddAccount.vue'
-import ChangeAccount from '@/components/windows/ChangeAccount.vue'
-import TransferFunds from '@/components/windows/TransferFunds.vue'
+import AddAccount from '@/components/modals/AddAccount.vue'
+import ChangeAccount from '@/components/modals/ChangeAccount.vue'
+import TransferFunds from '@/components/modals/TransferFunds.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from "@/utils/element";

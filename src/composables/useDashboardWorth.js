@@ -32,25 +32,15 @@ export function useDashboardWorth() {
   const totalWorthUsd = computed(() => valuation.value.totalValueUsd);
   // 根据当前展示币种，把总资产的美元值换算成页面展示金额。
   const totalWorthDisplayAmount = computed(() => {
-    const usdRate = resolveUsdPerCurrencyRate(
+    return Number(totalWorthUsd.value) / resolveUsdPerCurrencyRate(
       displayCurrency.value,
       usdPerCurrencyRates.value,
     );
-    if (!Number.isFinite(usdRate) || usdRate <= 0) return 0;
-    return Number(totalWorthUsd.value) / usdRate;
   });
 
   // 拉取最新汇率并更新共享汇率状态。
   const refreshWorth = async ({ forceRates = false } = {}) => {
-    let nextRates = getCachedUsdPerCurrencyRates();
-
-    try {
-      nextRates = await ensureUsdPerCurrencyRates({ force: forceRates });
-    } catch {
-      // Keep previous rates when FX API is temporarily unavailable.
-    }
-
-    usdPerCurrencyRates.value = nextRates;
+    usdPerCurrencyRates.value = await ensureUsdPerCurrencyRates({ force: forceRates });
     worthReady.value = true;
   };
 
@@ -63,12 +53,8 @@ export function useDashboardWorth() {
   );
 
   onMounted(async () => {
-    try {
-      await accountsStore.fetchAccounts();
-    } catch {
-      // API layer already handles visible error feedback.
-    }
-    void refreshWorth();
+    await accountsStore.fetchAccounts();
+    await refreshWorth();
   });
 
   return {

@@ -30,18 +30,11 @@ export function useBookkeepingPage() {
   const deletingId = ref(null);
   const clearingAll = ref(false);
 
-  // 规范化历史记录模式参数，避免无效值影响查询。
-  function normalizeHistoryMode(raw) {
-    const mode = String(raw ?? "").trim().toLowerCase();
-    if (mode === TRANSACTION_HISTORY_MODE.ALL) return TRANSACTION_HISTORY_MODE.ALL;
-    if (mode === TRANSACTION_HISTORY_MODE.TRANSFER) return TRANSACTION_HISTORY_MODE.TRANSFER;
-    if (mode === TRANSACTION_HISTORY_MODE.REVERSED) return TRANSACTION_HISTORY_MODE.REVERSED;
-    return TRANSACTION_HISTORY_MODE.ACTIVITY;
-  }
+  const HISTORY_MODES = new Set(Object.values(TRANSACTION_HISTORY_MODE));
 
   // 根据当前历史记录模式返回对应的中文名称。
   function currentModeLabel() {
-    const mode = txFilters.value?.history_mode;
+    const mode = txFilters.value.history_mode;
     if (mode === TRANSACTION_HISTORY_MODE.ALL) return "投资记录";
     if (mode === TRANSACTION_HISTORY_MODE.TRANSFER) return "转账记录";
     if (mode === TRANSACTION_HISTORY_MODE.REVERSED) return "已撤销记录";
@@ -65,8 +58,8 @@ export function useBookkeepingPage() {
 
   // 重置搜索条件，同时保留当前分页大小和历史模式。
   function onSearchReset() {
-    const currentPageSize = Number(txFilters.value?.page_size) || 10;
-    const currentMode = txFilters.value?.history_mode || TRANSACTION_HISTORY_MODE.ACTIVITY;
+    const currentPageSize = Number(txFilters.value.page_size) || 10;
+    const currentMode = txFilters.value.history_mode;
     transactionsStore.resetFilters();
     return transactionsStore.fetchList({
       page: 1,
@@ -165,8 +158,11 @@ export function useBookkeepingPage() {
   }
 
   onMounted(() => {
-    const modeFromRoute = normalizeHistoryMode(route.query?.history_mode ?? route.query?.mode);
-    const currentPageSize = Number(txFilters.value?.page_size) || 10;
+    const routeMode = String(route.query?.history_mode ?? route.query?.mode ?? "").trim().toLowerCase();
+    const modeFromRoute = HISTORY_MODES.has(routeMode)
+      ? routeMode
+      : TRANSACTION_HISTORY_MODE.ACTIVITY;
+    const currentPageSize = Number(txFilters.value.page_size) || 10;
     transactionsStore.resetFilters();
     return Promise.all([
       accountsStore.fetchAccounts(),

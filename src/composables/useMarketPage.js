@@ -27,8 +27,15 @@ function getMarketOrderIndex(market) {
 
 // 为行情表格行生成稳定的唯一键。
 function buildQuoteRowKey(market, quote) {
-  const shortCode = String(quote?.short_code ?? "").trim().toUpperCase();
-  return `${market}-${shortCode || "UNKNOWN"}`;
+  return `${market}-${String(quote.short_code).trim().toUpperCase()}`;
+}
+
+// 按预设顺序比较两个市场，用于稳定排序。
+function compareMarkets(aMarket, bMarket) {
+  const aIdx = getMarketOrderIndex(aMarket);
+  const bIdx = getMarketOrderIndex(bMarket);
+  if (aIdx !== bIdx) return aIdx - bIdx;
+  return String(aMarket).localeCompare(String(bMarket), "zh-CN");
 }
 
 // 提供行情页面的列表展示、搜索、自选管理和格式化逻辑。
@@ -48,40 +55,27 @@ export function useMarketPage() {
   const marketButtons = computed(() => {
     const counter = new Map();
     for (const block of markets.value) {
-      const market = normalizeMarketCode(block?.market);
-      if (!market) continue;
-      const quotes = Array.isArray(block?.quotes) ? block.quotes : [];
-      counter.set(market, (counter.get(market) ?? 0) + quotes.length);
+      const market = normalizeMarketCode(block.market);
+      counter.set(market, (counter.get(market) ?? 0) + block.quotes.length);
     }
 
     return Array.from(counter, ([market, count]) => ({
       market,
       label: getMarketLabel(market),
       count,
-    })).sort((a, b) => {
-      const aIdx = getMarketOrderIndex(a.market);
-      const bIdx = getMarketOrderIndex(b.market);
-      if (aIdx !== bIdx) return aIdx - bIdx;
-      return String(a.label).localeCompare(String(b.label), "zh-CN");
-    });
+    })).sort((a, b) => compareMarkets(a.market, b.market));
   });
 
   // 将按市场分组的行情数据展开成表格所需的一维列表。
   const allQuotes = computed(() => {
     const rows = [];
-    const sortedMarkets = [...markets.value].sort((a, b) => {
-      const aMarket = normalizeMarketCode(a?.market);
-      const bMarket = normalizeMarketCode(b?.market);
-      const aIdx = getMarketOrderIndex(aMarket);
-      const bIdx = getMarketOrderIndex(bMarket);
-      if (aIdx !== bIdx) return aIdx - bIdx;
-      return String(aMarket).localeCompare(String(bMarket), "zh-CN");
-    });
+    const sortedMarkets = [...markets.value].sort((a, b) =>
+      compareMarkets(normalizeMarketCode(a.market), normalizeMarketCode(b.market)),
+    );
 
     sortedMarkets.forEach((block) => {
-      const market = normalizeMarketCode(block?.market);
-      const quotes = Array.isArray(block?.quotes) ? block.quotes : [];
-      quotes.forEach((quote) => {
+      const market = normalizeMarketCode(block.market);
+      block.quotes.forEach((quote) => {
         rows.push({
           ...quote,
           market,
@@ -142,9 +136,7 @@ export function useMarketPage() {
     try {
       const res = await searchMarketInstruments(query);
       if (reqId !== searchRequestSeq) return;
-
-      const rows = Array.isArray(res.data?.results) ? res.data.results : [];
-      searchResults.value = rows;
+      searchResults.value = res.data.results;
     } catch {
       if (reqId !== searchRequestSeq) return;
       resetSearchState();
@@ -218,15 +210,9 @@ export function useMarketPage() {
 
   // 选择一个搜索结果并尝试加入自选列表。
   async function pickSearchResult(item) {
-    const symbol = String(item?.symbol ?? "").trim().toUpperCase();
-    if (!symbol) {
-      ElMessage.error("标的代码无效，无法添加");
-      return;
-    }
-
     try {
-      const payload = await marketStore.addWatchlistInstrument(symbol);
-      const created = Boolean(payload?.created);
+      const payload = await marketStore.addWatchlistInstrument(String(item.symbol).trim().toUpperCase());
+      const created = Boolean(payload.created);
       ElMessage.success(created ? "添加成功" : "该标的已在自选中");
       ensureSelectedMarketAvailable();
     } catch {
@@ -243,18 +229,10 @@ export function useMarketPage() {
 
   // 从自选列表中删除一条行情标的。
   async function onDeleteClick(row) {
-    const market = normalizeMarketCode(row?.market);
-    const shortCode = String(row?.short_code ?? "").trim().toUpperCase();
-
-    if (!market || !shortCode) {
-      ElMessage.error("标的代码无效，无法删除");
-      return;
-    }
-
     try {
       await marketStore.deleteWatchlistInstrument({
-        market,
-        short_code: shortCode,
+        market: normalizeMarketCode(row.market),
+        short_code: String(row.short_code).trim().toUpperCase(),
       });
       ElMessage.success("删除成功");
       ensureSelectedMarketAvailable();

@@ -31,12 +31,10 @@ export function deleteAccount(id) {
 
 // 判断一个账户是否为系统中的投资账户。
 export function isInvestmentAccount(account) {
-  if (!account || typeof account !== "object") return false;
   return account.name === INVESTMENT_ACCOUNT_NAME && account.type === INVESTMENT_ACCOUNT_TYPE;
 }
 
 // 过滤掉账户列表中的投资账户。
 export function filterNonInvestmentAccounts(accounts) {
-  if (!Array.isArray(accounts)) return [];
   return accounts.filter((account) => !isInvestmentAccount(account));
 }

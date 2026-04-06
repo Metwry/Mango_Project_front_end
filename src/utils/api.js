@@ -65,7 +65,7 @@ function notifyError(message, { key = String(message ?? "") } = {}) {
 }
 
 // 从后端响应体中提取可直接展示的错误信息。
-function extractBackendErrorMessage(payload) {
+export function extractBackendErrorMessage(payload) {
   const raw = payload?.message;
   if (typeof raw === "string") {
     const text = raw.trim();

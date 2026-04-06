@@ -16,17 +16,13 @@ function normalizeDisplayCurrency(value) {
 
 // 从本地存储读取展示币种，并在异常时回退到默认值。
 function readPersistedDisplayCurrency() {
-  if (typeof window === "undefined") {
-    return normalizeDisplayCurrency(DASHBOARD_WORTH_CONFIG.displayCurrency);
+  let raw = null;
+  if (typeof window !== "undefined") {
+    try {
+      raw = window.localStorage.getItem(DISPLAY_CURRENCY_STORAGE_KEY);
+    } catch {}
   }
-
-  try {
-    return normalizeDisplayCurrency(
-      window.localStorage.getItem(DISPLAY_CURRENCY_STORAGE_KEY),
-    );
-  } catch {
-    return normalizeDisplayCurrency(DASHBOARD_WORTH_CONFIG.displayCurrency);
-  }
+  return normalizeDisplayCurrency(raw ?? DASHBOARD_WORTH_CONFIG.displayCurrency);
 }
 
 const sharedDisplayCurrency = ref(readPersistedDisplayCurrency());

@@ -17,7 +17,7 @@ export function toSafeNumber(value, fallback = 0) {
 
 // 根据币种代码返回对应的货币符号。
 export function getCurrencySymbol(code) {
-  return CURRENCY_SYMBOL_MAP[String(code || "").toUpperCase()] ?? "";
+  return CURRENCY_SYMBOL_MAP[String(code ?? "").toUpperCase()] ?? "";
 }
 
 // 按指定币种和格式配置输出金额文本。
@@ -36,7 +36,7 @@ export function formatCurrencyAmount(
   const n = Number(amount);
   if (!Number.isFinite(n)) return invalidText;
 
-  const c = String(currency || "CNY").toUpperCase();
+  const c = String(currency ?? "CNY").toUpperCase();
   if (symbolOnly) {
     const symbol = getCurrencySymbol(c);
     const absText = new Intl.NumberFormat(locale, {

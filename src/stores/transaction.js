@@ -58,12 +58,12 @@ export const useTransactionsStore = defineStore("transactions", () => {
     try {
       Object.assign(filters, patch);
       const params = sanitizeParams({ ...filters });
-      const historyMode = params.history_mode || TRANSACTION_HISTORY_MODE.ACTIVITY;
+      const historyMode = params.history_mode;
       delete params.history_mode;
 
       const res = await getTransactionsByMode(historyMode, params);
-      items.value = Array.isArray(res.data?.results) ? res.data.results : [];
-      total.value = Number(res.data?.count ?? items.value.length) || 0;
+      items.value = res.data.results;
+      total.value = Number(res.data.count);
       return items.value;
     } catch (e) {
       error.value = e;
@@ -132,13 +132,12 @@ export const useTransactionsStore = defineStore("transactions", () => {
     error.value = null;
     try {
       const res = await reverseTransaction(id);
-      const data = res.data;
       await fetchList({
         page: filters.page,
         page_size: filters.page_size,
         history_mode: filters.history_mode,
       });
-      return data;
+      return res.data;
     } catch (e) {
       error.value = e;
       throw e;

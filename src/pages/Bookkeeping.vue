@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import TransactionsHistoryCard from "@/components/cards/bookkeepingCards/TransactionsHistoryCard.vue";
-import AddTransaction from "@/components/windows/AddTransaction.vue";
+import AddTransaction from "@/components/modals/AddTransaction.vue";
 import { useBookkeepingPage } from "@/composables/useBookkeepingPage";
 
 const {

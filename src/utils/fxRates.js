@@ -16,53 +16,26 @@ function getUsdExchangeRates() {
   });
 }
 
-// 规范化币种代码，统一转成大写文本。
-function toCode(value) {
+// 统一币种代码写法，和后端保持大写格式。
+function normalizeCurrency(value) {
   return String(value ?? "").trim().toUpperCase();
 }
 
-// 判断一个值是否为大于零的有限数。
-function isFinitePositive(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0;
-}
+// 把后端返回的 USD 基准 rates 转成每单位外币对应多少美元。
+function toUsdPerCurrencyRates(rates) {
+  const mapped = { USD: 1 };
 
-// 获取美元兑人民币的汇率，必要时回退到默认配置。
-function getUsdPerCnyRate(usdPerCurrencyRates) {
-  const candidate = Number(
-    usdPerCurrencyRates?.CNY ?? DEFAULT_USD_PER_CURRENCY_RATES.CNY,
-  );
-  return isFinitePositive(candidate)
-    ? candidate
-    : DEFAULT_USD_PER_CURRENCY_RATES.CNY;
-}
-
-// 把接口返回的汇率数据标准化为每单位外币对应多少美元。
-function normalizeUsdPerCurrencyRates(payload) {
-  const normalized = { USD: 1 };
-  const rates = payload?.rates;
-  if (!rates || typeof rates !== "object") {
-    return normalized;
-  }
-
-  Object.entries(rates).forEach(([rawCode, rawValue]) => {
-    const code = toCode(rawCode);
-    const rawRate = Number(rawValue);
-    if (!code || !rawRate) return;
-
-    const usdPerCurrency = code === "USD" ? 1 : 1 / rawRate;
-
-    if (isFinitePositive(usdPerCurrency)) {
-      normalized[code] = usdPerCurrency;
-    }
+  Object.entries(rates).forEach(([code, rate]) => {
+    const currency = normalizeCurrency(code);
+    mapped[currency] = currency === "USD" ? 1 : 1 / Number(rate);
   });
 
-  return normalized;
+  return mapped;
 }
 
-// 解析目标币种对应的美元汇率，并在缺失时回退到默认值。
+// 解析目标币种对应的美元汇率。
 export function resolveUsdPerCurrencyRate(target, usdPerCurrencyRates) {
-  const currency = toCode(
+  const currency = normalizeCurrency(
     typeof target === "string" ? target : (target?.currency || "USD"),
   );
   return (
@@ -70,15 +43,6 @@ export function resolveUsdPerCurrencyRate(target, usdPerCurrencyRates) {
     DEFAULT_USD_PER_CURRENCY_RATES[currency] ??
     1
   );
-}
-
-// 合并默认汇率与接口汇率，生成完整的美元汇率映射。
-function buildUsdPerCurrencyRates(payload) {
-  return {
-    ...DEFAULT_USD_PER_CURRENCY_RATES,
-    ...normalizeUsdPerCurrencyRates(payload),
-    USD: 1,
-  };
 }
 
 // 判断当前缓存汇率是否仍在有效期内。
@@ -101,43 +65,28 @@ export async function ensureUsdPerCurrencyRates({ force = false } = {}) {
     return fetchPromise;
   }
 
-  fetchPromise = (async () => {
-    try {
-      const res = await getUsdExchangeRates();
-      const payload = res.data ?? {};
-      cachedUsdPerCurrencyRates = buildUsdPerCurrencyRates(payload);
+  fetchPromise = getUsdExchangeRates()
+    .then((res) => {
+      cachedUsdPerCurrencyRates = {
+        ...DEFAULT_USD_PER_CURRENCY_RATES,
+        ...toUsdPerCurrencyRates(res.data.rates),
+        USD: 1,
+      };
       cachedFetchedAt = Date.now();
       return cachedUsdPerCurrencyRates;
-    } catch (e) {
-      if (cachedFetchedAt > 0) {
-        return cachedUsdPerCurrencyRates;
-      }
-      throw e;
-    } finally {
+    })
+    .finally(() => {
       fetchPromise = null;
-    }
-  })();
+    });
 
   return fetchPromise;
 }
 
 // 计算单个账户按汇率换算后的美元和人民币价值。
 function calculateAccountValue(account, usdPerCurrencyRates) {
-  const balance = Number(account?.balance ?? 0);
-  if (!Number.isFinite(balance)) {
-    return {
-      balance: 0,
-      currency: toCode(account?.currency || "USD"),
-      usdRate: 1,
-      valueUsd: 0,
-      valueCny: 0,
-      absValueCny: 0,
-      positiveValueCny: 0,
-    };
-  }
-
-  const currency = toCode(account?.currency || "USD");
-  const usdPerCny = getUsdPerCnyRate(usdPerCurrencyRates);
+  const balance = Number(account.balance);
+  const currency = normalizeCurrency(account.currency || "USD");
+  const usdPerCny = resolveUsdPerCurrencyRate("CNY", usdPerCurrencyRates);
 
   if (currency === "CNY") {
     const valueCny = balance;
@@ -153,7 +102,7 @@ function calculateAccountValue(account, usdPerCurrencyRates) {
     };
   }
 
-  const usdRate = resolveUsdPerCurrencyRate(account, usdPerCurrencyRates);
+  const usdRate = resolveUsdPerCurrencyRate(currency, usdPerCurrencyRates);
   const valueUsd = balance * usdRate;
   const valueCny = valueUsd / usdPerCny;
 
@@ -192,4 +141,3 @@ export function buildAccountsValuation(accounts, usdPerCurrencyRates) {
 }
 
 export { DEFAULT_USD_PER_CURRENCY_RATES };
-

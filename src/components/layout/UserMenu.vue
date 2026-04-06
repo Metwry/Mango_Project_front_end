@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { onClickOutside } from '@vueuse/core'
 import BaseIcon from '../ui/BaseIcon.vue'
-import SettingsModal from '../windows/SettingsModal.vue'
-import UserProfileModal from '../windows/UserProfileModal.vue'
+import SettingsModal from '../modals/SettingsModal.vue'
+import UserProfileModal from '../modals/UserProfileModal.vue'
 import { ElMessage } from "@/utils/element";
 
 const router = useRouter()
