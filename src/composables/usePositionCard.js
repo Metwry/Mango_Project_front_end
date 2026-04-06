@@ -49,9 +49,12 @@ function limitSeriesPoints(points, maxPoints = POSITION_TREND_CONFIG.maxRenderPo
 
 function formatHourTick(value) {
   const date = new Date(new Date(value).getTime() + 8 * 60 * 60 * 1000);
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
   const hh = String(date.getUTCHours()).padStart(2, "0");
-  const mm = String(date.getUTCMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+  const minute = String(date.getUTCMinutes()).padStart(2, "0");
+  if (POSITION_TREND_CONFIG.lookbackDays > 1) return `${mm}-${dd}`;
+  return `${hh}:${minute}`;
 }
 
 function formatTimeTickWithSeconds(value) {
@@ -228,7 +231,7 @@ export function usePositionCard(props) {
     }
 
     const end = new Date();
-    const start = new Date(end.getTime() - POSITION_TREND_CONFIG.lookbackHours * 60 * 60 * 1000);
+    const start = new Date(end.getTime() - POSITION_TREND_CONFIG.lookbackDays * 24 * 60 * 60 * 1000);
     const params = {
       level: POSITION_TREND_CONFIG.level,
       start_time: start.toISOString(),
