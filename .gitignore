@@ -28,8 +28,7 @@ coverage
 .eslintcache
 
 # Environment files
-.env
-.env.*
+.env.development
 !.env.example
 
 # Local docs
