@@ -268,7 +268,7 @@ export const DASHBOARD_TREND_CONFIG = Object.freeze({
 
 export const POSITION_TREND_CONFIG = Object.freeze({
   level: "H4",
-  lookbackDays: 7,
+  lookbackDays: 30,
   snapshotLimit: 10000,
   maxRenderPoints: readIntEnv("VITE_POSITION_TREND_MAX_RENDER_POINTS", 96, {
     min: 2,
@@ -285,7 +285,7 @@ export const POSITION_TREND_CONFIG = Object.freeze({
       max: 59,
     }),
   }),
-  headerLabel: "近7天走势",
+  headerLabel: "近30天走势",
 });
 
 export const SEARCH_CONFIG = Object.freeze({
