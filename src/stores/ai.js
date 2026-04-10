@@ -61,6 +61,8 @@ function mapSessionSummary(item) {
     messages: [],
     detailLoaded: false,
     isTemporary: false,
+    streamStage: "",
+    streamStatus: "",
   };
 }
 
@@ -156,6 +158,8 @@ export const useAiStore = defineStore("ai", () => {
       messages: [],
       detailLoaded: true,
       isTemporary: true,
+      streamStage: "",
+      streamStatus: "",
     };
 
     conversations.value = [tempConversation, ...conversations.value];
@@ -174,6 +178,8 @@ export const useAiStore = defineStore("ai", () => {
       messages: mapMessages(payload.messages),
       detailLoaded: true,
       isTemporary: false,
+      streamStage: "",
+      streamStatus: "",
     });
   }
 
@@ -266,12 +272,16 @@ export const useAiStore = defineStore("ai", () => {
         messages: tempConversation?.messages || [],
         detailLoaded: true,
         isTemporary: false,
+        streamStage: "",
+        streamStatus: "",
       });
     } else {
       patchConversation(sessionId, {
         title,
         detailLoaded: true,
         isTemporary: false,
+        streamStage: "",
+        streamStatus: "",
       });
     }
 
@@ -286,6 +296,7 @@ export const useAiStore = defineStore("ai", () => {
       updatedAt: new Date().toISOString(),
       updatedAtLabel: "刚刚",
       detailLoaded: true,
+      streamStage: "",
     });
 
     if (!conversations.value.some((item) => item.id === sessionId)) return;
@@ -309,12 +320,11 @@ export const useAiStore = defineStore("ai", () => {
     moveConversationToTop(sessionId);
   }
 
-  function parseSseData(eventName, dataText) {
-    if (eventName === "delta") return dataText;
+  function parseSseData(dataText) {
     try {
       return JSON.parse(dataText || "{}");
     } catch {
-      return {};
+      return dataText;
     }
   }
 
@@ -340,7 +350,7 @@ export const useAiStore = defineStore("ai", () => {
         }
 
         if (!eventName) continue;
-        await handlers(eventName, parseSseData(eventName, dataLines.join("\n")));
+        await handlers(eventName, parseSseData(dataLines.join("\n")));
       }
 
       if (done) break;
@@ -391,9 +401,23 @@ export const useAiStore = defineStore("ai", () => {
           return;
         }
 
+        if (eventName === "session") {
+          resolvedSessionId = Number(payload?.session_id ?? resolvedSessionId);
+          if (resolvedSessionId) applySessionStart(resolvedSessionId, finalTitle);
+          return;
+        }
+
         if (eventName === "delta") {
-          assistantContent += String(payload ?? "");
+          assistantContent += String(payload?.content ?? payload ?? "");
           updateStreamingMessage(resolvedSessionId ?? target.id, assistantContent, finalTitle);
+          return;
+        }
+
+        if (eventName === "status") {
+          patchConversation(resolvedSessionId ?? target.id, {
+            streamStage: String(payload?.stage ?? "").trim(),
+            streamStatus: String(payload?.message ?? "").trim(),
+          });
           return;
         }
 
@@ -401,12 +425,20 @@ export const useAiStore = defineStore("ai", () => {
           const message =
             String(payload?.message ?? "").trim() || "当前请求处理失败，请稍后重试。";
           assistantContent = message;
+          patchConversation(resolvedSessionId ?? target.id, {
+            streamStage: "",
+            streamStatus: "",
+          });
           updateStreamingMessage(resolvedSessionId ?? target.id, assistantContent, finalTitle);
           throw new Error(message);
         }
 
         if (eventName === "done") {
           resolvedSessionId = Number(payload?.session_id ?? resolvedSessionId);
+          patchConversation(resolvedSessionId ?? target.id, {
+            streamStage: "",
+            streamStatus: "",
+          });
         }
       });
 
@@ -471,6 +503,7 @@ export const useAiStore = defineStore("ai", () => {
     loading,
     ready,
     isThinking,
+    streamStatus: computed(() => activeConversation.value?.streamStatus ?? ""),
     fetched,
     fetchSessions,
     selectConversation,

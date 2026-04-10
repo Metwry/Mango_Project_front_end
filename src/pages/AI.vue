@@ -16,7 +16,7 @@ const promptSuggestions = [
 
 const aiStore = useAiStore();
 const route = useRoute();
-const { conversations, activeConversation, activeConversationId, loading, ready, isThinking } =
+const { conversations, activeConversation, activeConversationId, loading, ready, isThinking, streamStatus } =
   storeToRefs(aiStore);
 
 const keyword = ref("");
@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
                     <div
                       class="inline-flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-500 shadow-sm dark:border-gray-800 dark:bg-gray-900/40 dark:text-gray-400">
                       <BaseIcon name="spinner" :spin="true" :size="16" />
-                      <span>正在思考中...</span>
+                      <span>{{ streamStatus || "正在思考中..." }}</span>
                     </div>
                   </div>
                 </div>
