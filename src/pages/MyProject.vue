@@ -38,7 +38,7 @@ const sections = [
     label: "AI功能展示",
     items: [
       {
-        title: "新闻概要总结",
+        title: "新闻概要总结(RAG)",
         description:
           "用更短路径给出市场新闻的核心结论与概览，适合作为智能助手入口中的快速阅读层。",
         image: "/pic/4-Ai功能-新闻概要总结.png",
@@ -46,7 +46,7 @@ const sections = [
         tone: "lavender",
       },
       {
-        title: "新闻详细介绍",
+        title: "新闻详细介绍(RAG)",
         description:
           "在简要摘要基础上进一步展开新闻背景、市场影响和重点事件细节，让用户能快速从摘要进入深度阅读。",
         image: "/pic/5-Ai功能-新闻详细介绍.png",
